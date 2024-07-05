@@ -8,7 +8,7 @@ Ansible install:
 Terraform install:
 https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli#install-terraform
 
-Manual files to currate:
+Required non-checked files:
 * `ansible/inventory/pi`:
     ```
     [piservers]
