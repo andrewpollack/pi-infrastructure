@@ -1,2 +1,2 @@
-- import_playbook: common/tasks/main.yml
-- import_playbook: artifactors/tasks/main.yml
+- import_playbook: roles/common/tasks/main.yml
+- import_playbook: roles/artifactors/tasks/main.yml
