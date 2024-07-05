@@ -3,7 +3,7 @@
   become: true
   vars:
     nexus_directory: "/home/{{ ansible_user }}/nexus"
-    # NOTE: Official image is only amd64, which won't work for the RaspPis.
+    # NOTE(andrewpollack): Official image is only amd64, which won't work for the RaspPis.
     # Using community arm64 image instead, or can build via `nexus/Dockerfile`.
     nexus_image: "sonatypecommunity/nexus3:3.69.0"
 

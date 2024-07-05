@@ -9,7 +9,7 @@ terraform {
 
 provider "nexus" {
   insecure = true
-  # NOTE: This is a locally running repository, being brought up/torn down
+  # TODO(andrewpollack): This is a locally running repository, being brought up/torn down
   # frequently during development. Fix password once this is running for longer
   # than minutes at a time.
   password = var.nexus_password
