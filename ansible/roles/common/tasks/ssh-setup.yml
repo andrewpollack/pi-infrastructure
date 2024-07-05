@@ -9,7 +9,7 @@
       ansible.posix.authorized_key:
         user: "{{ ansible_user }}"
         state: present
-        key: "{{ lookup('file', pub_ssh_key) }}"
+        key: "{{ lookup('file', pub_ssh_key_path) }}"
 
     - name: SSH> Disallow SSH password authentication
       lineinfile:

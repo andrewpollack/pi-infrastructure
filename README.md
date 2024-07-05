@@ -23,7 +23,7 @@ Manual files to currate:
     ```
 * `ansible/roles/common/vars/vars.yml`:
     ```
-    pub_ssh_key: <FILL IN>
+    pub_ssh_key_path: <FILL IN>
     ```
 * `terraform/nexus/local.tfvars`:
     ```
