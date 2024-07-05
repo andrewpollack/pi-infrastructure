@@ -2,5 +2,9 @@
 
 ## Running
 ```shell
-ansible-playbook main-playbook.yml -i inventory
+make all
+
+make ssh
+make nexus
+...
 ```
