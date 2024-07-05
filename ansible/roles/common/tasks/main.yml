@@ -1,0 +1,3 @@
+- import_playbook: ssh-setup.yml
+- import_playbook: docker-install.yml
+- import_playbook: prometheus-install.yml

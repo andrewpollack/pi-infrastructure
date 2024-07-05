@@ -1,0 +1,13 @@
+version: '3'
+  services:
+    nexus:
+      image: {{ nexus_image }}
+      container_name: nexus
+      environment:
+          - INSTALL4J_ADD_VM_PARAMS=-Xms2703m -Xmx2703m -XX:MaxDirectMemorySize=2703m -Djava.util.prefs.userRoot=/nexus-data/javaprefs
+      ports:
+          - "127.0.0.1:8081:8081"
+          - "127.0.0.1:8082:8082"
+      volumes:
+          - {{ nexus_directory }}/data:/nexus-data
+      restart: always

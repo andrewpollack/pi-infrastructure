@@ -1,0 +1,31 @@
+---
+- hosts: artifactors
+  become: true
+  vars:
+    nexus_directory: "/home/{{ ansible_user }}/nexus"
+    # NOTE: Official image is only amd64, which won't work for the RaspPis.
+    # Using community arm64 image instead, or can build via `nexus/Dockerfile`.
+    nexus_image: "sonatypecommunity/nexus3:3.69.0"
+
+  tasks:
+    - name: Nexus> Create directory for Nexus
+      file:
+        path: "{{ nexus_directory }}"
+        state: directory
+        mode: '0755'
+    
+    - name: Nexus> Create writeable data directory for Nexus
+      file:
+        path: "{{ nexus_directory }}/data"
+        state: directory
+        mode: '0777'
+    
+    - name: Nexus> Create Nexus docker-compose.yml
+      template:
+        src: ../templates/docker-compose.yml.j2
+        dest: "/home/{{ ansible_user }}/nexus/docker-compose.yml"
+    
+    - name: Nexus> Pull Nexus docker image
+      community.docker.docker_image:
+        name: "{{ nexus_image }}"
+        source: pull

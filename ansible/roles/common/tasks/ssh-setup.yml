@@ -1,0 +1,24 @@
+---
+- hosts: piservers
+  become: true
+  vars_files:
+    - ../vars/vars.yml
+
+  tasks:
+    - name: SSH> Set authorized key taken from file
+      ansible.posix.authorized_key:
+        user: "{{ ansible_user }}"
+        state: present
+        key: "{{ lookup('file', {{ pub_ssh_key }}) }}"
+
+    - name: SSH> Disallow SSH password authentication
+      lineinfile:
+        dest: /etc/ssh/sshd_config
+        regexp: "^PasswordAuthentication"
+        line: "PasswordAuthentication no"
+        state: present
+        validate: sshd -t -f %s
+    
+    - name: SSH> Reboot to allow SSH changes to take effect
+      reboot:
+        reboot_timeout: 3600
