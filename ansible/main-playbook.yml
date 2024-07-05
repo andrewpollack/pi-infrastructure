@@ -1,0 +1,2 @@
+- import_playbook: common/tasks/main.yml
+- import_playbook: artifactors/tasks/main.yml
