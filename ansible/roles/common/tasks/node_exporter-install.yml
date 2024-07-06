@@ -1,0 +1,60 @@
+---
+- name: Download, configure, and run node_exporter
+  hosts: piservers
+  become: true
+  vars:
+    node_exporter_version: 1.8.1
+
+  tasks:
+    - name: Create a directory for node_exporter
+      ansible.builtin.file:
+        path: /opt/node_exporter
+        state: directory
+        mode: '0755'
+
+    - name: Download node_exporter
+      ansible.builtin.get_url:
+        url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-arm64.tar.gz"
+        dest: /tmp/node_exporter.tar.gz
+        mode: '0644'
+
+    - name: Extract node_exporter
+      ansible.builtin.unarchive:
+        src: /tmp/node_exporter.tar.gz
+        dest: /opt/node_exporter
+        remote_src: yes
+        creates: /opt/node_exporter/node_exporter-{{ node_exporter_version }}.linux-arm64
+
+    - name: Symlink node_exporter
+      ansible.builtin.file:
+        src: /opt/node_exporter/node_exporter-{{ node_exporter_version }}.linux-arm64/node_exporter
+        dest: /usr/local/bin/node_exporter
+        state: link
+
+    - name: Create node_exporter group
+      ansible.builtin.group:
+        name: node_exporter
+        state: present
+
+    - name: Create node_exporter user, part of group
+      ansible.builtin.user:
+        name: node_exporter
+        group: node_exporter
+        shell: /bin/false
+        home: /opt/node_exporter
+        system: yes
+        state: present
+
+    - name: Create systemd service file for node_exporter
+      ansible.builtin.template:
+        src: ../templates/node_exporter.service.j2
+        dest: /etc/systemd/system/node_exporter.service
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Start and enable node_exporter service
+      ansible.builtin.systemd:
+        name: node_exporter
+        state: started
+        enabled: yes

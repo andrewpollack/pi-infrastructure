@@ -10,6 +10,7 @@
         user: "{{ ansible_user }}"
         state: present
         key: "{{ lookup('file', pub_ssh_key_path) }}"
+      register: ssh_key_changed
 
     - name: SSH> Disallow SSH password authentication
       lineinfile:
@@ -18,7 +19,9 @@
         line: "PasswordAuthentication no"
         state: present
         validate: sshd -t -f %s
+      register: ssh_config_changed
     
     - name: SSH> Reboot to allow SSH changes to take effect
       reboot:
         reboot_timeout: 3600
+      when: ssh_key_changed.changed or ssh_config_changed.changed

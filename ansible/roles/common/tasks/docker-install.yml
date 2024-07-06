@@ -47,6 +47,7 @@
           signed-by=/etc/apt/keyrings/docker.gpg]
           https://download.docker.com/linux/ubuntu {{ ansible_lsb.codename }} stable
         state: present
+      register: docker_apt_changed
 
     - name: Docker> Install Docker and related packages
       apt:
@@ -78,7 +79,9 @@
       loop:
         - docker.service
         - containerd.service
+      register: docker_service_changed
     
     - name: Docker> Reboot to allow changes to take place
       reboot:
         reboot_timeout: 3600
+      when: docker_apt_changed.changed or docker_service_changed.changed
