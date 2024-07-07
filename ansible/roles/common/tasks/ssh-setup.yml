@@ -21,7 +21,20 @@
         validate: sshd -t -f %s
       register: ssh_config_changed
     
+    - name: SSH> Check if 50-cloud-init.conf exists
+      stat:
+        path: /etc/ssh/sshd_config.d/50-cloud-init.conf
+      register: file_stat
+    
+    - name: SSH> Replace content in 50-cloud-init.conf
+      replace:
+        path: /etc/ssh/sshd_config.d/50-cloud-init.conf
+        regexp: 'PasswordAuthentication yes'
+        replace: 'PasswordAuthentication no'
+      when: file_stat.stat.exists
+      register: ssh_cloud_init_changed
+    
     - name: SSH> Reboot to allow SSH changes to take effect
       reboot:
         reboot_timeout: 3600
-      when: ssh_key_changed.changed or ssh_config_changed.changed
+      when: ssh_key_changed.changed or ssh_config_changed.changed or ssh_cloud_init_changed.changed
