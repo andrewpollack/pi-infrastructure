@@ -1,3 +1,4 @@
 - import_playbook: ssh-setup.yml
 - import_playbook: docker-install.yml
 - import_playbook: node_exporter-install.yml
+- import_playbook: iperf3-install.yml

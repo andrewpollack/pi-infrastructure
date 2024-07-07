@@ -1,0 +1,16 @@
+---
+- name: Install iperf3 for networking bandwidth tests
+  hosts: piservers
+  become: yes
+
+  tasks:
+    - name: iperf3> Update and upgrade all packages to the latest version
+      apt:
+        update_cache: true
+        upgrade: dist
+        cache_valid_time: 3600
+
+    - name: iperf3> Install iperf3
+      apt:
+        name: iperf3
+        state: present
