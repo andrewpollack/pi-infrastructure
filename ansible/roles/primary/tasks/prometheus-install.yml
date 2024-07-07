@@ -1,9 +1,16 @@
 ---
 - name: Configure and run prometheus container
-  hosts: piservers
+  hosts: primary
   become: true
+  vars:
+    node_exporter_port: 9100
 
   tasks:
+    - name: Prometheus> Gather piservers ansible_host variables
+      set_fact:
+        piservers_hosts_with_node_exporter_port: "{{ groups['piservers'] | map('extract', hostvars, ['ansible_host']) | map('regex_replace', '(.+)', '\\1:{{ node_exporter_port }}') | list }}"
+      run_once: true
+
     - name: Prometheus> Create prometheus.yml
       ansible.builtin.template:
         src: ../templates/prometheus.yml.j2
