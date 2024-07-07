@@ -4,17 +4,24 @@
   become: true
   vars:
     node_exporter_port: 9100
+    prometheus_dir: "/home/{{ ansible_user }}/prometheus"
 
   tasks:
     - name: Prometheus> Gather piservers ansible_host variables
       set_fact:
         piservers_hosts_with_node_exporter_port: "{{ groups['piservers'] | map('extract', hostvars, ['ansible_host']) | map('regex_replace', '(.+)', '\\1:{{ node_exporter_port }}') | list }}"
       run_once: true
+    
+    - name: Prometheus> Create directory for Prometheus
+      file:
+        path: "{{ prometheus_dir }}"
+        state: directory
+        mode: '0755'
 
     - name: Prometheus> Create prometheus.yml
       ansible.builtin.template:
         src: ../templates/prometheus.yml.j2
-        dest: /home/{{ ansible_user }}/prometheus.yml
+        dest: "{{ prometheus_dir }}/prometheus.yml"
 
     - name: Prometheus> Pull Prometheus docker image
       community.docker.docker_image:
@@ -29,5 +36,5 @@
         state: started
         restart_policy: always
         volumes:
-          - "/home/{{ ansible_user }}/prometheus.yml:/etc/prometheus/prometheus.yml"
+          - "{{ prometheus_dir }}/prometheus.yml:/etc/prometheus/prometheus.yml"
         network_mode: host
