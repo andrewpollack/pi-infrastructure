@@ -5,9 +5,9 @@ global:
 scrape_configs:
   - job_name: 'node_exporter'
     static_configs:
-{% for index in range(piservers_targets_with_node_exporter_port | length) %}
+{% for index in range(common_targets_with_node_exporter_port | length) %}
     - targets:
-        - '{{ piservers_targets_with_node_exporter_port[index] }}'
+        - '{{ common_targets_with_node_exporter_port[index] }}'
       labels:
-        inventory_label: '{{ piservers_inventory_names[index] }}'
+        inventory_label: '{{ common_inventory_names[index] }}'
 {% endfor %}

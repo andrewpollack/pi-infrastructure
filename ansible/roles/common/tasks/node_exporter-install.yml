@@ -1,6 +1,6 @@
 ---
 - name: Download, configure, and run node_exporter
-  hosts: piservers
+  hosts: common
   become: true
   vars:
     node_exporter_version: 1.8.1

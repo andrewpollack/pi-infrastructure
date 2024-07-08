@@ -7,10 +7,10 @@
     prometheus_dir: "/home/{{ ansible_user }}/prometheus"
 
   tasks:
-    - name: Prometheus> Gather piservers ansible_host variables
+    - name: Prometheus> Gather common ansible_host variables
       set_fact:
-        piservers_targets_with_node_exporter_port: "{{ groups['piservers'] | map('extract', hostvars, ['ansible_host']) | map('regex_replace', '(.+)', '\\1:{{ node_exporter_port }}') | list }}"
-        piservers_inventory_names: "{{ groups['piservers'] }}"
+        common_targets_with_node_exporter_port: "{{ groups['common'] | map('extract', hostvars, ['ansible_host']) | map('regex_replace', '(.+)', '\\1:{{ node_exporter_port }}') | list }}"
+        common_inventory_names: "{{ groups['common'] }}"
       run_once: true
 
     - name: Prometheus> Create directory for Prometheus

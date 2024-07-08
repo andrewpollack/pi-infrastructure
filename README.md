@@ -11,7 +11,7 @@ https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli#
 Required non-checked files:
 * `ansible/inventory/pi`:
     ```
-    [piservers]
+    [common]
     <FILL IN>
 
     [artifactors]

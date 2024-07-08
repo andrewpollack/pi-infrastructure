@@ -1,5 +1,5 @@
 ---
-- hosts: piservers
+- hosts: common
   become: true
   vars:
     arch_mapping:  # Map ansible architecture {{ ansible_architecture }} names to Docker's architecture names

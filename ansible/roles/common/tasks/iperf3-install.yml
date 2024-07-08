@@ -1,6 +1,6 @@
 ---
 - name: Install iperf3 for networking bandwidth tests
-  hosts: piservers
+  hosts: common
   become: yes
 
   tasks:
