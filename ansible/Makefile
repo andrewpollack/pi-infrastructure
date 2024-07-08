@@ -9,11 +9,10 @@ all: playbooks
 playbooks:
 	ansible-playbook main-playbook.yml -i $(INVENTORY)
 
-# Role: Artifactors
-nexus:
-	ansible-playbook roles/artifactors/tasks/nexus.yml -i $(INVENTORY)
-
 # Role: Primary
+nexus:
+	ansible-playbook roles/primary/tasks/nexus.yml -i $(INVENTORY)
+
 prometheus:
 	ansible-playbook roles/primary/tasks/prometheus-install.yml -i $(INVENTORY)
 

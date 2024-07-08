@@ -22,7 +22,7 @@
     
     - name: Nexus> Create Nexus docker-compose.yml
       template:
-        src: ../templates/docker-compose.yml.j2
+        src: ../templates/nexus-docker-compose.yml.j2
         dest: "/home/{{ ansible_user }}/nexus/docker-compose.yml"
     
     - name: Nexus> Pull Nexus docker image
