@@ -25,6 +25,11 @@ Required non-checked files:
     ```
     pub_ssh_key_path: <FILL IN>
     ```
+* `ansible/roles/workers/vars/vars.yml`:
+    ```
+    k3s_token: <FILL IN>
+    k3s_url: <FILL IN>
+    ```
 * `terraform/nexus/local.tfvars`:
     ```
     nexus_url = <FILL IN>
