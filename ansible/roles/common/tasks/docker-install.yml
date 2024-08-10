@@ -70,7 +70,18 @@
         name: "{{ ansible_user }}"
         groups: docker
         append: true
-    
+
+    - name: Docker> Configure Docker daemon to allow insecure nexus registry
+      copy:
+        dest: /etc/docker/daemon.json
+        content: |
+          {
+            "insecure-registries": ["{{ hostvars[groups['primary'][0]].ansible_host }}:8082"]
+          }
+        owner: root
+        group: root
+        mode: '0644'
+
     - name: Docker> Enable and start Docker services
       systemd:
         name: "{{ item }}"

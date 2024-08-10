@@ -1,5 +1,5 @@
 ---
-- hosts: artifactors
+- hosts: primary
   become: true
   vars:
     nexus_directory: "/home/{{ ansible_user }}/nexus"
@@ -29,3 +29,30 @@
       community.docker.docker_image:
         name: "{{ nexus_image }}"
         source: pull
+    
+    - name: Nexus> Create systemd service file for Docker Compose
+      copy:
+        dest: /etc/systemd/system/nexus.service
+        content: |
+          [Unit]
+          Description=Docker Compose application
+          After=network.target
+
+          [Service]
+          Type=simple
+          WorkingDirectory={{ nexus_directory }}
+          ExecStart=/usr/bin/docker compose up
+          ExecStop=/usr/bin/docker compose down
+          Restart=always
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Nexus> Reload systemd configuration
+      command: systemctl daemon-reload
+
+    - name: Nexus> Enable and start Docker Compose service
+      systemd:
+        name: nexus
+        state: started
+        enabled: yes

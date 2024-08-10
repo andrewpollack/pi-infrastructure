@@ -2,7 +2,7 @@ terraform {
   required_providers {
     nexus = {
       source  = "datadrivers/nexus"
-      version = "2.3.0"
+      version = "2.4.0"
     }
   }
 }
@@ -17,8 +17,8 @@ provider "nexus" {
   username = var.nexus_username
 }
 
-resource "nexus_repository_docker_hosted" "container_repo" {
-  name   = "container_repo"
+resource "nexus_repository_docker_hosted" "container-repo" {
+  name   = "container-repo"
   online = true
 
   docker {
