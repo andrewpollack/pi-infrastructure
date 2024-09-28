@@ -38,6 +38,15 @@
         mode: 0755
       register: install_script
     
+    - name: k3s> Setup insecure registries
+      copy:
+        dest: /etc/rancher/k3s/registries.yaml
+        content: |
+        mirrors:
+          "{{ hostvars[groups['primary'][0]].ansible_host }}:8082":
+            endpoint:
+              - "http://{{ hostvars[groups['primary'][0]].ansible_host }}:8082"
+    
     # NOTE(andrewpollack): Relying on https://docs.k3s.io/quick-start for quick start.
     # In longer term, will be nice to extract the steps from https://get.k3s.io/ into
     # the playbook. 
