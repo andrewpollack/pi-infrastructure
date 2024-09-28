@@ -54,3 +54,8 @@ by this script to make sure recipes are populated. While we could just pull from
 repo itself, CD in this way is far more fun!
 
 ![Screenshot from 2024-09-28 13-27-38](https://github.com/user-attachments/assets/4b9abc7b-37e7-4730-8e1a-121b2c9d3536)
+
+## Can I see the cluster?
+
+Sure! Mind the dust 😹
+![image_123650291](https://github.com/user-attachments/assets/8e0d6666-116b-43fb-9084-b6f32adf706a)
