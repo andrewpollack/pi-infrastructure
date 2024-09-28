@@ -1,5 +1,5 @@
 # Pi Infrastructure
-Checkins for a raspberry pi setup I'm playing around with.
+Checkins for a raspberry pi setup and k3s cluster I'm playing around with.
 
 ## Setup
 Ansible install:
