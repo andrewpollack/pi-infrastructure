@@ -89,7 +89,7 @@ def generateMeals(current_month, current_year):
             selected_item = selected_group["items"].pop()
             selected_item = (
                 f'<a href="{selected_item["url"]}">{selected_item["name"]}</a>'
-                if selected_item["url"] != ""
+                if "url" in selected_item.keys() != ""
                 else selected_item["name"]
             )
 
