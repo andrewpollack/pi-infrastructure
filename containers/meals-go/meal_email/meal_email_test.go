@@ -170,8 +170,7 @@ func TestGroceryListGeneration(t *testing.T) {
 	itemsOctober := collection.GenerateMealsList(*calendar.NewCalendar(2024, time.October))
 	_ = CreateGroceryEmailMessage(itemsOctober)
 
-	// TODO: Actually test here. Golden tests are a pain comparing against a changing
-	// output...
+	// TODO: Actually test here. Golden tests are a pain comparing against a changing output...
 }
 
 func TestEmailGeneration(t *testing.T) {
@@ -181,6 +180,5 @@ func TestEmailGeneration(t *testing.T) {
 	}
 
 	_ = GenerateEmailForNextWeek(Date{Year: 2024, Month: 10, Day: 28}, collection)
-	// TODO: Actually test here. Golden tests are a pain comparing against a changing
-	// output...
+	// TODO: Actually test here. Golden tests are a pain comparing against a changing output...
 }
