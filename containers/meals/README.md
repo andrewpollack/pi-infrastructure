@@ -1,5 +1,7 @@
 # recipe-maker.py
 
+## DEPRECATED... See https://github.com/andrewpollack/pi-infrastructure/tree/main/containers/meals-go
+
 ![Screenshot from 2024-09-28 15-54-16](https://github.com/user-attachments/assets/92b2241f-ee41-4184-aa17-0ba6494cf091)
 
 Quick and dirty script for randoomly selecting and rendering a months worth of recipes.
