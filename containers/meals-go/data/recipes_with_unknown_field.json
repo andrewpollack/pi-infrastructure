@@ -1,0 +1,153 @@
+[
+    {
+        "category": "Italy",
+        "items": [
+            {
+                "name": "pasta"
+            },
+            {
+                "name": "lasagna"
+            },
+            {
+                "name": "better than olive garden",
+                "unknown_field": [
+                    {
+                        "item": "Impossible meat",
+                        "quantity": 1,
+                        "unit": "lb",
+                        "aisle": "16 & 17 (Freezer)"
+                    },
+                    {
+                        "item": "onion",
+                        "quantity": 1,
+                        "unit": "count",
+                        "aisle": "Produce"
+                    },
+                    {
+                        "item": "carrot",
+                        "quantity": 2,
+                        "unit": "count",
+                        "aisle": "Produce"
+                    },
+                    {
+                        "item": "celery",
+                        "quantity": 2,
+                        "unit": "count",
+                        "aisle": "Produce"
+                    },
+                    {
+                        "item": "28 oz can diced tomato",
+                        "quantity": 1,
+                        "unit": "count",
+                        "aisle": "1 & 2 (Pasta, Global, Canned)"
+                    },
+                    {
+                        "item": "16 oz can red kidney bean",
+                        "quantity": 1,
+                        "unit": "count",
+                        "aisle": "1 & 2 (Pasta, Global, Canned)"
+                    },
+                    {
+                        "item": "Veggie stock",
+                        "quantity": 2,
+                        "unit": "cup",
+                        "aisle": "1 & 2 (Pasta, Global, Canned)"
+                    },
+                    {
+                        "item": "Italian seasoning",
+                        "quantity": 2,
+                        "unit": "tsp",
+                        "aisle": "3-5 (Breakfast & Baking)"
+                    },
+                    {
+                        "item": "Tobasco",
+                        "quantity": 1,
+                        "unit": "tsp",
+                        "aisle": "1 & 2 (Pasta, Global, Canned)"
+                    },
+                    {
+                        "item": "Pasta",
+                        "quantity": 4,
+                        "unit": "oz",
+                        "aisle": "1 & 2 (Pasta, Global, Canned)"
+                    }
+                ]
+            },
+            {
+                "name": "chili"
+            },
+            {
+                "name": "green pasta"
+            },
+            {
+                "name": "tortellini"
+            },
+            {
+                "name": "mushroom stroganoff"
+            },
+            {
+                "name": "Linguine w/ Crisp Chickpeas & Rosemary"
+            }
+        ]
+    },
+    {
+        "category": "Soupy liquid",
+        "items": [
+            {
+                "name": "ramen"
+            },
+            {
+                "name": "tantanmen"
+            },
+            {
+                "name": "udon"
+            },
+            {
+                "name": "curry"
+            },
+            {
+                "name": "soup"
+            },
+            {
+                "name": "BA: sweet corn and green pepper chowder"
+            },
+            {
+                "name": "One-Pot Broccoli Mac & Cheese",
+                "url": "https://cooking.nytimes.com/recipes/1022725-one-pot-broccoli-mac-and-cheese",
+                "ingredients": 
+                [
+                    {
+                        "item": "elbow macaroni",
+                        "quantity": 1,
+                        "unit": "count",
+                        "aisle": "1 & 2 (Pasta, Global, Canned)"
+                    },
+                    {
+                        "item": "broccoli",
+                        "quantity": 1,
+                        "unit": "lb",
+                        "aisle": "Produce"
+                    },
+                    {
+                        "item": "whole milk",
+                        "quantity": 2.5,
+                        "unit": "cup",
+                        "aisle": "18 & 19 (Alcohol, Butter, Cheese)"
+                    },
+                    {
+                        "item": "grated sharp cheddar",
+                        "quantity": 8,
+                        "unit": "oz",
+                        "aisle": "18 & 19 (Alcohol, Butter, Cheese)"
+                    },
+                    {
+                        "item": "garlic powder",
+                        "quantity": 0.5,
+                        "unit": "tsp",
+                        "aisle": "3-5 (Breakfast & Baking)"
+                    }
+                ]
+            }
+        ]
+    }
+]

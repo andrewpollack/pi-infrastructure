@@ -1,0 +1,337 @@
+[
+    {
+        "category": "Italy",
+        "items": [
+            {
+                "name": "pasta"
+            },
+            {
+                "name": "lasagna"
+            },
+            {
+                "name": "better than olive garden",
+                "ingredients": [
+                    {
+                        "item": "Impossible meat",
+                        "quantity": 1,
+                        "unit": "lb",
+                        "aisle": "16 & 17 (Freezer)"
+                    },
+                    {
+                        "item": "onion",
+                        "quantity": 1,
+                        "unit": "count",
+                        "aisle": "Produce"
+                    },
+                    {
+                        "item": "carrot",
+                        "quantity": 2,
+                        "unit": "count",
+                        "aisle": "Produce"
+                    },
+                    {
+                        "item": "celery",
+                        "quantity": 2,
+                        "unit": "count",
+                        "aisle": "Produce"
+                    },
+                    {
+                        "item": "28 oz can diced tomato",
+                        "quantity": 1,
+                        "unit": "count",
+                        "aisle": "1 & 2 (Pasta, Global, Canned)"
+                    },
+                    {
+                        "item": "16 oz can red kidney bean",
+                        "quantity": 1,
+                        "unit": "count",
+                        "aisle": "1 & 2 (Pasta, Global, Canned)"
+                    },
+                    {
+                        "item": "Veggie stock",
+                        "quantity": 2,
+                        "unit": "cup",
+                        "aisle": "1 & 2 (Pasta, Global, Canned)"
+                    },
+                    {
+                        "item": "Italian seasoning",
+                        "quantity": 2,
+                        "unit": "tsp",
+                        "aisle": "3-5 (Breakfast & Baking)"
+                    },
+                    {
+                        "item": "Tobasco",
+                        "quantity": 1,
+                        "unit": "tsp",
+                        "aisle": "1 & 2 (Pasta, Global, Canned)"
+                    },
+                    {
+                        "item": "Pasta",
+                        "quantity": 4,
+                        "unit": "oz",
+                        "aisle": "1 & 2 (Pasta, Global, Canned)"
+                    }
+                ]
+            },
+            {
+                "name": "chili"
+            },
+            {
+                "name": "green pasta"
+            },
+            {
+                "name": "tortellini"
+            },
+            {
+                "name": "mushroom stroganoff"
+            },
+            {
+                "name": "Linguine w/ Crisp Chickpeas & Rosemary"
+            }
+        ]
+    },
+    {
+        "category": "Soupy liquid",
+        "items": [
+            {
+                "name": "ramen"
+            },
+            {
+                "name": "tantanmen"
+            },
+            {
+                "name": "udon"
+            },
+            {
+                "name": "curry"
+            },
+            {
+                "name": "soup"
+            },
+            {
+                "name": "BA: sweet corn and green pepper chowder"
+            },
+            {
+                "name": "One-Pot Broccoli Mac & Cheese",
+                "url": "https://cooking.nytimes.com/recipes/1022725-one-pot-broccoli-mac-and-cheese",
+                "ingredients": 
+                [
+                    {
+                        "item": "elbow macaroni",
+                        "quantity": 1,
+                        "unit": "count",
+                        "aisle": "1 & 2 (Pasta, Global, Canned)"
+                    },
+                    {
+                        "item": "broccoli",
+                        "quantity": 1,
+                        "unit": "lb",
+                        "aisle": "Produce"
+                    },
+                    {
+                        "item": "whole milk",
+                        "quantity": 2.5,
+                        "unit": "cup",
+                        "aisle": "18 & 19 (Alcohol, Butter, Cheese)"
+                    },
+                    {
+                        "item": "grated sharp cheddar",
+                        "quantity": 8,
+                        "unit": "oz",
+                        "aisle": "18 & 19 (Alcohol, Butter, Cheese)"
+                    },
+                    {
+                        "item": "garlic powder",
+                        "quantity": 0.5,
+                        "unit": "tsp",
+                        "aisle": "3-5 (Breakfast & Baking)"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "category": "breakfast",
+        "items": [
+            {
+                "name": "omelette"
+            },
+            {
+                "name": "pancake",
+                "ingredients":
+                [
+                    {
+                        "item": "pancake mix",
+                        "quantity": 1,
+                        "unit": "count",
+                        "aisle": "3-5 (Breakfast & Baking)"
+                    },
+                    {
+                        "item": "breakfat sausage",
+                        "quantity": 1,
+                        "unit": "count",
+                        "aisle": "16 & 17 (Freezer)"
+                    },
+                    {
+                        "item": "bag of chocolate chips",
+                        "quantity": 1,
+                        "unit": "count",
+                        "aisle": "3-5 (Breakfast & Baking)"
+                    }
+                ]
+            },
+            {
+                "name": "french toast",
+                "url": "https://tastesbetterfromscratch.com/classic-french-toast/",
+                "ingredients":
+                [
+                    {
+                        "item": "soft bread",
+                        "quantity": 1,
+                        "unit": "count",
+                        "aisle": "Cheese & Bakery"
+                    },
+                    {
+                        "item": "milk",
+                        "quantity": 0.66,
+                        "unit": "cup",
+                        "aisle": "18 & 19 (Alcohol, Butter, Cheese)"
+                    },
+                    {
+                        "item": "flour",
+                        "quantity": 0.25,
+                        "unit": "cup",
+                        "aisle": "3-5 (Breakfast & Baking)"
+                    },
+                    {
+                        "item": "sugar",
+                        "quantity": 0.25,
+                        "unit": "cup",
+                        "aisle": "3-5 (Breakfast & Baking)"
+                    },
+                    {
+                        "item": "cinnamon",
+                        "quantity": 1,
+                        "unit": "tsp",
+                        "aisle": "3-5 (Breakfast & Baking)"
+                    },
+                    {
+                        "item": "vanilla extract",
+                        "quantity": 1,
+                        "unit": "tsp",
+                        "aisle": "3-5 (Breakfast & Baking)"
+                    },
+                    {
+                        "item": "eggs",
+                        "quantity": 6,
+                        "unit": "count",
+                        "aisle": "18 & 19 (Alcohol, Butter, Cheese)"
+                    }
+                ]
+            },
+            {
+                "name": "quiche"
+            },
+            {
+                "name": "frittata"
+            }
+        ]
+    },
+    {
+        "category": "Breadwich",
+        "items": [
+            {
+                "name": "grilled cheese",
+                "ingredients": 
+                [
+                    {
+                        "item": "sourdough bread",
+                        "quantity": 1,
+                        "unit": "count",
+                        "aisle": "Cheese & Bakery"
+                    },
+                    {
+                        "item": "cheese slices",
+                        "quantity": 1,
+                        "unit": "count",
+                        "aisle": "18 & 19 (Alcohol, Butter, Cheese)"
+                    },
+                    {
+                        "item": "can of tomato-y soup",
+                        "quantity": 1,
+                        "unit": "count",
+                        "aisle": "1 & 2 (Pasta, Global, Canned)"
+                    }
+                ]
+            },
+            {
+                "name": "sandwich"
+            },
+            {
+                "name": "gyros"
+            },
+            {
+                "name": "arepas"
+            },
+            {
+                "name": "BA: french dip sandwich"
+            }
+        ]
+    },
+    {
+        "category": "American?",
+        "items": [
+            {
+                "name": "burger",
+                "ingredients": 
+                [
+                    {
+                        "item": "burger patties",
+                        "quantity": 2,
+                        "unit": "count",
+                        "aisle": "16 & 17 (Freezer)"
+                    },
+                    {
+                        "item": "burger buns",
+                        "quantity": 2,
+                        "unit": "count",
+                        "aisle": "Cheese & Bakery"
+                    },
+                    {
+                        "item": "cheese slices",
+                        "quantity": 1,
+                        "unit": "count",
+                        "aisle": "18 & 19 (Alcohol, Butter, Cheese)"
+                    },
+                    {
+                        "item": "frozen vegetables",
+                        "quantity": 1,
+                        "unit": "count",
+                        "aisle": "16 & 17 (Freezer)"
+                    },
+                    {
+                        "item": "chips",
+                        "quantity": 1,
+                        "unit": "count",
+                        "aisle": "6-9 (Bevs & Snacks)"
+                    },
+                    {
+                        "item": "lettuce",
+                        "quantity": 1,
+                        "unit": "count",
+                        "aisle": "Produce"
+                    }
+                ]
+            },
+            {
+                "name": "hotdog"
+            },
+            {
+                "name": "sausagedog"
+            },
+            {
+                "name": "Sloppy joe"
+            }
+        ]
+    }
+]

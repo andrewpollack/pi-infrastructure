@@ -324,7 +324,7 @@ def main():
     adjusted_dom = (
         dom + first_day.weekday()
     )  # Adjust day to account for start of the week
-    curr_week_index = (adjusted_dom - 1) // 7
+    curr_week_index = (adjusted_dom - 1) // 7 + 1
 
     if current_month == 12:
         next_month = 1
