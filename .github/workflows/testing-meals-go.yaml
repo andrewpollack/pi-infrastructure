@@ -6,7 +6,7 @@ on:
       - 'containers/meals-go/**'
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
 
     defaults:
@@ -21,7 +21,5 @@ jobs:
           go-version: '1.22.x'
       - name: Install dependencies
         run: go get .
-      - name: Build
-        run: go build -v ./...
-      - name: Test with the Go CLI
-        run: go test
+      - name: Test
+        run: go test ./...
