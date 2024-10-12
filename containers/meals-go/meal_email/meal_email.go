@@ -271,12 +271,9 @@ func GenerateEmailForNextWeek(date Date, collection meal_collection.MealCollecti
 func GenerateHeaderForNextWeek(date Date) string {
 	daysOfWeek := GetDaysOfNextWeek(date)
 	first := daysOfWeek[0]
+	last := daysOfWeek[6]
 
-	currMonthCalendar := calendar.NewCalendar(first.Year, time.Month(first.Month))
-	// Add 1 to make more human-readable.
-	dayIndex := currMonthCalendar.GetWeekIndexOfDay(date.Day) + 1
-
-	return fmt.Sprintf("Meals for %s Week %d", time.Month(first.Month), dayIndex)
+	return fmt.Sprintf("Meals for %s %d → %s %d ", time.Month(first.Month), first.Day, time.Month(last.Month), last.Day)
 }
 
 func CreateAndSendEmail(srv *gmail.Service) {
