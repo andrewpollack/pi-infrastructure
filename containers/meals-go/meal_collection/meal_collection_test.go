@@ -96,7 +96,7 @@ func TestGenerateMealsWholeYearMatchAcrossMonth(t *testing.T) {
 	}
 
 	itemsOctober1 := collection.GenerateMealsWholeYear(*calendar.NewCalendar(2024, time.October))
-	itemsOctober2 := collection.GenerateMealsWholeYear(*calendar.NewCalendar(2024, time.November))
+	itemsOctober2 := collection.GenerateMealsWholeYear(*calendar.NewCalendar(2024, time.October))
 
 	// Items should match length...
 	if len(itemsOctober1) != len(itemsOctober2) {

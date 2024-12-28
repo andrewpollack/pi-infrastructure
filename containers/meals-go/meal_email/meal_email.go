@@ -263,7 +263,7 @@ func GenerateEmailForNextWeek(date Date, collection meal_collection.MealCollecti
 	calendars := make(map[YearMonth][]meal_collection.Item)
 
 	var allItems []meal_collection.Item
-	if os.Getenv("USE_HARDCODE") == "false" {
+	if os.Getenv("USE_HARDCODE") == "false" || os.Getenv("USE_HARDCODE") == "" {
 		for _, day := range daysOfWeek {
 			currYearMonth := YearMonth{day.Year, day.Month}
 

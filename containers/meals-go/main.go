@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	if os.Getenv("JUST_EMAIL") == "false" {
+	if os.Getenv("JUST_EMAIL") == "false" || os.Getenv("JUST_EMAIL") == "" {
 		meal_calendar.RunServer()
 	} else {
 		srv, err := meal_email.AuthenticateGmail()
