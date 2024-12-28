@@ -215,20 +215,66 @@ func CreateGroceryEmailMessage(meals []meal_collection.Item) string {
 	return groceryEmail
 }
 
+func useHardcodedValues(collection meal_collection.MealCollection) []meal_collection.Item {
+	var flattenedItems []meal_collection.Item
+	for _, item := range collection {
+		flattenedItems = append(flattenedItems, item.Items...)
+	}
+
+	arr := [7]string{
+		os.Getenv("H_1"),
+		os.Getenv("H_2"),
+		os.Getenv("H_3"),
+		os.Getenv("H_4"),
+		os.Getenv("H_5"),
+		os.Getenv("H_6"),
+		os.Getenv("H_7"),
+	}
+
+	var allItems []meal_collection.Item
+	for i, v := range arr {
+		if i == 4 {
+			allItems = append(allItems, meal_collection.Item{
+				Name: "LEFTOVERS",
+			})
+			continue
+		}
+		if i == 5 {
+			allItems = append(allItems, meal_collection.Item{
+				Name: "OUT",
+			})
+			continue
+		}
+
+		for _, fullItem := range flattenedItems {
+			if fullItem.Name == v {
+				allItems = append(allItems, fullItem)
+				break
+			}
+		}
+	}
+
+	return allItems
+}
+
 func GenerateEmailForNextWeek(date Date, collection meal_collection.MealCollection) string {
 	daysOfWeek := GetDaysOfNextWeek(date)
 
 	calendars := make(map[YearMonth][]meal_collection.Item)
 
 	var allItems []meal_collection.Item
-	for _, day := range daysOfWeek {
-		currYearMonth := YearMonth{day.Year, day.Month}
+	if os.Getenv("USE_HARDCODE") == "false" {
+		for _, day := range daysOfWeek {
+			currYearMonth := YearMonth{day.Year, day.Month}
 
-		if _, exists := calendars[currYearMonth]; !exists {
-			calendars[currYearMonth] = collection.GenerateMealsList(*calendar.NewCalendar(day.Year, time.Month(day.Month)))
+			if _, exists := calendars[currYearMonth]; !exists {
+				calendars[currYearMonth] = collection.GenerateMealsWholeYearNoCategories(*calendar.NewCalendar(day.Year, time.Month(day.Month)))
+			}
+
+			allItems = append(allItems, calendars[currYearMonth][day.Day-1])
 		}
-
-		allItems = append(allItems, calendars[currYearMonth][day.Day-1])
+	} else {
+		allItems = useHardcodedValues(collection)
 	}
 
 	htmlBody := `
@@ -273,7 +319,7 @@ func GenerateHeaderForNextWeek(date Date) string {
 	first := daysOfWeek[0]
 	last := daysOfWeek[6]
 
-	return fmt.Sprintf("Meals for %s %d → %s %d ", time.Month(first.Month), first.Day, time.Month(last.Month), last.Day)
+	return fmt.Sprintf("Meals for %s %d -> %s %d ", time.Month(first.Month), first.Day, time.Month(last.Month), last.Day)
 }
 
 func CreateAndSendEmail(srv *gmail.Service) {

@@ -23,7 +23,7 @@ func NewCalendar(calendar calendar.Calendar, meal_collection meal_collection.Mea
 
 // Example method that uses both Calendar and MealCollection
 func (mc *MealCalendar) RenderHTMLCalendar() string {
-	items := mc.MealCollection.GenerateMealsList(mc.Calendar)
+	items := mc.MealCollection.GenerateMealsWholeYearNoCategories(mc.Calendar)
 
 	mealCalendar := fmt.Sprintf(`
 <h1>%s %d</h1>
@@ -47,10 +47,14 @@ func (mc *MealCalendar) RenderHTMLCalendar() string {
 				mealCalendar += "NONE"
 			} else {
 				item := items[day.Number-1]
+				itemName := item.Name
+				if len(item.Ingredients) == 0 {
+					itemName += "*"
+				}
 				if item.URL != nil {
-					mealCalendar += fmt.Sprintf("<a href=\"%s\">%s</a>", *item.URL, item.Name)
+					mealCalendar += fmt.Sprintf("<b> %d </b> <a href=\"%s\">%s</a>", day.Number, *item.URL, itemName)
 				} else {
-					mealCalendar += item.Name
+					mealCalendar += fmt.Sprintf("<b> %d </b> %s", day.Number, itemName)
 				}
 			}
 			mealCalendar += "</td>\n"

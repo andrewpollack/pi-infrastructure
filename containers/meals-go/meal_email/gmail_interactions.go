@@ -104,7 +104,7 @@ func AuthenticateGmail() (*gmail.Service, error) {
 	credentialsLocation := os.Getenv("CREDENTIALS_LOCATION")
 	b, err := os.ReadFile(credentialsLocation)
 	if err != nil {
-		log.Fatalf("Unable to read client secret file: %v", err)
+		log.Fatalf("Unable to read client secret file %s: %v", credentialsLocation, err)
 	}
 
 	// If modifying these scopes, delete your previously saved token.json.
