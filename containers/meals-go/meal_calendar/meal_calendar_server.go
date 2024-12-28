@@ -6,6 +6,8 @@ import (
 	"meals/meal_collection"
 	"net/http"
 	"os"
+	"sort"
+	"strings"
 	"time"
 )
 
@@ -29,6 +31,27 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 	currMonthMealCalendar := NewCalendar(*calendar.NewCalendar(currYear, currMonth), collection)
 	nextMonthMealCalendar := NewCalendar(*calendar.NewCalendar(nextYear, nextMonth), collection)
 
+	var flattenedItems []meal_collection.Item
+	for _, item := range collection {
+		flattenedItems = append(flattenedItems, item.Items...)
+	}
+
+	sort.Slice(flattenedItems, func(i, j int) bool {
+		return strings.ToLower(flattenedItems[i].Name) < strings.ToLower(flattenedItems[j].Name)
+	})
+
+	endList := "<h2> ALL ITEMS </h2>\n\n<ul>\n"
+	for _, item := range flattenedItems {
+		endList += "\t<li>"
+		if item.URL != nil {
+			endList += fmt.Sprintf("<a href=\"%s\">%s</a>", *item.URL, item.Name)
+		} else {
+			endList += item.Name
+		}
+		endList += "</li>\n"
+	}
+	endList += "\n</ul>"
+
 	fmt.Fprintf(w, `
 		<!DOCTYPE html>
 		<html lang="en">
@@ -46,9 +69,11 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 			%s
 
 			%s
+
+			%s
 		</body>
 		</html>
-	`, currMonthMealCalendar.RenderHTMLCalendar(), nextMonthMealCalendar.RenderHTMLCalendar())
+	`, currMonthMealCalendar.RenderHTMLCalendar(), nextMonthMealCalendar.RenderHTMLCalendar(), endList)
 }
 
 func RunServer() {

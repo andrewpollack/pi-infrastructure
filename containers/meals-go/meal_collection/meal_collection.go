@@ -242,6 +242,168 @@ func (m MealCollection) DeepCopy() MealCollection {
 	return mealCopy
 }
 
+// GenerateMealsWholeYear generates a random list of meals, not respecting categories
+func (m MealCollection) GenerateMealsWholeYearNoCategories(currCalendar calendar.Calendar) []Item {
+	// Use Year+Month to make meal generation consistent
+	rand.Seed(uint64(currCalendar.Year))
+
+	// Create a copy of MealCollection so that the original isn't modified
+	mealCopy := m.DeepCopy()
+
+	var allItems []Item
+	for _, category := range mealCopy {
+		allItems = append(allItems, category.Items...)
+	}
+
+	currItemInd := 0
+	Shuffle(allItems)
+
+	for i := range int(currCalendar.Month) - 1 {
+		pastCalendar := calendar.NewCalendar(currCalendar.Year, time.Month(i+1))
+
+		for j := 1; j < pastCalendar.DaysInMonth()+1; j++ {
+			if pastCalendar.GetWeekday(j) == time.Thursday {
+				continue
+			}
+			if pastCalendar.GetWeekday(j) == time.Friday {
+				continue
+			}
+
+			if currItemInd >= len(allItems) {
+				Shuffle(allItems)
+				currItemInd = 0
+			}
+
+			// Copy would go here
+
+			currItemInd += 1
+		}
+	}
+
+	var selectedMeals []Item
+	for j := 1; j < currCalendar.DaysInMonth()+1; j++ {
+		if currCalendar.GetWeekday(j) == time.Thursday {
+			selectedMeals = append(selectedMeals, Item{
+				Name: "LEFTOVERS",
+			})
+			continue
+		}
+		if currCalendar.GetWeekday(j) == time.Friday {
+			selectedMeals = append(selectedMeals, Item{
+				Name: "OUT",
+			})
+			continue
+		}
+
+		if currItemInd >= len(allItems) {
+			Shuffle(allItems)
+			currItemInd = 0
+		}
+
+		// Copy would go here
+		selectedMeals = append(selectedMeals, allItems[currItemInd])
+
+		currItemInd += 1
+	}
+
+	return selectedMeals
+}
+
+// GenerateMealsWholeYear generates a random list of meals by popping one item from each category at a time
+func (m MealCollection) GenerateMealsWholeYear(currCalendar calendar.Calendar) []Item {
+	// Use Year+Month to make meal generation consistent
+	rand.Seed(uint64(currCalendar.Year))
+
+	// Create a copy of MealCollection so that the original isn't modified
+	mealCopy := m.DeepCopy()
+	// Shuffle categories
+	Shuffle(mealCopy)
+	// Shuffle items within each category
+	for i := range mealCopy {
+		Shuffle(mealCopy[i].Items)
+	}
+
+	currMealCategoryIndex := 0
+	for i := range int(currCalendar.Month) - 1 {
+		pastCalendar := calendar.NewCalendar(currCalendar.Year, time.Month(i+1))
+
+		for j := 1; j < pastCalendar.DaysInMonth()+1; j++ {
+			if pastCalendar.GetWeekday(j) == time.Thursday {
+				continue
+			}
+			if pastCalendar.GetWeekday(j) == time.Friday {
+				continue
+			}
+
+			for {
+				// Need to repopulate!
+				if currMealCategoryIndex >= len(mealCopy) {
+					// Create a copy of MealCollection so that the original isn't modified
+					mealCopy = m.DeepCopy()
+					// Shuffle categories
+					Shuffle(mealCopy)
+					// Shuffle items within each category
+					for i := range mealCopy {
+						Shuffle(mealCopy[i].Items)
+					}
+
+					currMealCategoryIndex = 0
+				}
+				_, remainingItems, popped := PopItem(mealCopy[currMealCategoryIndex].Items)
+				if popped {
+					mealCopy[currMealCategoryIndex].Items = remainingItems
+					currMealCategoryIndex += 1
+					break
+				}
+				currMealCategoryIndex += 1
+			}
+		}
+	}
+
+	var selectedMeals []Item
+	for j := 1; j < currCalendar.DaysInMonth()+1; j++ {
+		if currCalendar.GetWeekday(j) == time.Thursday {
+			selectedMeals = append(selectedMeals, Item{
+				Name: "LEFTOVERS",
+			})
+			continue
+		}
+		if currCalendar.GetWeekday(j) == time.Friday {
+			selectedMeals = append(selectedMeals, Item{
+				Name: "OUT",
+			})
+			continue
+		}
+
+		for {
+			// Need to repopulate!
+			if currMealCategoryIndex >= len(mealCopy) {
+				// Create a copy of MealCollection so that the original isn't modified
+				mealCopy = m.DeepCopy()
+				// Shuffle categories
+				Shuffle(mealCopy)
+				// Shuffle items within each category
+				for i := range mealCopy {
+					Shuffle(mealCopy[i].Items)
+				}
+
+				currMealCategoryIndex = 0
+			}
+
+			item, remainingItems, popped := PopItem(mealCopy[currMealCategoryIndex].Items)
+			if popped {
+				selectedMeals = append(selectedMeals, item)
+				mealCopy[currMealCategoryIndex].Items = remainingItems
+				currMealCategoryIndex += 1
+				break
+			}
+			currMealCategoryIndex += 1
+		}
+	}
+
+	return selectedMeals
+}
+
 // GenerateMealsList generates a random list of meals by popping one item from each category at a time
 func (m MealCollection) GenerateMealsList(calendar calendar.Calendar) []Item {
 	// Use Year+Month to make meal generation consistent
