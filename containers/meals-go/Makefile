@@ -3,14 +3,6 @@
 # Include external variables file
 include variables.mk
 
-# Target to deploy meals Docker image
-deploy_meals_image: copy_files build_and_push_image
-
-# Target to copy files to the remote machine
-copy_files:
-	@echo "Copying files to the remote machine..."
-	scp -r $(LOCAL_MEALS_DIR) $(REMOTE_USER):$(REMOTE_MEALS_DIR)
-
 # Target to build and push the Docker image
 build_and_push_image:
 	@echo "Building and pushing Docker image..."
