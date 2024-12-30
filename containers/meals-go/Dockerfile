@@ -1,5 +1,5 @@
 # Stage 1: Build the Go binary
-FROM golang:1.22-alpine AS builder
+FROM golang:1.23-alpine AS builder
 ARG TARGETPLATFORM
 
 WORKDIR /app
@@ -27,7 +27,7 @@ RUN case "$TARGETPLATFORM" in \
         *) echo "Unsupported architecture: $TARGETPLATFORM"; exit 1 ;; \
     esac
 
-FROM alpine:3.20.3
+FROM alpine:3.21.0
 
 WORKDIR /app
 
