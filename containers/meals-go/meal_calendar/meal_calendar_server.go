@@ -42,11 +42,18 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 
 	endList := "<h2> ALL ITEMS </h2>\n\n<ul>\n"
 	for _, item := range flattenedItems {
+		itemName := item.Name
+		if len(item.Ingredients) == 0 {
+			if item.Name != "LEFTOVERS" && item.Name != "OUT" {
+				itemName += "*"
+			}
+		}
+
 		endList += "\t<li>"
 		if item.URL != nil {
-			endList += fmt.Sprintf("<a href=\"%s\">%s</a>", *item.URL, item.Name)
+			endList += fmt.Sprintf("<a href=\"%s\">%s</a>", *item.URL, itemName)
 		} else {
-			endList += item.Name
+			endList += itemName
 		}
 		endList += "</li>\n"
 	}
