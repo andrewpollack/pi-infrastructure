@@ -49,7 +49,9 @@ func (mc *MealCalendar) RenderHTMLCalendar() string {
 				item := items[day.Number-1]
 				itemName := item.Name
 				if len(item.Ingredients) == 0 {
-					itemName += "*"
+					if item.Name != "LEFTOVERS" && item.Name != "OUT" {
+						itemName += "*"
+					}
 				}
 				if item.URL != nil {
 					mealCalendar += fmt.Sprintf("<b> %d </b> <a href=\"%s\">%s</a>", day.Number, *item.URL, itemName)
