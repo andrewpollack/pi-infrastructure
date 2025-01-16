@@ -26,6 +26,18 @@ repo itself, CD in this way is far more fun!
 
 ---
 
+### [garage-go](https://github.com/andrewpollack/pi-infrastructure/tree/main/containers/garage-go)
+
+I (too often) leave for work, round the corner, and immediately second guess whether I closed the garage door. So, I fixed this concern.
+
+This Garage door monitoring system uses a Raspberry Pi 2 W hooked up with a magnetic door sensor. The magnetic door sensor detects when the garage door is in the "closed" position. Metrics are exposed via
+a Prometheus exporter, which are scraped by a Prometheus deployment I'm using across these projects. Finally, a dashboard is available to view the yes/no question through Grafana.
+
+![image](https://github.com/user-attachments/assets/5e800534-3013-4760-a3e6-b6288c50d657)
+
+ 
+---
+
 ## Setup
 Ansible install:
 `$ sudo apt install ansible-core`
