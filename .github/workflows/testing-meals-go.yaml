@@ -2,11 +2,9 @@ name: Test recipe-maker
 
 on:
   pull_request:
-    paths:
-      - 'containers/meals-go/**'
 
 jobs:
-  test:
+  test-go:
     runs-on: ubuntu-latest
 
     defaults:
