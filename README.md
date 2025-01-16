@@ -1,7 +1,7 @@
 # Pi Infrastructure
 Checkins for a raspberry pi setup and k3s cluster I'm playing around with.
 
-| ![image](https://github.com/user-attachments/assets/bc09b971-1d7f-4e1c-a014-6dcb45a53e9c) |
+| ![image](https://github.com/user-attachments/assets/3b9e1048-1b2b-49bd-9887-1338c3262ce7) |
 |:--:|
 
 ## What's hosted?
