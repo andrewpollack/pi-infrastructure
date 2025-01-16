@@ -1,5 +1,6 @@
 # Pi Infrastructure
-Checkins for a raspberry pi setup and k3s cluster I'm playing around with.
+Repository for managing infrastructure as code and containerized applications in a k3s cluster deployed on a Raspberry Pi setup.
+Experimenting with lightweight Kubernetes and localized development.
 
 | ![image](https://github.com/user-attachments/assets/3b9e1048-1b2b-49bd-9887-1338c3262ce7) |
 |:--:|
