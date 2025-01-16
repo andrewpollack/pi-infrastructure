@@ -33,6 +33,8 @@ I (too often) leave for work, round the corner, and immediately second guess whe
 This Garage door monitoring system uses a Raspberry Pi 2 W hooked up with a magnetic door sensor. The magnetic door sensor detects when the garage door is in the "closed" position. Metrics are exposed via
 a Prometheus exporter, which are scraped by a Prometheus deployment I'm using across these projects. Finally, a dashboard is available to view the yes/no question through Grafana.
 
+*Note: Getting started with the Hardware portion, particularly reading the state of the GPIO pin, was super doable thanks to this book <ins>[Automate Your Home Using Go](https://pragprog.com/titles/gohome/automate-your-home-using-go/)</ins>*
+
 ![image](https://github.com/user-attachments/assets/5e800534-3013-4760-a3e6-b6288c50d657)
 
  
