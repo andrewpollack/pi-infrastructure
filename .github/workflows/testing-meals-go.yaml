@@ -6,7 +6,7 @@ on:
       - 'containers/meals-go/**'
 
 jobs:
-  test:
+  test-go:
     runs-on: ubuntu-latest
 
     defaults:
