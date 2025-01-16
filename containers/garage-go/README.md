@@ -7,4 +7,4 @@ a Prometheus exporter, which are scraped by a Prometheus deployment I'm using ac
 
 ![image](https://github.com/user-attachments/assets/0fc0b76a-0609-489c-9992-567ffb8a7b0f)
 
-Hardware portion was super helpful to follow the book <ins>[Automate Your Home Using Go](https://pragprog.com/titles/gohome/automate-your-home-using-go/)</ins>
+*Note: Getting started with the Hardware portion, particularly reading the state of the GPIO pin, was super doable thanks to this book <ins>[Automate Your Home Using Go](https://pragprog.com/titles/gohome/automate-your-home-using-go/)</ins>*
