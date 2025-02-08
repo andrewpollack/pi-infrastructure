@@ -1,6 +1,7 @@
 package meal_calendar
 
 import (
+	"log"
 	"meals/calendar"
 	"meals/meal_collection"
 	"testing"
@@ -8,7 +9,12 @@ import (
 )
 
 func TestCalendarHTMLGeneration(t *testing.T) {
-	collection, err := meal_collection.ReadMealCollection("../data/recipes.json")
+	mealData, err := meal_collection.OpenMealData("../data/recipes.json")
+	if err != nil {
+		log.Fatalf("Error fetching mealData: %v", err)
+	}
+
+	collection, err := meal_collection.ReadMealCollection(mealData)
 	if err != nil {
 		t.Errorf("Something went wrong reading meals... %s", err)
 	}

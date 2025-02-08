@@ -263,7 +263,8 @@ func GenerateEmailForNextWeek(date Date, collection meal_collection.MealCollecti
 	calendars := make(map[YearMonth][]meal_collection.Item)
 
 	var allItems []meal_collection.Item
-	if os.Getenv("USE_HARDCODE") == "false" || os.Getenv("USE_HARDCODE") == "" {
+	switch os.Getenv("USE_HARDCODE") {
+	case "false", "":
 		for _, day := range daysOfWeek {
 			currYearMonth := YearMonth{day.Year, day.Month}
 
@@ -273,7 +274,7 @@ func GenerateEmailForNextWeek(date Date, collection meal_collection.MealCollecti
 
 			allItems = append(allItems, calendars[currYearMonth][day.Day-1])
 		}
-	} else {
+	default:
 		allItems = useHardcodedValues(collection)
 	}
 
@@ -330,7 +331,12 @@ func CreateAndSendEmail(srv *gmail.Service) {
 	month := currentTime.Month()
 	day := currentTime.Day()
 
-	collection, err := meal_collection.ReadMealCollection("")
+	mealData, err := meal_collection.OpenFromS3()
+	if err != nil {
+		log.Fatalf("Error fetching mealData: %v", err)
+	}
+
+	collection, err := meal_collection.ReadMealCollection(mealData)
 	if err != nil {
 		fmt.Printf("Something went wrong reading meals: %s\n", err)
 

@@ -21,7 +21,6 @@ func NewCalendar(calendar calendar.Calendar, meal_collection meal_collection.Mea
 	return meal_calendar
 }
 
-// Example method that uses both Calendar and MealCollection
 func (mc *MealCalendar) RenderHTMLCalendar() string {
 	items := mc.MealCollection.GenerateMealsWholeYearNoCategories(mc.Calendar)
 

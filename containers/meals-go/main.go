@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"meals/meal_calendar"
 	"meals/meal_email"
@@ -8,9 +9,12 @@ import (
 )
 
 func main() {
-	if os.Getenv("JUST_EMAIL") == "false" || os.Getenv("JUST_EMAIL") == "" {
+	justEmail := os.Getenv("JUST_EMAIL")
+
+	switch justEmail {
+	case "false", "":
 		meal_calendar.RunServer()
-	} else {
+	default:
 		srv, err := meal_email.AuthenticateGmail()
 		if err != nil {
 			log.Fatalf("Failed to authenticate with Gmail: %s", err.Error())
@@ -18,4 +22,6 @@ func main() {
 
 		meal_email.CreateAndSendEmail(srv)
 	}
+
+	fmt.Println("Application finished.")
 }

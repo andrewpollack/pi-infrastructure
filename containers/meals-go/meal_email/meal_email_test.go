@@ -1,6 +1,7 @@
 package meal_email
 
 import (
+	"log"
 	"meals/calendar"
 	"meals/meal_collection"
 	"testing"
@@ -162,7 +163,12 @@ func TestNextWeekGeneration(t *testing.T) {
 }
 
 func TestGroceryListGeneration(t *testing.T) {
-	collection, err := meal_collection.ReadMealCollection(MEALS_JSON)
+	mealData, err := meal_collection.OpenMealData(MEALS_JSON)
+	if err != nil {
+		log.Fatalf("Error fetching mealData: %v", err)
+	}
+
+	collection, err := meal_collection.ReadMealCollection(mealData)
 	if err != nil {
 		t.Errorf("Something went wrong reading meals... %s", err)
 	}
@@ -174,7 +180,12 @@ func TestGroceryListGeneration(t *testing.T) {
 }
 
 func TestEmailGeneration(t *testing.T) {
-	collection, err := meal_collection.ReadMealCollection(MEALS_JSON)
+	mealData, err := meal_collection.OpenMealData(MEALS_JSON)
+	if err != nil {
+		log.Fatalf("Error fetching mealData: %v", err)
+	}
+
+	collection, err := meal_collection.ReadMealCollection(mealData)
 	if err != nil {
 		t.Errorf("Something went wrong reading meals... %s", err)
 	}

@@ -2,6 +2,7 @@ package meal_calendar
 
 import (
 	"fmt"
+	"log"
 	"meals/calendar"
 	"meals/meal_collection"
 	"net/http"
@@ -11,15 +12,26 @@ import (
 	"time"
 )
 
-// helloHandler is the function that handles HTTP requests and responds with "Hello"
-func helloHandler(w http.ResponseWriter, r *http.Request) {
-	// Set the content type to text/html to let the browser know it's an HTML response
+func mealCalendarHandler(w http.ResponseWriter, r *http.Request) {
+	// Fetch meal data from S3
+	mealData, err := meal_collection.OpenFromS3()
+	if err != nil {
+		log.Fatalf("Error fetching mealData: %v", err)
+	}
+
+	// Return HTML
 	w.Header().Set("Content-Type", "text/html")
 
-	collection, _ := meal_collection.ReadMealCollection("")
+	// Decode the meal collection
+	collection, _ := meal_collection.ReadMealCollection(mealData)
+
+	// Get current date info
 	currYear, currMonth, _ := time.Now().Date()
+
 	var nextMonth time.Month
 	var nextYear int
+
+	// Determine the next month/year
 	if currMonth == time.December {
 		nextMonth = time.January
 		nextYear = currYear + 1
@@ -28,25 +40,30 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 		nextYear = currYear
 	}
 
+	// Build two calendars: current month + next month
 	currMonthMealCalendar := NewCalendar(*calendar.NewCalendar(currYear, currMonth), collection)
 	nextMonthMealCalendar := NewCalendar(*calendar.NewCalendar(nextYear, nextMonth), collection)
 
+	// Flatten all items from the collection
 	var flattenedItems []meal_collection.Item
 	for _, item := range collection {
 		flattenedItems = append(flattenedItems, item.Items...)
 	}
 
+	// Sort items alphabetically (case-insensitive)
 	sort.Slice(flattenedItems, func(i, j int) bool {
-		return strings.ToLower(flattenedItems[i].Name) < strings.ToLower(flattenedItems[j].Name)
+		return strings.ToLower(flattenedItems[i].Name) <
+			strings.ToLower(flattenedItems[j].Name)
 	})
 
-	endList := "<h2> ALL ITEMS </h2>\n\n<ul>\n"
+	// Build the HTML list of all items
+	endList := "<h2>ALL ITEMS</h2>\n\n<ul>\n"
 	for _, item := range flattenedItems {
 		itemName := item.Name
-		if len(item.Ingredients) == 0 {
-			if item.Name != "LEFTOVERS" && item.Name != "OUT" {
-				itemName += "*"
-			}
+		if len(item.Ingredients) == 0 &&
+			item.Name != "LEFTOVERS" &&
+			item.Name != "OUT" {
+			itemName += "*"
 		}
 
 		endList += "\t<li>"
@@ -57,38 +74,38 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		endList += "</li>\n"
 	}
-	endList += "\n</ul>"
+	endList += "</ul>"
 
-	fmt.Fprintf(w, `
-		<!DOCTYPE html>
-		<html lang="en">
-		<head>
-			<meta charset="UTF-8">
-			<meta name="viewport" content="width=device-width, initial-scale=1.0">
-			<title>Meals</title>
-			<style>
-				table, th, td {
-					border: 1px solid black;
-				}
-			</style>
-		</head>
-		<body>
-			%s
-
-			%s
-
-			%s
-		</body>
-		</html>
-	`, currMonthMealCalendar.RenderHTMLCalendar(), nextMonthMealCalendar.RenderHTMLCalendar(), endList)
+	// Render final HTML
+	fmt.Fprintf(w, `<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Meals</title>
+	<style>
+		table, th, td {
+			border: 1px solid black;
+		}
+	</style>
+</head>
+<body>
+	%s
+	%s
+	%s
+</body>
+</html>`,
+		currMonthMealCalendar.RenderHTMLCalendar(),
+		nextMonthMealCalendar.RenderHTMLCalendar(),
+		endList,
+	)
 }
 
 func RunServer() {
-	// Route the root URL ("/") to the helloHandler
-	http.HandleFunc("/", helloHandler)
-
-	// Start the server on port 8080 and log any errors
 	port := os.Getenv("SERVE_PORT")
+
+	http.HandleFunc("/", mealCalendarHandler)
+
 	fmt.Printf("Starting server on :%s...", port)
 	err := http.ListenAndServe(fmt.Sprintf(":%s", port), nil)
 	if err != nil {

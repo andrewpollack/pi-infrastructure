@@ -2,6 +2,7 @@ package meal_collection
 
 import (
 	"fmt"
+	"log"
 	"meals/calendar"
 	"testing"
 	"time"
@@ -10,14 +11,24 @@ import (
 const MEALS_JSON = "../data/recipes.json"
 
 func TestMealCollectionReading(t *testing.T) {
-	_, err := ReadMealCollection(MEALS_JSON)
+	mealData, err := OpenMealData(MEALS_JSON)
+	if err != nil {
+		log.Fatalf("Error fetching mealData: %v", err)
+	}
+
+	_, err = ReadMealCollection(mealData)
 	if err != nil {
 		t.Errorf("Something went wrong reading meals... %s", err)
 	}
 }
 
 func TestMealCollectionBadReading(t *testing.T) {
-	_, err := ReadMealCollection("../data/recipes_with_unknown_field.json")
+	mealData, err := OpenMealData("../data/recipes_with_unknown_field.json")
+	if err != nil {
+		log.Fatalf("Error fetching mealData: %v", err)
+	}
+
+	_, err = ReadMealCollection(mealData)
 	expectedErr := "error unmarshalling JSON: json: unknown field \"unknown_field\""
 	if err == nil || err.Error() != expectedErr {
 		t.Errorf("Expected error: '%s', got: '%v'", expectedErr, err)
@@ -25,7 +36,12 @@ func TestMealCollectionBadReading(t *testing.T) {
 }
 
 func TestMealListGenerationFromCollection(t *testing.T) {
-	collection, err := ReadMealCollection(MEALS_JSON)
+	mealData, err := OpenMealData(MEALS_JSON)
+	if err != nil {
+		log.Fatalf("Error fetching mealData: %v", err)
+	}
+
+	collection, err := ReadMealCollection(mealData)
 	if err != nil {
 		t.Errorf("Something went wrong reading meals... %s", err)
 	}
@@ -37,7 +53,12 @@ func TestMealListGenerationFromCollection(t *testing.T) {
 }
 
 func TestMealListGenerationUniquePerMonth(t *testing.T) {
-	collection, err := ReadMealCollection(MEALS_JSON)
+	mealData, err := OpenMealData(MEALS_JSON)
+	if err != nil {
+		log.Fatalf("Error fetching mealData: %v", err)
+	}
+
+	collection, err := ReadMealCollection(mealData)
 	if err != nil {
 		t.Errorf("Something went wrong reading meals... %s", err)
 	}
@@ -63,7 +84,12 @@ func TestMealListGenerationUniquePerMonth(t *testing.T) {
 }
 
 func TestMealListGenerationMatchAcrossMonth(t *testing.T) {
-	collection, err := ReadMealCollection(MEALS_JSON)
+	mealData, err := OpenMealData(MEALS_JSON)
+	if err != nil {
+		log.Fatalf("Error fetching mealData: %v", err)
+	}
+
+	collection, err := ReadMealCollection(mealData)
 	if err != nil {
 		t.Errorf("Something went wrong reading meals... %s", err)
 	}
@@ -90,7 +116,12 @@ func TestMealListGenerationMatchAcrossMonth(t *testing.T) {
 }
 
 func TestGenerateMealsWholeYearMatchAcrossMonth(t *testing.T) {
-	collection, err := ReadMealCollection(MEALS_JSON)
+	mealData, err := OpenMealData(MEALS_JSON)
+	if err != nil {
+		log.Fatalf("Error fetching mealData: %v", err)
+	}
+
+	collection, err := ReadMealCollection(mealData)
 	if err != nil {
 		t.Errorf("Something went wrong reading meals... %s", err)
 	}
@@ -117,7 +148,12 @@ func TestGenerateMealsWholeYearMatchAcrossMonth(t *testing.T) {
 }
 
 func TestGenerateMealsWholeYearUniquePerMonth(t *testing.T) {
-	collection, err := ReadMealCollection(MEALS_JSON)
+	mealData, err := OpenMealData(MEALS_JSON)
+	if err != nil {
+		log.Fatalf("Error fetching mealData: %v", err)
+	}
+
+	collection, err := ReadMealCollection(mealData)
 	if err != nil {
 		t.Errorf("Something went wrong reading meals... %s", err)
 	}
