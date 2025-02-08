@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"meals/calendar"
 	"os"
 	"reflect"
@@ -147,42 +146,40 @@ func validateMealCollection(mealCollection MealCollection) error {
 	}
 	return nil
 }
-func ReadMealCollection(filename string) (MealCollection, error) {
-	var reader io.Reader
 
-	if filename == "" {
-		bucketName := os.Getenv("BUCKET_NAME")
+func OpenMealData(filename string) (io.ReadCloser, error) {
+	return os.Open(filename)
+}
 
-		// Load the AWS default configuration
-		cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("us-west-2"))
-		if err != nil {
-			log.Fatalf("unable to load SDK config, %v", err)
-		}
-
-		// Create an S3 service client
-		s3Client := s3.NewFromConfig(cfg)
-
-		input := &s3.GetObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String("recipes.json"),
-		}
-
-		resp, err := s3Client.GetObject(context.TODO(), input)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get object: %v", err)
-		}
-		defer resp.Body.Close() // Close the S3 object after we're done reading
-
-		reader = resp.Body
-	} else {
-		file, err := os.Open(filename)
-		if err != nil {
-			return nil, fmt.Errorf("error opening file: %v", err)
-		}
-		defer file.Close()
-
-		reader = file
+func OpenFromS3() (io.ReadCloser, error) {
+	bucketName := os.Getenv("BUCKET_NAME")
+	if bucketName == "" {
+		return nil, fmt.Errorf("bucket name is not set")
 	}
+
+	// Load AWS config
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("us-west-2"))
+	if err != nil {
+		return nil, fmt.Errorf("unable to load SDK config: %v", err)
+	}
+
+	// Create an S3 client
+	s3Client := s3.NewFromConfig(cfg)
+
+	// Get the object
+	resp, err := s3Client.GetObject(context.TODO(), &s3.GetObjectInput{
+		Bucket: aws.String(bucketName),
+		Key:    aws.String("recipes.json"),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get object from S3: %v", err)
+	}
+
+	return resp.Body, nil
+}
+
+func ReadMealCollection(reader io.ReadCloser) (MealCollection, error) {
+	defer reader.Close()
 
 	decoder := json.NewDecoder(reader)
 	decoder.DisallowUnknownFields()

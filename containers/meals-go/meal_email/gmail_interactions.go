@@ -22,6 +22,10 @@ func getClient(config *oauth2.Config) *http.Client {
 	// created automatically when the authorization flow completes for the first
 	// time.
 	tokFile := os.Getenv("TOKEN_LOCATION")
+	if tokFile == "" {
+		log.Fatal("TOKEN_LOCATION not set.")
+	}
+
 	tok, err := tokenFromFile(tokFile)
 	if err != nil {
 		tok = getTokenFromWeb(config)
@@ -102,6 +106,10 @@ func sendEmail(srv *gmail.Service, from, to, subject, body string) error {
 func AuthenticateGmail() (*gmail.Service, error) {
 	ctx := context.Background()
 	credentialsLocation := os.Getenv("CREDENTIALS_LOCATION")
+	if credentialsLocation == "" {
+		log.Fatal("CREDENTIALS_LOCATION not set.")
+	}
+
 	b, err := os.ReadFile(credentialsLocation)
 	if err != nil {
 		log.Fatalf("Unable to read client secret file %s: %v", credentialsLocation, err)
