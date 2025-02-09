@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"meals/calendar"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -176,4 +177,82 @@ func TestGenerateMealsWholeYearUniquePerMonth(t *testing.T) {
 	if allMatch {
 		t.Errorf("Both lists match, when they should not.")
 	}
+}
+
+func TestItemListToCombinedGroceryItems(t *testing.T) {
+	// Sample input data
+	meals := []Item{
+		{
+			Name: "Pizza",
+			Ingredients: []Ingredient{
+				{Item: "Cheese", Quantity: 2, Unit: UnitCount, Aisle: AisleCheeseAndBakery},
+				{Item: "Tomato Sauce", Quantity: 1, Unit: UnitCup, Aisle: AisleProduce},
+			},
+		},
+		{
+			Name: "Burger",
+			Ingredients: []Ingredient{
+				{Item: "Cheese", Quantity: 2, Unit: UnitCount, Aisle: AisleCheeseAndBakery},
+				{Item: "Bun", Quantity: 4, Unit: UnitCount, Aisle: AisleCheeseAndBakery},
+				{Item: "Beef", Quantity: 1, Unit: UnitLb, Aisle: AisleMeatAndYogurt},
+			},
+		},
+	}
+
+	got := ItemListToCombinedGroceryItems(meals)
+	want := map[Aisle][]GroceryItem{
+		AisleCheeseAndBakery: {
+			{
+				Name:         "Cheese",
+				Unit:         UnitCount,
+				Quantity:     4,
+				RelatedMeals: []string{"Pizza", "Burger"},
+			},
+			{
+				Name:         "Bun",
+				Unit:         UnitCount,
+				Quantity:     4,
+				RelatedMeals: []string{"Burger"},
+			},
+		},
+		AisleAlcoholButterCheese: {},
+		AisleFreezer:             {},
+		AisleNoFoodItems:         {},
+		AisleBeveragesAndSnacks:  {},
+		AisleBreakfastAndBaking:  {},
+		AislePastaGlobalCanned:   {},
+		AisleProduce: {
+			{
+				Name:         "Tomato Sauce",
+				Unit:         UnitCup,
+				Quantity:     1,
+				RelatedMeals: []string{"Pizza"},
+			},
+		},
+		AisleMeatAndYogurt: {
+			{
+				Name:         "Beef",
+				Unit:         UnitLb,
+				Quantity:     1,
+				RelatedMeals: []string{"Burger"},
+			},
+		},
+	}
+
+	// Compare the two maps
+	if len(got) != len(want) {
+		t.Errorf("Got %d aisles, want %d aisles", len(got), len(want))
+	}
+
+	for aisle, wantItems := range want {
+		gotItems, ok := got[aisle]
+		if !ok {
+			t.Errorf("Missing aisle %q in the result map", aisle)
+			continue
+		}
+		if !reflect.DeepEqual(gotItems, wantItems) {
+			t.Errorf("Aisle %q items = %#v; want %#v", aisle, gotItems, wantItems)
+		}
+	}
+
 }
