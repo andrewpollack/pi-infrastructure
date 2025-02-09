@@ -6,9 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"meals/calendar"
 	"os"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -105,8 +107,74 @@ type Category struct {
 }
 
 type GroceryItem struct {
+	Name         string
+	Unit         Unit
 	Quantity     float64
 	RelatedMeals []string
+}
+
+func formatSignificant(f float64, sigDigits int) string {
+	if f == 0 {
+		return "0"
+	}
+
+	scale := math.Pow10(sigDigits - 1 - int(math.Floor(math.Log10(math.Abs(f)))))
+
+	result := math.Round(f*scale) / scale
+
+	return fmt.Sprintf("%g", result)
+}
+
+func (gi GroceryItem) String() string {
+	return fmt.Sprintf("%s %s: %s (%s)",
+		formatSignificant(gi.Quantity, 4),   // e.g. "2.75"
+		gi.Unit,                             // e.g. "lb"
+		gi.Name,                             // e.g. "Beef"
+		strings.Join(gi.RelatedMeals, ", "), // e.g. "Burger, Tacos"
+	)
+}
+
+func ItemListToCombinedGroceryItems(meals []Item) map[Aisle][]GroceryItem {
+	// Temporary struct for simplifying combinations...
+	type GroceryItemKey struct {
+		Name string
+		Unit Unit
+	}
+
+	groceryCollection := make(map[Aisle]map[GroceryItemKey]GroceryItem)
+	for _, aisle := range AllAisles {
+		groceryCollection[aisle] = make(map[GroceryItemKey]GroceryItem)
+	}
+
+	for _, meal := range meals {
+		for _, ing := range meal.Ingredients {
+			key := GroceryItemKey{
+				Name: ing.Item,
+				Unit: ing.Unit,
+			}
+
+			// Fetch the existing item (if any) to update Quantity / RelatedMeals
+			item := groceryCollection[ing.Aisle][key]
+			item.Name = ing.Item
+			item.Unit = ing.Unit
+			item.Quantity += ing.Quantity
+			item.RelatedMeals = append(item.RelatedMeals, meal.Name)
+
+			// Store the updated GroceryItem back
+			groceryCollection[ing.Aisle][key] = item
+		}
+	}
+
+	combined := make(map[Aisle][]GroceryItem, len(groceryCollection))
+	for aisle, itemsMap := range groceryCollection {
+		slice := make([]GroceryItem, 0, len(itemsMap))
+		for _, finalItem := range itemsMap {
+			slice = append(slice, finalItem)
+		}
+		combined[aisle] = slice
+	}
+
+	return combined
 }
 
 type MealCollection []Category
