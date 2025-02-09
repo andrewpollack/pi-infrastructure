@@ -45,20 +45,20 @@ func mealCalendarHandler(w http.ResponseWriter, r *http.Request) {
 	nextMonthMealCalendar := NewCalendar(*calendar.NewCalendar(nextYear, nextMonth), collection)
 
 	// Flatten all items from the collection
-	var flattenedItems []meal_collection.Item
+	var flattenedMeals []meal_collection.Meal
 	for _, item := range collection {
-		flattenedItems = append(flattenedItems, item.Items...)
+		flattenedMeals = append(flattenedMeals, item.Items...)
 	}
 
 	// Sort items alphabetically (case-insensitive)
-	sort.Slice(flattenedItems, func(i, j int) bool {
-		return strings.ToLower(flattenedItems[i].Name) <
-			strings.ToLower(flattenedItems[j].Name)
+	sort.Slice(flattenedMeals, func(i, j int) bool {
+		return strings.ToLower(flattenedMeals[i].Name) <
+			strings.ToLower(flattenedMeals[j].Name)
 	})
 
 	// Build the HTML list of all items
 	endList := "<h2>ALL ITEMS</h2>\n\n<ul>\n"
-	for _, item := range flattenedItems {
+	for _, item := range flattenedMeals {
 		itemName := item.Name
 		if len(item.Ingredients) == 0 &&
 			item.Name != "LEFTOVERS" &&

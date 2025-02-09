@@ -83,10 +83,10 @@ type YearMonth struct {
 	Month int
 }
 
-func CreateGroceryEmailMessage(meals []meal_collection.Item) string {
+func CreateGroceryEmailMessage(meals []meal_collection.Meal) string {
 	var sb strings.Builder
 
-	groceryCollection := meal_collection.ItemListToCombinedGroceryItems(meals)
+	groceryCollection := meal_collection.MealsToGroceryItems(meals)
 
 	for _, aisle := range meal_collection.AllAisles {
 		itemsForAisle := groceryCollection[aisle]
@@ -115,8 +115,8 @@ func CreateGroceryEmailMessage(meals []meal_collection.Item) string {
 	return sb.String()
 }
 
-func useHardcodedValues(collection meal_collection.MealCollection) []meal_collection.Item {
-	var flattenedItems []meal_collection.Item
+func useHardcodedValues(collection meal_collection.MealCollection) []meal_collection.Meal {
+	var flattenedItems []meal_collection.Meal
 	for _, item := range collection {
 		flattenedItems = append(flattenedItems, item.Items...)
 	}
@@ -131,16 +131,16 @@ func useHardcodedValues(collection meal_collection.MealCollection) []meal_collec
 		os.Getenv("H_7"),
 	}
 
-	var allItems []meal_collection.Item
+	var allItems []meal_collection.Meal
 	for i, v := range arr {
 		if i == 4 {
-			allItems = append(allItems, meal_collection.Item{
+			allItems = append(allItems, meal_collection.Meal{
 				Name: "LEFTOVERS",
 			})
 			continue
 		}
 		if i == 5 {
-			allItems = append(allItems, meal_collection.Item{
+			allItems = append(allItems, meal_collection.Meal{
 				Name: "OUT",
 			})
 			continue
@@ -160,9 +160,9 @@ func useHardcodedValues(collection meal_collection.MealCollection) []meal_collec
 func GenerateEmailForNextWeek(date Date, collection meal_collection.MealCollection) string {
 	daysOfWeek := GetDaysOfNextWeek(date)
 
-	calendars := make(map[YearMonth][]meal_collection.Item)
+	calendars := make(map[YearMonth][]meal_collection.Meal)
 
-	var allItems []meal_collection.Item
+	var allItems []meal_collection.Meal
 	switch os.Getenv("USE_HARDCODE") {
 	case "false", "":
 		for _, day := range daysOfWeek {

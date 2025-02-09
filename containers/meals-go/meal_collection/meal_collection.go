@@ -95,7 +95,7 @@ type Ingredient struct {
 	Aisle    Aisle   `json:"aisle"`
 }
 
-type Item struct {
+type Meal struct {
 	Name        string       `json:"name"`
 	URL         *string      `json:"url,omitempty"`
 	Ingredients []Ingredient `json:"ingredients,omitempty"`
@@ -103,7 +103,7 @@ type Item struct {
 
 type Category struct {
 	Category string `json:"category"`
-	Items    []Item `json:"items"`
+	Items    []Meal `json:"items"`
 }
 
 type GroceryItem struct {
@@ -134,7 +134,7 @@ func (gi GroceryItem) String() string {
 	)
 }
 
-func ItemListToCombinedGroceryItems(meals []Item) map[Aisle][]GroceryItem {
+func MealsToGroceryItems(meals []Meal) map[Aisle][]GroceryItem {
 	// Temporary struct for simplifying combinations...
 	type GroceryItemKey struct {
 		Name string
@@ -267,9 +267,9 @@ func ReadMealCollection(reader io.ReadCloser) (MealCollection, error) {
 }
 
 // PopItem removes and returns the first item from the list (if any) and returns the remaining items
-func PopItem(items []Item) (Item, []Item, bool) {
+func PopItem(items []Meal) (Meal, []Meal, bool) {
 	if len(items) == 0 {
-		return Item{}, items, false
+		return Meal{}, items, false
 	}
 	return items[0], items[1:], true
 }
@@ -300,7 +300,7 @@ func (m MealCollection) DeepCopy() MealCollection {
 		mealCopy[i] = category
 
 		// Create a deep copy of the Items slice
-		mealCopy[i].Items = make([]Item, len(category.Items))
+		mealCopy[i].Items = make([]Meal, len(category.Items))
 		copy(mealCopy[i].Items, category.Items)
 	}
 
@@ -308,14 +308,14 @@ func (m MealCollection) DeepCopy() MealCollection {
 }
 
 // GenerateMealsWholeYear generates a random list of meals, not respecting categories
-func (m MealCollection) GenerateMealsWholeYearNoCategories(currCalendar calendar.Calendar) []Item {
+func (m MealCollection) GenerateMealsWholeYearNoCategories(currCalendar calendar.Calendar) []Meal {
 	// Use Year+Month to make meal generation consistent
 	rand.Seed(uint64(currCalendar.Year))
 
 	// Create a copy of MealCollection so that the original isn't modified
 	mealCopy := m.DeepCopy()
 
-	var allItems []Item
+	var allItems []Meal
 	for _, category := range mealCopy {
 		allItems = append(allItems, category.Items...)
 	}
@@ -345,16 +345,16 @@ func (m MealCollection) GenerateMealsWholeYearNoCategories(currCalendar calendar
 		}
 	}
 
-	var selectedMeals []Item
+	var selectedMeals []Meal
 	for j := 1; j < currCalendar.DaysInMonth()+1; j++ {
 		if currCalendar.GetWeekday(j) == time.Thursday {
-			selectedMeals = append(selectedMeals, Item{
+			selectedMeals = append(selectedMeals, Meal{
 				Name: "LEFTOVERS",
 			})
 			continue
 		}
 		if currCalendar.GetWeekday(j) == time.Friday {
-			selectedMeals = append(selectedMeals, Item{
+			selectedMeals = append(selectedMeals, Meal{
 				Name: "OUT",
 			})
 			continue
@@ -375,7 +375,7 @@ func (m MealCollection) GenerateMealsWholeYearNoCategories(currCalendar calendar
 }
 
 // GenerateMealsWholeYear generates a random list of meals by popping one item from each category at a time
-func (m MealCollection) GenerateMealsWholeYear(currCalendar calendar.Calendar) []Item {
+func (m MealCollection) GenerateMealsWholeYear(currCalendar calendar.Calendar) []Meal {
 	// Use Year+Month to make meal generation consistent
 	rand.Seed(uint64(currCalendar.Year))
 
@@ -425,16 +425,16 @@ func (m MealCollection) GenerateMealsWholeYear(currCalendar calendar.Calendar) [
 		}
 	}
 
-	var selectedMeals []Item
+	var selectedMeals []Meal
 	for j := 1; j < currCalendar.DaysInMonth()+1; j++ {
 		if currCalendar.GetWeekday(j) == time.Thursday {
-			selectedMeals = append(selectedMeals, Item{
+			selectedMeals = append(selectedMeals, Meal{
 				Name: "LEFTOVERS",
 			})
 			continue
 		}
 		if currCalendar.GetWeekday(j) == time.Friday {
-			selectedMeals = append(selectedMeals, Item{
+			selectedMeals = append(selectedMeals, Meal{
 				Name: "OUT",
 			})
 			continue
@@ -470,7 +470,7 @@ func (m MealCollection) GenerateMealsWholeYear(currCalendar calendar.Calendar) [
 }
 
 // GenerateMealsList generates a random list of meals by popping one item from each category at a time
-func (m MealCollection) GenerateMealsList(calendar calendar.Calendar) []Item {
+func (m MealCollection) GenerateMealsList(calendar calendar.Calendar) []Meal {
 	// Use Year+Month to make meal generation consistent
 	rand.Seed(uint64(calendar.Year) + uint64(calendar.Month*10))
 
@@ -482,7 +482,7 @@ func (m MealCollection) GenerateMealsList(calendar calendar.Calendar) []Item {
 		Shuffle(mealCopy[i].Items)
 	}
 
-	var selectedMeals []Item
+	var selectedMeals []Meal
 
 	runningDays := 1
 	for {
@@ -493,14 +493,14 @@ func (m MealCollection) GenerateMealsList(calendar calendar.Calendar) []Item {
 
 		for i := range mealCopy {
 			if calendar.GetWeekday(runningDays) == time.Thursday {
-				selectedMeals = append(selectedMeals, Item{
+				selectedMeals = append(selectedMeals, Meal{
 					Name: "LEFTOVERS",
 				})
 				runningDays += 1
 			}
 
 			if calendar.GetWeekday(runningDays) == time.Friday {
-				selectedMeals = append(selectedMeals, Item{
+				selectedMeals = append(selectedMeals, Meal{
 					Name: "OUT",
 				})
 				runningDays += 1
