@@ -3,7 +3,6 @@ package meal_email
 import (
 	"fmt"
 	"log"
-	"math"
 	"meals/calendar"
 	"meals/meal_collection"
 	"os"
@@ -13,34 +12,6 @@ import (
 
 	"google.golang.org/api/gmail/v1"
 )
-
-type Aisle string
-
-// Define constants for all the possible values of Aisle
-const (
-	AisleCheeseAndBakery     string = "Cheese & Bakery"
-	AisleAlcoholButterCheese string = "18 & 19 (Alcohol, Butter, Cheese)"
-	AisleFreezer             string = "16 & 17 (Freezer)"
-	AisleNoFoodItems         string = "10-15 (No Food Items)"
-	AisleBeveragesAndSnacks  string = "6-9 (Bevs & Snacks)"
-	AisleBreakfastAndBaking  string = "3-5 (Breakfast & Baking)"
-	AislePastaGlobalCanned   string = "1 & 2 (Pasta, Global, Canned)"
-	AisleProduce             string = "Produce"
-	AisleMeatAndYogurt       string = "Meat & Yogurt"
-)
-
-// AllAisles contains the list of all valid aisle values
-var AllAisles = []string{
-	AisleCheeseAndBakery,
-	AisleAlcoholButterCheese,
-	AisleFreezer,
-	AisleNoFoodItems,
-	AisleBeveragesAndSnacks,
-	AisleBreakfastAndBaking,
-	AislePastaGlobalCanned,
-	AisleProduce,
-	AisleMeatAndYogurt,
-}
 
 type Date struct {
 	Year  int
@@ -112,107 +83,36 @@ type YearMonth struct {
 	Month int
 }
 
-func GenerateGroceryCollection(meals []meal_collection.Item) map[string]map[string]meal_collection.GroceryItem {
-	// Aisle -> ITEM__UNIT -> QUANTITY, RECIPES
-	groceryCollection := make(map[string]map[string]meal_collection.GroceryItem)
-
-	for _, aisle := range AllAisles {
-		groceryCollection[aisle] = make(map[string]meal_collection.GroceryItem)
-	}
-
-	for _, currItem := range meals {
-		if len(currItem.Ingredients) == 0 {
-			continue
-		}
-
-		for _, ingredient := range currItem.Ingredients {
-			aisle := string(ingredient.Aisle)
-			item := ingredient.Item
-			quantity := ingredient.Quantity
-			unit := ingredient.Unit
-
-			// Key combining item and unit
-			k := fmt.Sprintf("%s__%s", item, unit)
-
-			if _, exists := groceryCollection[aisle][k]; !exists {
-				groceryCollection[aisle][k] = meal_collection.GroceryItem{Quantity: 0, RelatedMeals: []string{}}
-			}
-
-			quant := groceryCollection[aisle][k].Quantity + quantity
-			relatedMeals := append(groceryCollection[aisle][k].RelatedMeals, currItem.Name)
-
-			groceryCollection[aisle][k] = meal_collection.GroceryItem{Quantity: quant, RelatedMeals: relatedMeals}
-		}
-	}
-
-	return groceryCollection
-}
-
-func formatSignificant(f float64, sigDigits int) string {
-	if f == 0 {
-		return "0"
-	}
-
-	// Calculate the order of magnitude (log10) to scale the float
-	scale := math.Pow10(sigDigits - 1 - int(math.Floor(math.Log10(math.Abs(f)))))
-
-	// Scale, round, and rescale the float
-	result := math.Round(f*scale) / scale
-
-	// Format the result with %g to drop unnecessary trailing zeroes
-	return fmt.Sprintf("%g", result)
-}
-
 func CreateGroceryEmailMessage(meals []meal_collection.Item) string {
-	groceryCollection := GenerateGroceryCollection(meals)
+	var sb strings.Builder
 
-	groceryEmail := ""
-	for _, aisle := range AllAisles {
-		items := []string{}
+	groceryCollection := meal_collection.ItemListToCombinedGroceryItems(meals)
 
-		itemsForIsle, ok := groceryCollection[aisle]
-		if !ok {
+	for _, aisle := range meal_collection.AllAisles {
+		itemsForAisle := groceryCollection[aisle]
+
+		// Sort by Name
+		sort.Slice(itemsForAisle, func(i, j int) bool {
+			return itemsForAisle[i].Name < itemsForAisle[j].Name
+		})
+
+		fmt.Fprintf(&sb, "<h4>%s</h4>\n", aisle)
+
+		// If no items for this aisle, show "NONE"
+		if len(itemsForAisle) == 0 {
+			sb.WriteString("<p>NONE</p>\n<br>\n")
 			continue
 		}
 
-		// Get the keys (item names) and sort them
-		keys := make([]string, 0, len(itemsForIsle))
-		for k := range itemsForIsle {
-			keys = append(keys, k)
+		// Otherwise, create a UL of items
+		sb.WriteString("<ul style='margin-left: 20px;'>\n")
+		for _, gi := range itemsForAisle {
+			fmt.Fprintf(&sb, "<li>%s</li>\n", gi.String())
 		}
-		sort.Strings(keys)
-
-		for _, k := range keys {
-			// Aisle -> ITEM__UNIT -> QUANTITY, RECIPES
-			v := itemsForIsle[k]
-			quant := v.Quantity
-			relatedMeals := strings.Join(v.RelatedMeals, ", ")
-			parts := strings.Split(k, "__")
-			item := parts[0]
-			unit := parts[1]
-
-			// Format the item as * quantity unit: item (related_meals)
-			items = append(items, fmt.Sprintf("%s %s: %s (%s)", formatSignificant(quant, 4), unit, item, relatedMeals))
-		}
-
-		groceryEmail += fmt.Sprintf("<h4>%s</h4>\n", aisle)
-
-		if len(items) == 0 {
-			// If there are no items, display "NONE"
-			groceryEmail += "<p>NONE</p>\n"
-		} else {
-			// Start an unordered list for the items
-			groceryEmail += "<ul style='margin-left: 20px;'>\n"
-			for _, item := range items {
-				groceryEmail += fmt.Sprintf("<li>%s</li>\n", item)
-			}
-			groceryEmail += "</ul>\n"
-		}
-
-		groceryEmail += "<br>\n"
+		sb.WriteString("</ul>\n<br>\n")
 	}
 
-	return groceryEmail
+	return sb.String()
 }
 
 func useHardcodedValues(collection meal_collection.MealCollection) []meal_collection.Item {
