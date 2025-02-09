@@ -86,17 +86,22 @@ type YearMonth struct {
 func CreateGroceryEmailMessage(meals []meal_collection.Meal) string {
 	var sb strings.Builder
 
-	groceryCollection := meal_collection.MealsToGroceryItems(meals)
+	ingredients := meal_collection.MealsToIngredients(meals)
+	sort.Slice(ingredients, func(i, j int) bool {
+		return ingredients[i].Name < ingredients[j].Name
+	})
 
 	for _, aisle := range meal_collection.AllAisles {
-		itemsForAisle := groceryCollection[aisle]
-
-		// Sort by Name
-		sort.Slice(itemsForAisle, func(i, j int) bool {
-			return itemsForAisle[i].Name < itemsForAisle[j].Name
-		})
-
+		// Write a header for the aisle
 		fmt.Fprintf(&sb, "<h4>%s</h4>\n", aisle)
+
+		// Collect all items for this aisle
+		var itemsForAisle []meal_collection.Ingredient
+		for _, ing := range ingredients {
+			if ing.Aisle == aisle {
+				itemsForAisle = append(itemsForAisle, ing)
+			}
+		}
 
 		// If no items for this aisle, show "NONE"
 		if len(itemsForAisle) == 0 {
@@ -131,16 +136,16 @@ func useHardcodedValues(collection meal_collection.MealCollection) []meal_collec
 		os.Getenv("H_7"),
 	}
 
-	var allItems []meal_collection.Meal
+	var allMeals []meal_collection.Meal
 	for i, v := range arr {
 		if i == 4 {
-			allItems = append(allItems, meal_collection.Meal{
+			allMeals = append(allMeals, meal_collection.Meal{
 				Name: "LEFTOVERS",
 			})
 			continue
 		}
 		if i == 5 {
-			allItems = append(allItems, meal_collection.Meal{
+			allMeals = append(allMeals, meal_collection.Meal{
 				Name: "OUT",
 			})
 			continue
@@ -148,13 +153,13 @@ func useHardcodedValues(collection meal_collection.MealCollection) []meal_collec
 
 		for _, fullItem := range flattenedItems {
 			if fullItem.Name == v {
-				allItems = append(allItems, fullItem)
+				allMeals = append(allMeals, fullItem)
 				break
 			}
 		}
 	}
 
-	return allItems
+	return allMeals
 }
 
 func GenerateEmailForNextWeek(date Date, collection meal_collection.MealCollection) string {
@@ -162,7 +167,7 @@ func GenerateEmailForNextWeek(date Date, collection meal_collection.MealCollecti
 
 	calendars := make(map[YearMonth][]meal_collection.Meal)
 
-	var allItems []meal_collection.Meal
+	var allMeals []meal_collection.Meal
 	switch os.Getenv("USE_HARDCODE") {
 	case "false", "":
 		for _, day := range daysOfWeek {
@@ -172,10 +177,10 @@ func GenerateEmailForNextWeek(date Date, collection meal_collection.MealCollecti
 				calendars[currYearMonth] = collection.GenerateMealsWholeYearNoCategories(*calendar.NewCalendar(day.Year, time.Month(day.Month)))
 			}
 
-			allItems = append(allItems, calendars[currYearMonth][day.Day-1])
+			allMeals = append(allMeals, calendars[currYearMonth][day.Day-1])
 		}
 	default:
-		allItems = useHardcodedValues(collection)
+		allMeals = useHardcodedValues(collection)
 	}
 
 	htmlBody := `
@@ -199,13 +204,13 @@ func GenerateEmailForNextWeek(date Date, collection meal_collection.MealCollecti
 	htmlBody += "<tbody>\n<tr>"
 
 	for i := range fullDaysOfWeek {
-		htmlBody += fmt.Sprintf("<td>%s</td>\n", allItems[i].Name)
+		htmlBody += fmt.Sprintf("<td>%s</td>\n", allMeals[i].Name)
 	}
 
 	htmlBody += "</tr>\n</tbody>\n"
 	htmlBody += "</table>\n\n"
 
-	htmlBody += CreateGroceryEmailMessage(allItems)
+	htmlBody += CreateGroceryEmailMessage(allMeals)
 
 	htmlBody += `
 	</body>
