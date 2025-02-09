@@ -89,10 +89,11 @@ func (u Unit) IsValid() error {
 }
 
 type Ingredient struct {
-	Item     string  `json:"item"`
-	Quantity float64 `json:"quantity"`
-	Unit     Unit    `json:"unit"`
-	Aisle    Aisle   `json:"aisle"`
+	Name         string  `json:"item"`
+	Quantity     float64 `json:"quantity"`
+	Unit         Unit    `json:"unit"`
+	Aisle        Aisle   `json:"aisle"`
+	RelatedMeals []string
 }
 
 type Meal struct {
@@ -104,13 +105,6 @@ type Meal struct {
 type Category struct {
 	Category string `json:"category"`
 	Items    []Meal `json:"items"`
-}
-
-type GroceryItem struct {
-	Name         string
-	Unit         Unit
-	Quantity     float64
-	RelatedMeals []string
 }
 
 func formatSignificant(f float64, sigDigits int) string {
@@ -125,63 +119,60 @@ func formatSignificant(f float64, sigDigits int) string {
 	return fmt.Sprintf("%g", result)
 }
 
-func (gi GroceryItem) String() string {
+func (i Ingredient) String() string {
 	return fmt.Sprintf("%s %s: %s (%s)",
-		formatSignificant(gi.Quantity, 4),   // e.g. "2.75"
-		gi.Unit,                             // e.g. "lb"
-		gi.Name,                             // e.g. "Beef"
-		strings.Join(gi.RelatedMeals, ", "), // e.g. "Burger, Tacos"
+		formatSignificant(i.Quantity, 4),   // e.g. "2.75"
+		i.Unit,                             // e.g. "lb"
+		i.Name,                             // e.g. "Beef"
+		strings.Join(i.RelatedMeals, ", "), // e.g. "Burger, Tacos"
 	)
 }
 
-func MealsToGroceryItems(meals []Meal) map[Aisle][]GroceryItem {
-	// Temporary struct for simplifying combinations...
-	type GroceryItemKey struct {
-		Name string
-		Unit Unit
+func MealsToIngredients(meals []Meal) []Ingredient {
+	type ingredientKey struct {
+		Name  string
+		Unit  Unit
+		Aisle Aisle
 	}
 
-	groceryCollection := make(map[Aisle]map[GroceryItemKey]GroceryItem)
-	for _, aisle := range AllAisles {
-		groceryCollection[aisle] = make(map[GroceryItemKey]GroceryItem)
-	}
+	combined := make(map[ingredientKey]Ingredient)
 
+	// Aggregate ingredients by (Name, Unit, Aisle)
 	for _, meal := range meals {
 		for _, ing := range meal.Ingredients {
-			key := GroceryItemKey{
-				Name: ing.Item,
-				Unit: ing.Unit,
+			key := ingredientKey{
+				Name:  ing.Name,
+				Unit:  ing.Unit,
+				Aisle: ing.Aisle,
 			}
 
-			// Fetch the existing item (if any) to update Quantity / RelatedMeals
-			item := groceryCollection[ing.Aisle][key]
-			item.Name = ing.Item
-			item.Unit = ing.Unit
-			item.Quantity += ing.Quantity
-			item.RelatedMeals = append(item.RelatedMeals, meal.Name)
+			agg := combined[key]
 
-			// Store the updated GroceryItem back
-			groceryCollection[ing.Aisle][key] = item
+			// Update fields and sum quantities
+			agg.Name = ing.Name
+			agg.Unit = ing.Unit
+			agg.Aisle = ing.Aisle
+			agg.Quantity += ing.Quantity
+			agg.RelatedMeals = append(agg.RelatedMeals, meal.Name)
+
+			combined[key] = agg
 		}
 	}
 
-	combined := make(map[Aisle][]GroceryItem, len(groceryCollection))
-	for aisle, itemsMap := range groceryCollection {
-		slice := make([]GroceryItem, 0, len(itemsMap))
-		for _, finalItem := range itemsMap {
-			slice = append(slice, finalItem)
-		}
-		combined[aisle] = slice
+	// Flatten into a single slice
+	result := make([]Ingredient, 0, len(combined))
+	for _, ing := range combined {
+		result = append(result, ing)
 	}
 
-	return combined
+	return result
 }
 
 type MealCollection []Category
 
 // validateIngredient checks if all required fields of an Ingredient are set and valid
 func validateIngredient(ingredient Ingredient) error {
-	if ingredient.Item == "" {
+	if ingredient.Name == "" {
 		return errors.New("ingredient item cannot be empty")
 	}
 	if ingredient.Quantity <= 0 {
@@ -315,13 +306,13 @@ func (m MealCollection) GenerateMealsWholeYearNoCategories(currCalendar calendar
 	// Create a copy of MealCollection so that the original isn't modified
 	mealCopy := m.DeepCopy()
 
-	var allItems []Meal
+	var allMeals []Meal
 	for _, category := range mealCopy {
-		allItems = append(allItems, category.Items...)
+		allMeals = append(allMeals, category.Items...)
 	}
 
 	currItemInd := 0
-	Shuffle(allItems)
+	Shuffle(allMeals)
 
 	for i := range int(currCalendar.Month) - 1 {
 		pastCalendar := calendar.NewCalendar(currCalendar.Year, time.Month(i+1))
@@ -334,8 +325,8 @@ func (m MealCollection) GenerateMealsWholeYearNoCategories(currCalendar calendar
 				continue
 			}
 
-			if currItemInd >= len(allItems) {
-				Shuffle(allItems)
+			if currItemInd >= len(allMeals) {
+				Shuffle(allMeals)
 				currItemInd = 0
 			}
 
@@ -360,13 +351,13 @@ func (m MealCollection) GenerateMealsWholeYearNoCategories(currCalendar calendar
 			continue
 		}
 
-		if currItemInd >= len(allItems) {
-			Shuffle(allItems)
+		if currItemInd >= len(allMeals) {
+			Shuffle(allMeals)
 			currItemInd = 0
 		}
 
 		// Copy would go here
-		selectedMeals = append(selectedMeals, allItems[currItemInd])
+		selectedMeals = append(selectedMeals, allMeals[currItemInd])
 
 		currItemInd += 1
 	}
