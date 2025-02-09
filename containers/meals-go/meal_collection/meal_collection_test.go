@@ -5,6 +5,7 @@ import (
 	"log"
 	"meals/calendar"
 	"reflect"
+	"sort"
 	"testing"
 	"time"
 )
@@ -179,80 +180,72 @@ func TestGenerateMealsWholeYearUniquePerMonth(t *testing.T) {
 	}
 }
 
-func TestMealsToGroceryItems(t *testing.T) {
+func TestMealsToIngredients(t *testing.T) {
 	// Sample input data
 	meals := []Meal{
 		{
 			Name: "Pizza",
 			Ingredients: []Ingredient{
-				{Item: "Cheese", Quantity: 2, Unit: UnitCount, Aisle: AisleCheeseAndBakery},
-				{Item: "Tomato Sauce", Quantity: 1, Unit: UnitCup, Aisle: AisleProduce},
+				{Name: "Cheese", Quantity: 2, Unit: UnitCount, Aisle: AisleCheeseAndBakery},
+				{Name: "Tomato Sauce", Quantity: 1, Unit: UnitCup, Aisle: AisleProduce},
 			},
 		},
 		{
 			Name: "Burger",
 			Ingredients: []Ingredient{
-				{Item: "Cheese", Quantity: 2, Unit: UnitCount, Aisle: AisleCheeseAndBakery},
-				{Item: "Bun", Quantity: 4, Unit: UnitCount, Aisle: AisleCheeseAndBakery},
-				{Item: "Beef", Quantity: 1, Unit: UnitLb, Aisle: AisleMeatAndYogurt},
+				{Name: "Cheese", Quantity: 2, Unit: UnitCount, Aisle: AisleCheeseAndBakery},
+				{Name: "Bun", Quantity: 4, Unit: UnitCount, Aisle: AisleCheeseAndBakery},
+				{Name: "Beef", Quantity: 1, Unit: UnitLb, Aisle: AisleMeatAndYogurt},
 			},
 		},
 	}
 
-	got := MealsToGroceryItems(meals)
-	want := map[Aisle][]GroceryItem{
-		AisleCheeseAndBakery: {
-			{
-				Name:         "Cheese",
-				Unit:         UnitCount,
-				Quantity:     4,
-				RelatedMeals: []string{"Pizza", "Burger"},
-			},
-			{
-				Name:         "Bun",
-				Unit:         UnitCount,
-				Quantity:     4,
-				RelatedMeals: []string{"Burger"},
-			},
+	got := MealsToIngredients(meals)
+	want := []Ingredient{
+		{
+			Name:         "Cheese",
+			Unit:         UnitCount,
+			Quantity:     4, // 2 + 2
+			Aisle:        AisleCheeseAndBakery,
+			RelatedMeals: []string{"Pizza", "Burger"},
 		},
-		AisleAlcoholButterCheese: {},
-		AisleFreezer:             {},
-		AisleNoFoodItems:         {},
-		AisleBeveragesAndSnacks:  {},
-		AisleBreakfastAndBaking:  {},
-		AislePastaGlobalCanned:   {},
-		AisleProduce: {
-			{
-				Name:         "Tomato Sauce",
-				Unit:         UnitCup,
-				Quantity:     1,
-				RelatedMeals: []string{"Pizza"},
-			},
+		{
+			Name:         "Bun",
+			Unit:         UnitCount,
+			Quantity:     4,
+			Aisle:        AisleCheeseAndBakery,
+			RelatedMeals: []string{"Burger"},
 		},
-		AisleMeatAndYogurt: {
-			{
-				Name:         "Beef",
-				Unit:         UnitLb,
-				Quantity:     1,
-				RelatedMeals: []string{"Burger"},
-			},
+		{
+			Name:         "Tomato Sauce",
+			Unit:         UnitCup,
+			Quantity:     1,
+			Aisle:        AisleProduce,
+			RelatedMeals: []string{"Pizza"},
+		},
+		{
+			Name:         "Beef",
+			Unit:         UnitLb,
+			Quantity:     1,
+			Aisle:        AisleMeatAndYogurt,
+			RelatedMeals: []string{"Burger"},
 		},
 	}
 
-	// Compare the two maps
-	if len(got) != len(want) {
-		t.Errorf("Got %d aisles, want %d aisles", len(got), len(want))
-	}
+	sortIngredients(got)
+	sortIngredients(want)
 
-	for aisle, wantItems := range want {
-		gotItems, ok := got[aisle]
-		if !ok {
-			t.Errorf("Missing aisle %q in the result map", aisle)
-			continue
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("MealsToIngredients() = %#v;\nwant %#v", got, want)
+	}
+}
+
+// sortIngredients sorts by Aisle, then by Name, for consistent comparison.
+func sortIngredients(ings []Ingredient) {
+	sort.Slice(ings, func(i, j int) bool {
+		if ings[i].Aisle != ings[j].Aisle {
+			return ings[i].Aisle < ings[j].Aisle
 		}
-		if !reflect.DeepEqual(gotItems, wantItems) {
-			t.Errorf("Aisle %q items = %#v; want %#v", aisle, gotItems, wantItems)
-		}
-	}
-
+		return ings[i].Name < ings[j].Name
+	})
 }
