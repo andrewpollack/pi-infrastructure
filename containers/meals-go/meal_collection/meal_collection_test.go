@@ -179,9 +179,9 @@ func TestGenerateMealsWholeYearUniquePerMonth(t *testing.T) {
 	}
 }
 
-func TestItemListToCombinedGroceryItems(t *testing.T) {
+func TestMealsToGroceryItems(t *testing.T) {
 	// Sample input data
-	meals := []Item{
+	meals := []Meal{
 		{
 			Name: "Pizza",
 			Ingredients: []Ingredient{
@@ -199,7 +199,7 @@ func TestItemListToCombinedGroceryItems(t *testing.T) {
 		},
 	}
 
-	got := ItemListToCombinedGroceryItems(meals)
+	got := MealsToGroceryItems(meals)
 	want := map[Aisle][]GroceryItem{
 		AisleCheeseAndBakery: {
 			{
