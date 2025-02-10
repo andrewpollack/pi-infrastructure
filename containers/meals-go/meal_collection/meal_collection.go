@@ -69,21 +69,19 @@ const (
 	UnitCount Unit = "count"
 )
 
-var AllUnits = []Unit{
-	UnitGram,
-	UnitLb,
-	UnitOz,
-	UnitCup,
-	UnitTbsp,
-	UnitTsp,
-	UnitCount,
-}
-
 func (u Unit) IsValid() error {
-	for _, validUnit := range AllUnits {
-		if u == validUnit {
-			return nil
-		}
+	var validUnits = map[Unit]struct{}{
+		UnitGram:  {},
+		UnitLb:    {},
+		UnitOz:    {},
+		UnitCup:   {},
+		UnitTbsp:  {},
+		UnitTsp:   {},
+		UnitCount: {},
+	}
+
+	if _, ok := validUnits[u]; ok {
+		return nil
 	}
 	return errors.New("invalid unit: " + string(u))
 }
@@ -102,24 +100,31 @@ type Meal struct {
 	Ingredients []Ingredient `json:"ingredients,omitempty"`
 }
 
+var MEAL_LEFTOVERS = Meal{
+	Name: "LEFTOVERS",
+}
+
+var MEAL_OUT = Meal{
+	Name: "OUT",
+}
+
 type Category struct {
 	Category string `json:"category"`
 	Items    []Meal `json:"items"`
 }
 
-func formatSignificant(f float64, sigDigits int) string {
-	if f == 0 {
-		return "0"
-	}
-
-	scale := math.Pow10(sigDigits - 1 - int(math.Floor(math.Log10(math.Abs(f)))))
-
-	result := math.Round(f*scale) / scale
-
-	return fmt.Sprintf("%g", result)
-}
+type MealCollection []Category
 
 func (i Ingredient) String() string {
+	formatSignificant := func(f float64, sigDigits int) string {
+		if f == 0 {
+			return "0"
+		}
+		scale := math.Pow10(sigDigits - 1 - int(math.Floor(math.Log10(math.Abs(f)))))
+		result := math.Round(f*scale) / scale
+		return fmt.Sprintf("%g", result)
+	}
+
 	return fmt.Sprintf("%s %s: %s (%s)",
 		formatSignificant(i.Quantity, 4),   // e.g. "2.75"
 		i.Unit,                             // e.g. "lb"
@@ -167,8 +172,6 @@ func MealsToIngredients(meals []Meal) []Ingredient {
 
 	return result
 }
-
-type MealCollection []Category
 
 // validateIngredient checks if all required fields of an Ingredient are set and valid
 func validateIngredient(ingredient Ingredient) error {
@@ -298,9 +301,10 @@ func (m MealCollection) DeepCopy() MealCollection {
 	return mealCopy
 }
 
-// GenerateMealsWholeYear generates a random list of meals, not respecting categories
+// GenerateMealsWholeYear generates a random list of meals, not respecting categories, and
+// starting from the beginning of the year
 func (m MealCollection) GenerateMealsWholeYearNoCategories(currCalendar calendar.Calendar) []Meal {
-	// Use Year+Month to make meal generation consistent
+	// Use Year to make meal generation consistent
 	rand.Seed(uint64(currCalendar.Year))
 
 	// Create a copy of MealCollection so that the original isn't modified
@@ -313,53 +317,37 @@ func (m MealCollection) GenerateMealsWholeYearNoCategories(currCalendar calendar
 
 	currItemInd := 0
 	Shuffle(allMeals)
-
-	for i := range int(currCalendar.Month) - 1 {
-		pastCalendar := calendar.NewCalendar(currCalendar.Year, time.Month(i+1))
-
-		for j := 1; j < pastCalendar.DaysInMonth()+1; j++ {
-			if pastCalendar.GetWeekday(j) == time.Thursday {
-				continue
-			}
-			if pastCalendar.GetWeekday(j) == time.Friday {
-				continue
-			}
-
-			if currItemInd >= len(allMeals) {
-				Shuffle(allMeals)
-				currItemInd = 0
-			}
-
-			// Copy would go here
-
-			currItemInd += 1
-		}
-	}
-
+	appendItems := false
 	var selectedMeals []Meal
-	for j := 1; j < currCalendar.DaysInMonth()+1; j++ {
-		if currCalendar.GetWeekday(j) == time.Thursday {
-			selectedMeals = append(selectedMeals, Meal{
-				Name: "LEFTOVERS",
-			})
-			continue
-		}
-		if currCalendar.GetWeekday(j) == time.Friday {
-			selectedMeals = append(selectedMeals, Meal{
-				Name: "OUT",
-			})
-			continue
+	for i := 1; i <= int(currCalendar.Month); i++ {
+		// Keep cycling through items and shuffling until we get to the desired month
+		if time.Month(i) == currCalendar.Month {
+			appendItems = true
 		}
 
-		if currItemInd >= len(allMeals) {
-			Shuffle(allMeals)
-			currItemInd = 0
+		cal := calendar.NewCalendar(currCalendar.Year, time.Month(i))
+		for j := 1; j < cal.DaysInMonth()+1; j++ {
+			var item Meal
+
+			switch cal.GetWeekday(j) {
+			case time.Thursday:
+				item = MEAL_LEFTOVERS
+			case time.Friday:
+				item = MEAL_OUT
+			default:
+				item = allMeals[currItemInd]
+
+				currItemInd += 1
+				if currItemInd >= len(allMeals) {
+					Shuffle(allMeals)
+					currItemInd = 0
+				}
+			}
+
+			if appendItems {
+				selectedMeals = append(selectedMeals, item)
+			}
 		}
-
-		// Copy would go here
-		selectedMeals = append(selectedMeals, allMeals[currItemInd])
-
-		currItemInd += 1
 	}
 
 	return selectedMeals
@@ -379,81 +367,54 @@ func (m MealCollection) GenerateMealsWholeYear(currCalendar calendar.Calendar) [
 		Shuffle(mealCopy[i].Items)
 	}
 
+	appendItems := false
 	currMealCategoryIndex := 0
-	for i := range int(currCalendar.Month) - 1 {
-		pastCalendar := calendar.NewCalendar(currCalendar.Year, time.Month(i+1))
+	var selectedMeals []Meal
+	for i := 1; i <= int(currCalendar.Month); i++ {
+		if time.Month(i) == currCalendar.Month {
+			appendItems = true
+		}
+
+		pastCalendar := calendar.NewCalendar(currCalendar.Year, time.Month(i))
 
 		for j := 1; j < pastCalendar.DaysInMonth()+1; j++ {
-			if pastCalendar.GetWeekday(j) == time.Thursday {
-				continue
-			}
-			if pastCalendar.GetWeekday(j) == time.Friday {
-				continue
-			}
+			var item Meal
 
-			for {
-				// Need to repopulate!
-				if currMealCategoryIndex >= len(mealCopy) {
-					// Create a copy of MealCollection so that the original isn't modified
-					mealCopy = m.DeepCopy()
-					// Shuffle categories
-					Shuffle(mealCopy)
-					// Shuffle items within each category
-					for i := range mealCopy {
-						Shuffle(mealCopy[i].Items)
+			switch pastCalendar.GetWeekday(j) {
+			case time.Thursday:
+				item = MEAL_LEFTOVERS
+			case time.Friday:
+				item = MEAL_OUT
+			default:
+				for {
+					// Reset...
+					if currMealCategoryIndex >= len(mealCopy) {
+						// Create a copy of MealCollection so that the original isn't modified
+						mealCopy = m.DeepCopy()
+						// Shuffle categories
+						Shuffle(mealCopy)
+						// Shuffle items within each category
+						for i := range mealCopy {
+							Shuffle(mealCopy[i].Items)
+						}
+
+						currMealCategoryIndex = 0
 					}
 
-					currMealCategoryIndex = 0
-				}
-				_, remainingItems, popped := PopItem(mealCopy[currMealCategoryIndex].Items)
-				if popped {
-					mealCopy[currMealCategoryIndex].Items = remainingItems
+					poppedItem, remainingItems, popped := PopItem(mealCopy[currMealCategoryIndex].Items)
+					if popped {
+						item = poppedItem
+						mealCopy[currMealCategoryIndex].Items = remainingItems
+						currMealCategoryIndex += 1
+						break
+					}
 					currMealCategoryIndex += 1
-					break
 				}
-				currMealCategoryIndex += 1
-			}
-		}
-	}
-
-	var selectedMeals []Meal
-	for j := 1; j < currCalendar.DaysInMonth()+1; j++ {
-		if currCalendar.GetWeekday(j) == time.Thursday {
-			selectedMeals = append(selectedMeals, Meal{
-				Name: "LEFTOVERS",
-			})
-			continue
-		}
-		if currCalendar.GetWeekday(j) == time.Friday {
-			selectedMeals = append(selectedMeals, Meal{
-				Name: "OUT",
-			})
-			continue
-		}
-
-		for {
-			// Need to repopulate!
-			if currMealCategoryIndex >= len(mealCopy) {
-				// Create a copy of MealCollection so that the original isn't modified
-				mealCopy = m.DeepCopy()
-				// Shuffle categories
-				Shuffle(mealCopy)
-				// Shuffle items within each category
-				for i := range mealCopy {
-					Shuffle(mealCopy[i].Items)
-				}
-
-				currMealCategoryIndex = 0
 			}
 
-			item, remainingItems, popped := PopItem(mealCopy[currMealCategoryIndex].Items)
-			if popped {
+			if appendItems {
 				selectedMeals = append(selectedMeals, item)
-				mealCopy[currMealCategoryIndex].Items = remainingItems
-				currMealCategoryIndex += 1
-				break
 			}
-			currMealCategoryIndex += 1
 		}
 	}
 
@@ -484,16 +445,12 @@ func (m MealCollection) GenerateMealsList(calendar calendar.Calendar) []Meal {
 
 		for i := range mealCopy {
 			if calendar.GetWeekday(runningDays) == time.Thursday {
-				selectedMeals = append(selectedMeals, Meal{
-					Name: "LEFTOVERS",
-				})
+				selectedMeals = append(selectedMeals, MEAL_LEFTOVERS)
 				runningDays += 1
 			}
 
 			if calendar.GetWeekday(runningDays) == time.Friday {
-				selectedMeals = append(selectedMeals, Meal{
-					Name: "OUT",
-				})
+				selectedMeals = append(selectedMeals, MEAL_OUT)
 				runningDays += 1
 			}
 
