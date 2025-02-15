@@ -1,27 +1,18 @@
 <script lang="ts">
-  import type { PageData } from './$types';
+	import type { PageData } from './$types';
+	import CalendarMonth from '$lib/CalendarMonth.svelte';
+	import MealsList from '$lib/MealsList.svelte';
 
-  // Import our new components
-  import CalendarMonth from '$lib/CalendarMonth.svelte';
-  import MealsList from '$lib/MealsList.svelte';
-
-  export let data: PageData;
-
-  // Destructure props for convenience
-  const { allMeals, allCalendars } = data;
+	export let data: PageData;
+	const { isDev, allMeals, allCalendars } = data;
 </script>
 
-<h1>Meals</h1>
+<h1>
+	{#if isDev}
+		((DEVMODE))
+	{/if}
+	Meals
+</h1>
 
-<!-- Render the "Current" month -->
-<CalendarMonth 
-  monthData={allCalendars.currMonthResponse} 
-/>
-
-<!-- Render the "Next" month -->
-<CalendarMonth 
-  monthData={allCalendars.nextMonthResponse} 
-/>
-
-<!-- Render the "All Meals" list -->
+<CalendarMonth monthData={allCalendars.currMonthResponse} />
 <MealsList meals={allMeals} />
