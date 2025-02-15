@@ -1,21 +1,31 @@
 import type { PageServerLoad } from './$types';
 import { env } from '$env/dynamic/private';
 import type { MealsResponse, CalendarResponse } from '$lib/types';
+import fs from 'fs/promises';
 
 export const load: PageServerLoad = async () => {
-  // 1) Fetch data from /api/meals
-  const API_BASE_URL = env.API_BASE_URL;
+	let mealsData: MealsResponse;
+	let allCalendars: CalendarResponse;
 
-  const mealsRes = await fetch(`${API_BASE_URL}/api/meals`);
-  const mealsData: MealsResponse = await mealsRes.json();
+	const isDev = !env.API_BASE_URL;
 
-  // 2) Fetch data from /api/calendar
-  const calendarRes = await fetch(`${API_BASE_URL}/api/calendar`);
-  const calendarData: CalendarResponse = await calendarRes.json();
+	if (isDev) {
+		const mealsFile = await fs.readFile('src/lib/data/meals.json', 'utf-8');
+		const calendarFile = await fs.readFile('src/lib/data/calendar.json', 'utf-8');
 
-  // Return the combined data to the Svelte page
-  return {
-    allMeals: mealsData.allMeals,
-    allCalendars: calendarData
-  };
+		mealsData = JSON.parse(mealsFile);
+		allCalendars = JSON.parse(calendarFile);
+	} else {
+		const mealsRes = await fetch(`${env.API_BASE_URL}/api/meals`);
+		mealsData = await mealsRes.json();
+
+		const calendarRes = await fetch(`${env.API_BASE_URL}/api/calendar`);
+		allCalendars = await calendarRes.json();
+	}
+
+	return {
+		isDev,
+		allMeals: mealsData.allMeals,
+		allCalendars
+	};
 };
