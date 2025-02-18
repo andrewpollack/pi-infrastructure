@@ -23,6 +23,9 @@
 			<tr>
 				{#each week as meal}
 					<td>
+						{#if meal.Day > 0}
+							<strong>{meal.Day}</strong> <br />
+						{/if}
 						{#if meal.URL}
 							<a href={meal.URL} target="_blank" rel="noopener noreferrer">
 								{meal.Meal}
