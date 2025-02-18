@@ -23,7 +23,7 @@ func mealCalendarHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
 	// Decode the meal collection
-	collection, _ := meal_collection.ReadMealCollection(mealData)
+	collection, _ := meal_collection.ReadMealCollectionFromReader(mealData)
 
 	// Get current date info
 	currYear, currMonth, _ := time.Now().Date()
