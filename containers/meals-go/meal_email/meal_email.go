@@ -250,12 +250,7 @@ func CreateAndSendEmail(srv *gmail.Service) {
 	month := currentTime.Month()
 	day := currentTime.Day()
 
-	mealData, err := meal_collection.OpenFromS3()
-	if err != nil {
-		log.Fatalf("Error fetching mealData: %v", err)
-	}
-
-	collection, err := meal_collection.ReadMealCollection(mealData)
+	collection, err := meal_collection.ReadMealCollectionFromDB()
 	if err != nil {
 		fmt.Printf("Something went wrong reading meals: %s\n", err)
 

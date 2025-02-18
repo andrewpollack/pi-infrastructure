@@ -18,7 +18,7 @@ func TestMealCollectionReading(t *testing.T) {
 		log.Fatalf("Error fetching mealData: %v", err)
 	}
 
-	_, err = ReadMealCollection(mealData)
+	_, err = ReadMealCollectionFromReader(mealData)
 	if err != nil {
 		t.Errorf("Something went wrong reading meals... %s", err)
 	}
@@ -30,7 +30,7 @@ func TestMealCollectionBadReading(t *testing.T) {
 		log.Fatalf("Error fetching mealData: %v", err)
 	}
 
-	_, err = ReadMealCollection(mealData)
+	_, err = ReadMealCollectionFromReader(mealData)
 	expectedErr := "error unmarshalling JSON: json: unknown field \"unknown_field\""
 	if err == nil || err.Error() != expectedErr {
 		t.Errorf("Expected error: '%s', got: '%v'", expectedErr, err)
@@ -43,7 +43,7 @@ func TestMealListGenerationFromCollection(t *testing.T) {
 		log.Fatalf("Error fetching mealData: %v", err)
 	}
 
-	collection, err := ReadMealCollection(mealData)
+	collection, err := ReadMealCollectionFromReader(mealData)
 	if err != nil {
 		t.Errorf("Something went wrong reading meals... %s", err)
 	}
@@ -60,7 +60,7 @@ func TestMealListGenerationUniquePerMonth(t *testing.T) {
 		log.Fatalf("Error fetching mealData: %v", err)
 	}
 
-	collection, err := ReadMealCollection(mealData)
+	collection, err := ReadMealCollectionFromReader(mealData)
 	if err != nil {
 		t.Errorf("Something went wrong reading meals... %s", err)
 	}
@@ -91,7 +91,7 @@ func TestMealListGenerationMatchAcrossMonth(t *testing.T) {
 		log.Fatalf("Error fetching mealData: %v", err)
 	}
 
-	collection, err := ReadMealCollection(mealData)
+	collection, err := ReadMealCollectionFromReader(mealData)
 	if err != nil {
 		t.Errorf("Something went wrong reading meals... %s", err)
 	}
@@ -123,7 +123,7 @@ func TestGenerateMealsWholeYearMatchAcrossMonth(t *testing.T) {
 		log.Fatalf("Error fetching mealData: %v", err)
 	}
 
-	collection, err := ReadMealCollection(mealData)
+	collection, err := ReadMealCollectionFromReader(mealData)
 	if err != nil {
 		t.Errorf("Something went wrong reading meals... %s", err)
 	}
@@ -155,7 +155,7 @@ func TestGenerateMealsWholeYearUniquePerMonth(t *testing.T) {
 		log.Fatalf("Error fetching mealData: %v", err)
 	}
 
-	collection, err := ReadMealCollection(mealData)
+	collection, err := ReadMealCollectionFromReader(mealData)
 	if err != nil {
 		t.Errorf("Something went wrong reading meals... %s", err)
 	}

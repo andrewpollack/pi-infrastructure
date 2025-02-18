@@ -10,12 +10,14 @@ import (
 	"meals/calendar"
 	"os"
 	"reflect"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/jackc/pgx/v5"
 	"golang.org/x/exp/rand"
 )
 
@@ -240,7 +242,121 @@ func OpenFromS3() (io.ReadCloser, error) {
 	return resp.Body, nil
 }
 
-func ReadMealCollection(reader io.ReadCloser) (MealCollection, error) {
+func ReadMealCollectionFromDB() (MealCollection, error) {
+	// Temporary types just for DB scans and JSON unmarshaling.
+	type DBIngredient struct {
+		Item     string  `json:"item"`
+		Quantity float64 `json:"quantity"`
+		Unit     string  `json:"unit"`
+		Aisle    string  `json:"aisle"`
+	}
+
+	type DBRecipe struct {
+		ID           int            `json:"id"`
+		Category     string         `json:"category"`
+		Name         string         `json:"name"`
+		URL          string         `json:"url"`
+		Ingredients  []DBIngredient `json:"ingredients"`
+		DateCreated  time.Time      `json:"date_created"`
+		DateModified time.Time      `json:"date_modified"`
+		Enabled      bool           `json:"enabled"`
+	}
+
+	postgresURL := os.Getenv("POSTGRES_URL")
+	if postgresURL == "" {
+		return nil, fmt.Errorf("POSTGRES_URL is not set")
+	}
+
+	conn, err := pgx.Connect(context.Background(), postgresURL)
+	if err != nil {
+		return nil, fmt.Errorf("unable to connect to database: %v", err)
+	}
+	defer conn.Close(context.Background())
+
+	rows, err := conn.Query(context.Background(), `
+		SELECT id, category, name, url, ingredients, date_created, date_modified, enabled
+		FROM recipes
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("query failed: %v", err)
+	}
+	defer rows.Close()
+
+	var recipes []DBRecipe
+
+	for rows.Next() {
+		var (
+			r              DBRecipe
+			rawIngredients []byte
+		)
+		if err := rows.Scan(
+			&r.ID,
+			&r.Category,
+			&r.Name,
+			&r.URL,
+			&rawIngredients,
+			&r.DateCreated,
+			&r.DateModified,
+			&r.Enabled,
+		); err != nil {
+			return nil, fmt.Errorf("scan failed: %v", err)
+		}
+		if err := json.Unmarshal(rawIngredients, &r.Ingredients); err != nil {
+			return nil, fmt.Errorf("unmarshal failed: %v", err)
+		}
+		recipes = append(recipes, r)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows iteration error: %v", err)
+	}
+
+	categoryMap := make(map[string][]Meal)
+	for _, recipe := range recipes {
+		// Convert DBIngredients -> Ingredients
+		var ingredients []Ingredient
+		for _, dbIng := range recipe.Ingredients {
+			ingredients = append(ingredients, Ingredient{
+				Name:     dbIng.Item,
+				Quantity: dbIng.Quantity,
+				Unit:     Unit(dbIng.Unit),
+				Aisle:    Aisle(dbIng.Aisle),
+			})
+		}
+
+		meal := Meal{
+			Name:        recipe.Name,
+			URL:         &recipe.URL,
+			Ingredients: ingredients,
+		}
+
+		// Append directly; if the slice doesn't exist yet, append works fine with nil
+		categoryMap[recipe.Category] = append(categoryMap[recipe.Category], meal)
+	}
+
+	var mealCollection MealCollection
+	for category, meals := range categoryMap {
+		mealCollection = append(mealCollection, Category{
+			Category: category,
+			Items:    meals,
+		})
+	}
+
+	// Sort categories
+	sort.Slice(mealCollection, func(i, j int) bool {
+		return strings.ToLower(mealCollection[i].Category) < strings.ToLower(mealCollection[j].Category)
+	})
+
+	// Sort items within each category
+	for _, category := range mealCollection {
+		sort.Slice(category.Items, func(i, j int) bool {
+			return strings.ToLower(category.Items[i].Name) < strings.ToLower(category.Items[j].Name)
+		})
+	}
+
+	return mealCollection, nil
+}
+
+func ReadMealCollectionFromReader(reader io.ReadCloser) (MealCollection, error) {
 	defer reader.Close()
 
 	decoder := json.NewDecoder(reader)
@@ -250,6 +366,18 @@ func ReadMealCollection(reader io.ReadCloser) (MealCollection, error) {
 	var mealCollection MealCollection
 	if err := decoder.Decode(&mealCollection); err != nil {
 		return nil, fmt.Errorf("error unmarshalling JSON: %v", err)
+	}
+
+	// Sort categories
+	sort.Slice(mealCollection, func(i, j int) bool {
+		return strings.ToLower(mealCollection[i].Category) < strings.ToLower(mealCollection[j].Category)
+	})
+
+	// Sort items within each category
+	for _, category := range mealCollection {
+		sort.Slice(category.Items, func(i, j int) bool {
+			return strings.ToLower(category.Items[i].Name) < strings.ToLower(category.Items[j].Name)
+		})
 	}
 
 	// Validate the meal collection

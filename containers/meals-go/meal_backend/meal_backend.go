@@ -1,12 +1,10 @@
 package meal_backend
 
 import (
-	"io"
 	"meals/calendar"
 	"meals/meal_calendar"
 	"meals/meal_collection"
 	"net/http"
-	"os"
 	"sort"
 	"strings"
 	"time"
@@ -67,19 +65,7 @@ func CreateBackendCalendarResponse(collection meal_collection.MealCollection, ye
 }
 
 func getMealCollection() (meal_collection.MealCollection, error) {
-	bucketName := os.Getenv("BUCKET_NAME")
-	var mealData io.ReadCloser
-	var err error
-	if bucketName == "" {
-		mealData, err = meal_collection.OpenMealData("data/recipes.json")
-	} else {
-		mealData, err = meal_collection.OpenFromS3()
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	collection, err := meal_collection.ReadMealCollection(mealData)
+	collection, err := meal_collection.ReadMealCollectionFromDB()
 	if err != nil {
 		return nil, err
 	}
