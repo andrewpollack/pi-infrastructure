@@ -14,7 +14,7 @@ func TestCalendarHTMLGeneration(t *testing.T) {
 		log.Fatalf("Error fetching mealData: %v", err)
 	}
 
-	collection, err := meal_collection.ReadMealCollection(mealData)
+	collection, err := meal_collection.ReadMealCollectionFromReader(mealData)
 	if err != nil {
 		t.Errorf("Something went wrong reading meals... %s", err)
 	}
