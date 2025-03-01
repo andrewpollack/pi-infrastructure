@@ -1,6 +1,7 @@
 package meal_email
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"meals/calendar"
@@ -10,7 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"google.golang.org/api/gmail/v1"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/ses"
+	"github.com/aws/aws-sdk-go-v2/service/ses/types"
 )
 
 type Date struct {
@@ -242,7 +245,7 @@ func GenerateHeaderForNextWeek(date Date) string {
 	return fmt.Sprintf("Meals for %s %d -> %s %d ", time.Month(first.Month), first.Day, time.Month(last.Month), last.Day)
 }
 
-func CreateAndSendEmail(srv *gmail.Service) {
+func CreateAndSendEmail(useSES bool) {
 	currentTime := time.Now()
 
 	// Extract the year, month, and day
@@ -273,10 +276,61 @@ SUBJECT: %s
 BODY:
 %s
 `, from, to, subject, body)
-	} else {
-		err = sendEmail(srv, from, to, subject, body)
+		return
+	}
+
+	if useSES {
+		err = sendEmailSES(from, to, subject, body)
 		if err != nil {
-			log.Fatalf("Failed to send email: %v", err)
+			log.Fatalf("Failed to send SES email: %v", err)
+		}
+	} else {
+		gs, err := AuthenticateGmail()
+		if err != nil {
+			log.Fatalf("Failed to authenticate with Gmail: %s", err.Error())
+		}
+
+		err = gs.SendEmail(from, to, subject, body)
+		if err != nil {
+			log.Fatalf("Failed to send Gmail email: %v", err)
 		}
 	}
+}
+
+func sendEmailSES(from, to, subject, bodyHtml string) error {
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("us-west-2"))
+	if err != nil {
+		return fmt.Errorf("unable to load SDK config, %v", err)
+	}
+
+	client := ses.NewFromConfig(cfg)
+	toAddresses := []string{}
+	for _, r := range strings.Split(to, ",") {
+		toAddresses = append(toAddresses, strings.TrimSpace(r))
+	}
+
+	input := &ses.SendEmailInput{
+		Source: &from,
+		Destination: &types.Destination{
+			ToAddresses: toAddresses,
+		},
+		Message: &types.Message{
+			Subject: &types.Content{
+				Data: &subject,
+			},
+			Body: &types.Body{
+				Html: &types.Content{
+					Data: &bodyHtml,
+				},
+			},
+		},
+	}
+
+	result, err := client.SendEmail(context.TODO(), input)
+	if err != nil {
+		return fmt.Errorf("failed to send email: %v", err)
+	}
+	log.Printf("Email sent: %v\n", result)
+
+	return nil
 }

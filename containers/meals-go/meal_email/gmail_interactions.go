@@ -72,38 +72,12 @@ func saveToken(path string, token *oauth2.Token) {
 	json.NewEncoder(f).Encode(token)
 }
 
-func sendEmail(srv *gmail.Service, from, to, subject, body string) error {
-
-	header := make(map[string]string)
-	header["From"] = from
-	header["To"] = to
-	header["Subject"] = subject
-	header["MIME-Version"] = "1.0"
-	header["Content-Type"] = "text/html; charset=\"utf-8\""
-
-	var message strings.Builder
-	for k, v := range header {
-		message.WriteString(fmt.Sprintf("%s: %s\r\n", k, v))
-	}
-	message.WriteString("\r\n" + body)
-
-	// Encode the message in base64 for the Gmail API
-	rawMessage := base64.URLEncoding.EncodeToString([]byte(message.String()))
-
-	gmailMessage := &gmail.Message{
-		Raw: rawMessage,
-	}
-
-	// Send the email using the Gmail API
-	_, err := srv.Users.Messages.Send("me", gmailMessage).Do()
-	if err != nil {
-		return fmt.Errorf("unable to send email: %v", err)
-	}
-
-	return nil
+// Define your own type that wraps *gmail.Service
+type GmailService struct {
+	Service *gmail.Service
 }
 
-func AuthenticateGmail() (*gmail.Service, error) {
+func AuthenticateGmail() (GmailService, error) {
 	ctx := context.Background()
 	credentialsLocation := os.Getenv("CREDENTIALS_LOCATION")
 	if credentialsLocation == "" {
@@ -130,5 +104,31 @@ func AuthenticateGmail() (*gmail.Service, error) {
 		log.Fatalf("Unable to spawn new service Gmail client: %v", err)
 	}
 
-	return srv, nil
+	return GmailService{Service: srv}, nil
+}
+
+func (gs *GmailService) SendEmail(from, to, subject, body string) error {
+	header := make(map[string]string)
+	header["From"] = from
+	header["To"] = to
+	header["Subject"] = subject
+	header["MIME-Version"] = "1.0"
+	header["Content-Type"] = "text/html; charset=\"utf-8\""
+
+	var message strings.Builder
+	for k, v := range header {
+		message.WriteString(fmt.Sprintf("%s: %s\r\n", k, v))
+	}
+	message.WriteString("\r\n" + body)
+
+	rawMessage := base64.URLEncoding.EncodeToString([]byte(message.String()))
+	gmailMessage := &gmail.Message{
+		Raw: rawMessage,
+	}
+
+	_, err := gs.Service.Users.Messages.Send("me", gmailMessage).Do()
+	if err != nil {
+		return fmt.Errorf("unable to send email: %v", err)
+	}
+	return nil
 }
