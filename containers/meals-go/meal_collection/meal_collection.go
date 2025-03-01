@@ -100,6 +100,7 @@ type Meal struct {
 	Name        string       `json:"name"`
 	URL         *string      `json:"url,omitempty"`
 	Ingredients []Ingredient `json:"ingredients,omitempty"`
+	Disabled    bool         `json:"disabled,omitempty"`
 }
 
 var MEAL_LEFTOVERS = Meal{
@@ -327,6 +328,7 @@ func ReadMealCollectionFromDB() (MealCollection, error) {
 			Name:        recipe.Name,
 			URL:         &recipe.URL,
 			Ingredients: ingredients,
+			Disabled:    !recipe.Enabled,
 		}
 
 		// Append directly; if the slice doesn't exist yet, append works fine with nil
@@ -463,6 +465,22 @@ func (m MealCollection) GenerateMealsWholeYearNoCategories(currCalendar calendar
 			case time.Friday:
 				item = MEAL_OUT
 			default:
+				if appendItems {
+					// Skip until finding a meal that is enabled. Makes shuffling more consistent
+					// month to month.
+					for {
+						if allMeals[currItemInd].Disabled {
+							currItemInd += 1
+							if currItemInd >= len(allMeals) {
+								Shuffle(allMeals)
+								currItemInd = 0
+							}
+						} else {
+							break
+						}
+					}
+				}
+
 				item = allMeals[currItemInd]
 
 				currItemInd += 1

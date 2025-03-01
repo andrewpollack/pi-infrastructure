@@ -13,9 +13,10 @@ import (
 )
 
 type DayResponse struct {
-	Day  int
-	Meal string
-	URL  *string
+	Day     int
+	Meal    string
+	URL     *string
+	Enabled bool
 }
 
 type BackendCalendarResponse struct {
@@ -52,9 +53,10 @@ func CreateBackendCalendarResponse(collection meal_collection.MealCollection, ye
 			}
 
 			itemResp := DayResponse{
-				Day:  day.Number,
-				Meal: item.Name,
-				URL:  item.URL,
+				Day:     day.Number,
+				Meal:    item.Name,
+				URL:     item.URL,
+				Enabled: !item.Disabled,
 			}
 			weekMeals = append(weekMeals, itemResp)
 		}
@@ -128,9 +130,10 @@ func GetMeals(c *gin.Context) {
 
 	for _, item := range flattenedMeals {
 		allMeals = append(allMeals, DayResponse{
-			Day:  0,
-			Meal: item.Name,
-			URL:  item.URL,
+			Day:     0,
+			Meal:    item.Name,
+			URL:     item.URL,
+			Enabled: !item.Disabled,
 		})
 	}
 
