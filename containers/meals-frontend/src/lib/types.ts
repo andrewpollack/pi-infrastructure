@@ -2,6 +2,7 @@ export interface Meal {
 	Day: number;
 	Meal: string;
 	URL: string | null;
+	Enabled: boolean | null;
 }
 
 export interface MealsResponse {
