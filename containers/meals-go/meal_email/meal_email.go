@@ -3,7 +3,6 @@ package meal_email
 import (
 	"context"
 	"fmt"
-	"log"
 	"meals/calendar"
 	"meals/meal_collection"
 	"os"
@@ -245,7 +244,7 @@ func GenerateHeaderForNextWeek(date Date) string {
 	return fmt.Sprintf("Meals for %s %d -> %s %d ", time.Month(first.Month), first.Day, time.Month(last.Month), last.Day)
 }
 
-func CreateAndSendEmail(useSES bool) {
+func CreateAndSendEmail(useSES bool) error {
 	currentTime := time.Now()
 
 	// Extract the year, month, and day
@@ -255,9 +254,7 @@ func CreateAndSendEmail(useSES bool) {
 
 	collection, err := meal_collection.ReadMealCollectionFromDB()
 	if err != nil {
-		fmt.Printf("Something went wrong reading meals: %s\n", err)
-
-		return
+		return fmt.Errorf("something went wrong reading meals: %s", err)
 	}
 
 	currDate := Date{Year: year, Month: int(month), Day: day}
@@ -276,25 +273,27 @@ SUBJECT: %s
 BODY:
 %s
 `, from, to, subject, body)
-		return
+		return nil
 	}
 
 	if useSES {
 		err = sendEmailSES(from, to, subject, body)
 		if err != nil {
-			log.Fatalf("Failed to send SES email: %v", err)
+			return fmt.Errorf("failed to send SES email: %v", err)
 		}
 	} else {
 		gs, err := AuthenticateGmail()
 		if err != nil {
-			log.Fatalf("Failed to authenticate with Gmail: %s", err.Error())
+			return fmt.Errorf("failed to authenticate with Gmail: %s", err.Error())
 		}
 
 		err = gs.SendEmail(from, to, subject, body)
 		if err != nil {
-			log.Fatalf("Failed to send Gmail email: %v", err)
+			return fmt.Errorf("failed to send Gmail email: %v", err)
 		}
 	}
+
+	return nil
 }
 
 func sendEmailSES(from, to, subject, bodyHtml string) error {
@@ -326,11 +325,10 @@ func sendEmailSES(from, to, subject, bodyHtml string) error {
 		},
 	}
 
-	result, err := client.SendEmail(context.TODO(), input)
+	_, err = client.SendEmail(context.TODO(), input)
 	if err != nil {
 		return fmt.Errorf("failed to send email: %v", err)
 	}
-	log.Printf("Email sent: %v\n", result)
 
 	return nil
 }

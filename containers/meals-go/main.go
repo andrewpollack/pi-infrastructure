@@ -18,7 +18,10 @@ func main() {
 		meal_backend.RunBackend()
 	case "email":
 		useSES := true
-		meal_email.CreateAndSendEmail(useSES)
+		err := meal_email.CreateAndSendEmail(useSES)
+		if err != nil {
+			fmt.Printf("Error: %s\n", err)
+		}
 	}
 
 	fmt.Println("Application finished.")
