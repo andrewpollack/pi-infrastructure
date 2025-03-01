@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"meals/meal_backend"
 	"meals/meal_calendar"
 	"meals/meal_email"
@@ -18,12 +17,8 @@ func main() {
 	case "backend", "":
 		meal_backend.RunBackend()
 	case "email":
-		srv, err := meal_email.AuthenticateGmail()
-		if err != nil {
-			log.Fatalf("Failed to authenticate with Gmail: %s", err.Error())
-		}
-
-		meal_email.CreateAndSendEmail(srv)
+		useSES := true
+		meal_email.CreateAndSendEmail(useSES)
 	}
 
 	fmt.Println("Application finished.")
