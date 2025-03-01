@@ -1,10 +1,13 @@
 package meal_backend
 
 import (
+	"fmt"
 	"meals/calendar"
 	"meals/meal_calendar"
 	"meals/meal_collection"
+	"meals/meal_email"
 	"net/http"
+	"os"
 	"sort"
 	"strings"
 	"time"
@@ -142,6 +145,81 @@ func GetMeals(c *gin.Context) {
 	})
 }
 
+func SendEmail(c *gin.Context) {
+	var meals []string
+	if err := c.BindJSON(&meals); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err,
+		})
+		return
+	}
+
+	// Verify only 5 meals are selected
+	if len(meals) != 5 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Exactly 5 meals must be selected",
+		})
+		return
+	}
+
+	collection, err := getMealCollection()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err,
+		})
+		return
+	}
+
+	var flattenedMeals []meal_collection.Meal
+	for _, item := range collection {
+		flattenedMeals = append(flattenedMeals, item.Items...)
+	}
+
+	var currMeals []meal_collection.Meal
+	// Attach the meal name to the actual meal collection
+	for _, meal := range meals {
+		foundItem := false
+		for _, item := range flattenedMeals {
+			if item.Name == meal {
+				currMeals = append(currMeals, item)
+				foundItem = true
+				break
+			}
+		}
+		if !foundItem {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": fmt.Sprintf("Meal not found: %s", meal),
+			})
+			return
+		}
+	}
+
+	os.Setenv("USE_HARDCODE", "true")
+	os.Setenv("H_5", "LEFTOVERS")
+	os.Setenv("H_6", "OUT")
+	for i, meal := range currMeals {
+		if i == 4 {
+			os.Setenv("H_7", meal.Name)
+			continue
+		}
+		envVar := fmt.Sprintf("H_%d", i+1)
+		os.Setenv(envVar, meal.Name)
+	}
+
+	useSES := true
+	err = meal_email.CreateAndSendEmail(useSES)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+	})
+}
+
 func HealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":    "healthy",
@@ -156,8 +234,9 @@ func RunBackend() {
 
 	api := router.Group("/api")
 
-	api.GET("/calendar", GetCalendar) // api: /api/ping
-	api.GET("/meals", GetMeals)       // api: /api/ping
+	api.GET("/calendar", GetCalendar)
+	api.GET("/meals", GetMeals)
+	api.POST("/email", SendEmail)
 
 	router.Run()
 }
