@@ -18,43 +18,29 @@ was born.
 selects and renders a month's worth of recipes, including related grocery list.
 Executes in two modes: frontend+backend service deployment, and email cronjob.
 
-#### Frontend+Backend service deployment:
-
-Deployed on k3s using two Deployments and a NodePort. This allows
-viewing this month's meals from my phone, laptop, or tablet by hitting a Tailscale
-URL. Links are clickable for finding related recipes.
-
-**Frontend** written in Svelte at [meals-frontend](https://github.com/andrewpollack/pi-infrastructure/tree/main/containers/meals-frontend),
-with a few different functionalities:
-* Current month calendar view,
-* Enable/Disable meals form,
-* Trigger email form to trigger the same workflow as next section.
-
-**Backend** written in GoLang and served using [Gin](https://github.com/gin-gonic/gin) at [meals-go](https://github.com/andrewpollack/pi-infrastructure/tree/main/containers/meals-go).
-
 | <img width="1241" alt="image" src="https://github.com/user-attachments/assets/438e51af-75c5-4d3b-bcf5-1834bba4d36a" /> |
 | :---------------------------------------------------------------------------------------------------------------------: |
 
-#### Email CronJob:
+#### Meals Services:
 
-Deployed on k3s using a CronJob. Every Thursday, finds next week's recipes and
-compiles a grocery list for all items, combining like items by quantity, and
-assigning each item to its respective aisle. This is then formatted and emailed
-to me and my partner. Email is sent using [Amazon Simple Email Service](https://aws.amazon.com/ses/) 
+| <img width="775" alt="image" src="https://github.com/user-attachments/assets/03d6ba11-32e2-4e4b-91ed-33f40bbf7b6f" /> |
+| :---------------------------------------------------------------------------------------------------------------------: |
+
+Services on k3s using Deployments and a NodePort. This setup allows
+viewing this month's meals from my phone, laptop, or tablet by hitting a Tailscale
+URL.
+
+* **[meals-frontend](https://github.com/andrewpollack/pi-infrastructure/tree/main/containers/meals-frontend)** written in Svelte, enables a few different functionalities:
+  * Current month calendar view,
+  * Enable/Disable meals form,
+  * Trigger email form to trigger the same workflow as next section.
+* **[meals-go](https://github.com/andrewpollack/pi-infrastructure/tree/main/containers/meals-go)** backend written in GoLang and served using [Gin](https://github.com/gin-gonic/gin).
+* **meals-updater-cronjob** CronJob to sync Postgres Database with source of truth JSON file stored in a private repository shared with my partner. Private repo done to make updating recipes as easy as opening a PR, and repo has CI setup to validate the contents.
+* **email-cronjob** every Thursday, finds next week's recipes and compiles a grocery list for all items, combining like items by quantity, and assigning each item to its respective aisle. This is then formatted and emailed
+to me and my partner. Email is sent using [Amazon Simple Email Service](https://aws.amazon.com/ses/)
+
 | <img width="742" alt="Screenshot 2025-03-01 at 6 16 48 PM" src="https://github.com/user-attachments/assets/3ff39709-fbd2-470e-86fd-75d7b4c74b38" /> |
 | :---------------------------------------------------------------------------------------: |
-
-#### Data:
-
-Recipes are stored in a JSON file in a private repository shared with my
-partner. This repo has CI/CD setup to validate the contents, and push the JSON
-file's latest state to S3. This state is synced with the Postgres database consumed
-by [meals-go](https://github.com/andrewpollack/pi-infrastructure/tree/main/containers/meals-go). 
-
-While we could just pull from the GitHub repo itself, CD in this way is far more
-fun!
-| ![Screenshot from 2024-09-28 13-27-38](https://github.com/user-attachments/assets/4b9abc7b-37e7-4730-8e1a-121b2c9d3536) |
-| :---------------------------------------------------------------------------------------------------------------------: |
 
 ---
 
