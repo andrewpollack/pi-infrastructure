@@ -9,27 +9,35 @@ Kubernetes and localized development.
 
 ## What's hosted?
 
-### [recipe-maker](https://github.com/andrewpollack/pi-infrastructure/tree/main/containers/meals-go)
+### [meals-go](https://github.com/andrewpollack/pi-infrastructure/tree/main/containers/meals-go)
 
 I got tired of having to pick what to eat for dinner each month, thus
-[recipe-maker](https://github.com/andrewpollack/pi-infrastructure/tree/main/containers/meals-go)
+[meals-go](https://github.com/andrewpollack/pi-infrastructure/tree/main/containers/meals-go)
 was born.
-[recipe-maker](https://github.com/andrewpollack/pi-infrastructure/tree/main/containers/meals-go)
+[meals-go](https://github.com/andrewpollack/pi-infrastructure/tree/main/containers/meals-go)
 selects and renders a month's worth of recipes, including related grocery list.
-Executes in two modes: server deployment, and email cronjob.
+Executes in two modes: frontend+backend service deployment, and email cronjob.
 
-#### Server deployment:
+#### Frontend+Backend service deployment:
 
-Deployed on k3s using a Deployment + NodePort Service. This allows viewing this
-month + next month's meals from my phone, laptop, or tablet by hitting the same
+Deployed on k3s using a Deployment + NodePort Service to service. This allows
+viewing this month's meals from my phone, laptop, or tablet by hitting a Tailscale
 URL. Links are clickable for finding related recipes.
+
+Frontend written in Svelte at [meals-frontend](https://github.com/andrewpollack/pi-infrastructure/tree/main/containers/meals-frontend),
+with a few different functionalities:
+* Current month calendar view,
+* Enable/Disable meals form,
+* Trigger email form to trigger the same workflow as next section.
+
+Backend written in GoLang and served using [Gin](https://github.com/gin-gonic/gin).
 
 | ![Screenshot from 2024-09-28 15-54-16](https://github.com/user-attachments/assets/92b2241f-ee41-4184-aa17-0ba6494cf091) |
 | :---------------------------------------------------------------------------------------------------------------------: |
 
 #### Email CronJob:
 
-Deployed on k3s using a CronJob. Every Friday, finds next week's recipes and
+Deployed on k3s using a CronJob. Every Thursday, finds next week's recipes and
 compiles a grocery list for all items, combining like items by quantity, and
 assigning each item to its respective aisle. This is then formatted and emailed
 to me and my partner. |
@@ -42,8 +50,8 @@ to me and my partner. |
 
 Recipes are stored in a JSON file in a private repository shared with my
 partner. This repo has CI/CD setup to validate the contents, and push the JSON
-file's latest state to S3. This state is then pulled by the
-[recipe-maker](https://github.com/andrewpollack/pi-infrastructure/tree/main/containers/meals-go).
+file's latest state to S3. This state is synced with the Postgres database consumed
+by [meals-go](https://github.com/andrewpollack/pi-infrastructure/tree/main/containers/meals-go). 
 
 While we could just pull from the GitHub repo itself, CD in this way is far more
 fun! |

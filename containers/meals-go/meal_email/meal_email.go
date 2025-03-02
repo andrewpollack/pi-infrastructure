@@ -251,8 +251,9 @@ func CreateAndSendEmail(useSES bool) error {
 	year := currentTime.Year()
 	month := currentTime.Month()
 	day := currentTime.Day()
+	firstOfMonth := time.Date(year, month, 1, 0, 0, 0, 0, currentTime.Location())
 
-	collection, err := meal_collection.ReadMealCollectionFromDB()
+	collection, err := meal_collection.ReadMealCollectionFromDB(firstOfMonth.Unix())
 	if err != nil {
 		return fmt.Errorf("something went wrong reading meals: %s", err)
 	}

@@ -11,7 +11,7 @@
 		if (checked) {
 			selectedMeals = [...selectedMeals, meal];
 		} else {
-			selectedMeals = selectedMeals.filter(m => m !== meal);
+			selectedMeals = selectedMeals.filter((m) => m !== meal);
 		}
 	}
 
@@ -36,10 +36,10 @@
 
 			const data = await res.json();
 			console.log('Response:', data);
-			successMessage = "Email sent successfully!";
+			successMessage = 'Email sent successfully!';
 		} catch (error) {
 			console.error('Error sending meals:', error);
-			errorMessage = "error: "
+			errorMessage = 'error: ';
 			if (error instanceof Error) {
 				errorMessage += error.message;
 			} else {
@@ -73,7 +73,7 @@
 							// If checking this box would be the 6th selection, uncheck it immediately and alert.
 							if (input.checked && selectedMeals.length >= 5) {
 								input.checked = false;
-								alert("error: You can only select up to 5 meals.");
+								alert('error: You can only select up to 5 meals.');
 								return;
 							}
 							toggleMeal(meal.Meal, input.checked);

@@ -69,8 +69,8 @@ func CreateBackendCalendarResponse(collection meal_collection.MealCollection, ye
 	return resp
 }
 
-func getMealCollection() (meal_collection.MealCollection, error) {
-	collection, err := meal_collection.ReadMealCollectionFromDB()
+func getMealCollection(recipeCreatedCutoff int64) (meal_collection.MealCollection, error) {
+	collection, err := meal_collection.ReadMealCollectionFromDB(recipeCreatedCutoff)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,11 @@ func getMealCollection() (meal_collection.MealCollection, error) {
 }
 
 func GetCalendar(c *gin.Context) {
-	collection, err := getMealCollection()
+	now := time.Now()
+	currYear, currMonth, _ := now.Date()
+	firstOfMonth := time.Date(currYear, currMonth, 1, 0, 0, 0, 0, now.Location())
+
+	collection, err := getMealCollection(firstOfMonth.Unix())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err,
@@ -87,7 +91,6 @@ func GetCalendar(c *gin.Context) {
 		return
 	}
 
-	currYear, currMonth, _ := time.Now().Date()
 	var nextMonth time.Month
 	var nextYear int
 
@@ -110,7 +113,7 @@ func GetCalendar(c *gin.Context) {
 }
 
 func GetMeals(c *gin.Context) {
-	collection, err := getMealCollection()
+	collection, err := getMealCollection(time.Now().Unix())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err,
@@ -162,7 +165,11 @@ func SendEmail(c *gin.Context) {
 		return
 	}
 
-	collection, err := getMealCollection()
+	now := time.Now()
+	currYear, currMonth, _ := now.Date()
+	firstOfMonth := time.Date(currYear, currMonth, 1, 0, 0, 0, 0, now.Location())
+
+	collection, err := getMealCollection(firstOfMonth.Unix())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err,
@@ -220,6 +227,71 @@ func SendEmail(c *gin.Context) {
 	})
 }
 
+func UpdateMeals(c *gin.Context) {
+	var mealUpdates []meal_collection.MealUpdate
+	if err := c.BindJSON(&mealUpdates); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err,
+		})
+		return
+	}
+
+	collection, err := getMealCollection(time.Now().Unix())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err,
+		})
+		return
+	}
+
+	var flattenedMeals []meal_collection.Meal
+	for _, item := range collection {
+		flattenedMeals = append(flattenedMeals, item.Items...)
+	}
+
+	// Filter out only those updates that differ from the current state
+	var updatesToApply []meal_collection.MealUpdate
+	for _, update := range mealUpdates {
+		foundItem := false
+		for _, item := range flattenedMeals {
+			if item.Name == update.Name {
+				foundItem = true
+				// Only include updates if the desired state differs from the current state.
+				if item.Disabled != update.Disabled {
+					updatesToApply = append(updatesToApply, update)
+				}
+				break
+			}
+		}
+		if !foundItem {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": fmt.Sprintf("Meal not found: %s", update.Name),
+			})
+			return
+		}
+	}
+
+	// If no updates are needed, return early
+	if len(updatesToApply) == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"status": "no updates needed",
+		})
+		return
+	}
+
+	err = meal_collection.UpdateMealsInDB(updatesToApply)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+	})
+}
+
 func HealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":    "healthy",
@@ -237,6 +309,7 @@ func RunBackend() {
 	api.GET("/calendar", GetCalendar)
 	api.GET("/meals", GetMeals)
 	api.POST("/email", SendEmail)
+	api.POST("/update", UpdateMeals)
 
 	router.Run()
 }
