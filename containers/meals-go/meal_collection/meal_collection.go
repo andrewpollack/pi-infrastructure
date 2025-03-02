@@ -243,7 +243,7 @@ func OpenFromS3() (io.ReadCloser, error) {
 	return resp.Body, nil
 }
 
-func ReadMealCollectionFromDB() (MealCollection, error) {
+func ReadMealCollectionFromDB(recipeCreatedCutoff int64) (MealCollection, error) {
 	// Temporary types just for DB scans and JSON unmarshaling.
 	type DBIngredient struct {
 		Item     string  `json:"item"`
@@ -277,7 +277,8 @@ func ReadMealCollectionFromDB() (MealCollection, error) {
 	rows, err := conn.Query(context.Background(), `
 		SELECT id, category, name, url, ingredients, date_created, date_modified, enabled
 		FROM recipes
-	`)
+		WHERE date_created < to_timestamp($1)
+	`, recipeCreatedCutoff)
 	if err != nil {
 		return nil, fmt.Errorf("query failed: %v", err)
 	}
@@ -356,6 +357,52 @@ func ReadMealCollectionFromDB() (MealCollection, error) {
 	}
 
 	return mealCollection, nil
+}
+
+type MealUpdate struct {
+	Name     string `json:"name"`
+	Disabled bool   `json:"disabled"`
+}
+
+func UpdateMealsInDB(updates []MealUpdate) error {
+	if len(updates) == 0 {
+		return nil
+	}
+
+	postgresURL := os.Getenv("POSTGRES_URL")
+	if postgresURL == "" {
+		return fmt.Errorf("POSTGRES_URL is not set")
+	}
+
+	conn, err := pgx.Connect(context.Background(), postgresURL)
+	if err != nil {
+		return fmt.Errorf("unable to connect to database: %v", err)
+	}
+	defer conn.Close(context.Background())
+
+	// Build slices for names and the desired enabled state.
+	// Our DB stores an "enabled" boolean, so we set enabled = !Disabled.
+	names := make([]string, len(updates))
+	enabledStates := make([]bool, len(updates))
+	for i, update := range updates {
+		names[i] = update.Name
+		enabledStates[i] = !update.Disabled
+	}
+
+	// Update the recipes table using unnest to update multiple rows in one query.
+	_, err = conn.Exec(context.Background(), `
+		UPDATE recipes
+		SET enabled = t.enabled
+		FROM (
+			SELECT unnest($1::text[]) AS name, unnest($2::boolean[]) AS enabled
+		) AS t
+		WHERE recipes.name = t.name
+	`, names, enabledStates)
+	if err != nil {
+		return fmt.Errorf("query failed: %v", err)
+	}
+
+	return nil
 }
 
 func ReadMealCollectionFromReader(reader io.ReadCloser) (MealCollection, error) {
