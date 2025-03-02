@@ -23,7 +23,7 @@ Executes in two modes: frontend+backend service deployment, and email cronjob.
 
 #### Meals Services:
 
-| <img width="693" alt="image" src="https://github.com/user-attachments/assets/79678fe9-dd08-4cab-a562-54e9079a8f78" /> |
+| <img width="648" alt="image" src="https://github.com/user-attachments/assets/5e68173c-f729-4eac-b710-cada1a3630c1" /> |
 | :---------------------------------------------------------------------------------------------------------------------: |
 
 Services on k3s using Deployments and a NodePort. This setup allows
