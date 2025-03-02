@@ -23,7 +23,7 @@ Executes in two modes: frontend+backend service deployment, and email cronjob.
 
 #### Meals Services:
 
-| <img width="675" alt="image" src="https://github.com/user-attachments/assets/98329cdc-2b0a-424b-b436-9badc10857a4" /> |
+| <img width="693" alt="image" src="https://github.com/user-attachments/assets/79678fe9-dd08-4cab-a562-54e9079a8f78" /> |
 | :---------------------------------------------------------------------------------------------------------------------: |
 
 Services on k3s using Deployments and a NodePort. This setup allows
@@ -34,8 +34,8 @@ URL.
   * Current month calendar view,
   * Enable/Disable meals form,
   * Trigger email form to trigger the same workflow as next section.
-* **[meals-go](https://github.com/andrewpollack/pi-infrastructure/tree/main/containers/meals-go)** backend written in GoLang and served using [Gin](https://github.com/gin-gonic/gin).
-* **meals-updater-cronjob** A scheduled CronJob synchronizes the Postgres database with the source of truth JSON file for recipes stored in S3. Recipe data is maintained in a private repository shared with my partner, where a CI/CD pipeline validates updates, with a post submit that pushes the latest JSON state to S3. As a result, updating recipes is as simple as opening a PR.
+* **[meals-backend](https://github.com/andrewpollack/pi-infrastructure/tree/main/containers/meals-go)** written in GoLang and served using [Gin](https://github.com/gin-gonic/gin).
+* **meals-db-sync-cronjob** A scheduled CronJob synchronizes the Postgres database with the source of truth JSON file for recipes stored in S3. Recipe data is maintained in a private repository shared with my partner, where a CI/CD pipeline validates updates, with a post submit that pushes the latest JSON state to S3. As a result, updating recipes is as simple as opening a PR.
 * **email-cronjob** every Thursday, finds next week's recipes and compiles a grocery list for all items, combining like items by quantity, and assigning each item to its respective aisle. This is then formatted and emailed
 to me and my partner. Email is sent using [Amazon Simple Email Service](https://aws.amazon.com/ses/)
 
