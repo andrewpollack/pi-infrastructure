@@ -13,9 +13,7 @@ func main() {
 	runMode := os.Getenv("RUN_MODE")
 
 	switch runMode {
-	case "server":
-		meal_calendar.RunServer()
-	case "backend", "":
+	case "backend":
 		meal_backend.RunBackend()
 	case "email":
 		useSES := true
@@ -28,6 +26,12 @@ func main() {
 		if err != nil {
 			fmt.Printf("Error: %s\n", err)
 		}
+	case "legacy":
+		// Legacy frontend+backend combined in one service
+		meal_calendar.RunServer()
+	default:
+		fmt.Printf("Invalid RUN_MODE: %s\n", runMode)
+		os.Exit(1)
 	}
 
 	fmt.Println("Application finished.")
