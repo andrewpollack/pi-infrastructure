@@ -4,7 +4,7 @@ Repository for managing infrastructure as code and containerized applications in
 a k3s cluster deployed on a Raspberry Pi setup. Experimenting with lightweight
 Kubernetes and localized development.
 
-| ![image](https://github.com/user-attachments/assets/3b9e1048-1b2b-49bd-9887-1338c3262ce7) |
+| <img width="886" alt="image" src="https://github.com/user-attachments/assets/9d8c3f3f-555b-4c0e-8bbd-aa6bda790870" /> |
 | :---------------------------------------------------------------------------------------: |
 
 ## What's hosted?
