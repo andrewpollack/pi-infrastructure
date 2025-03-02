@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"meals/meal_backend"
 	"meals/meal_calendar"
+	"meals/meal_db_sync"
 	"meals/meal_email"
 	"os"
 )
@@ -19,6 +20,11 @@ func main() {
 	case "email":
 		useSES := true
 		err := meal_email.CreateAndSendEmail(useSES)
+		if err != nil {
+			fmt.Printf("Error: %s\n", err)
+		}
+	case "db_sync":
+		err := meal_db_sync.SyncMeals()
 		if err != nil {
 			fmt.Printf("Error: %s\n", err)
 		}
