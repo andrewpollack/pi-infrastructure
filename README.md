@@ -9,7 +9,7 @@ Kubernetes and localized development.
 
 ## What's hosted?
 
-### [meals-go](https://github.com/andrewpollack/pi-infrastructure/tree/main/containers/meals-go)
+### [meals-go](https://github.com/andrewpollack/pi-infrastructure/tree/main/containers/meals-go) + [meals-frontend](https://github.com/andrewpollack/pi-infrastructure/tree/main/containers/meals-frontend)
 
 I got tired of having to pick what to eat for dinner each month, thus
 [meals-go](https://github.com/andrewpollack/pi-infrastructure/tree/main/containers/meals-go)
@@ -20,19 +20,19 @@ Executes in two modes: frontend+backend service deployment, and email cronjob.
 
 #### Frontend+Backend service deployment:
 
-Deployed on k3s using a Deployment + NodePort Service to service. This allows
+Deployed on k3s using two Deployments and a NodePort. This allows
 viewing this month's meals from my phone, laptop, or tablet by hitting a Tailscale
 URL. Links are clickable for finding related recipes.
 
-Frontend written in Svelte at [meals-frontend](https://github.com/andrewpollack/pi-infrastructure/tree/main/containers/meals-frontend),
+**Frontend** written in Svelte at [meals-frontend](https://github.com/andrewpollack/pi-infrastructure/tree/main/containers/meals-frontend),
 with a few different functionalities:
 * Current month calendar view,
 * Enable/Disable meals form,
 * Trigger email form to trigger the same workflow as next section.
 
-Backend written in GoLang and served using [Gin](https://github.com/gin-gonic/gin).
+**Backend** written in GoLang and served using [Gin](https://github.com/gin-gonic/gin) at [meals-go](https://github.com/andrewpollack/pi-infrastructure/tree/main/containers/meals-go).
 
-| ![Screenshot from 2024-09-28 15-54-16](https://github.com/user-attachments/assets/92b2241f-ee41-4184-aa17-0ba6494cf091) |
+| <img width="1241" alt="image" src="https://github.com/user-attachments/assets/438e51af-75c5-4d3b-bcf5-1834bba4d36a" /> |
 | :---------------------------------------------------------------------------------------------------------------------: |
 
 #### Email CronJob:
@@ -40,11 +40,9 @@ Backend written in GoLang and served using [Gin](https://github.com/gin-gonic/gi
 Deployed on k3s using a CronJob. Every Thursday, finds next week's recipes and
 compiles a grocery list for all items, combining like items by quantity, and
 assigning each item to its respective aisle. This is then formatted and emailed
-to me and my partner. |
-![image](https://github.com/user-attachments/assets/2e57dca2-dede-421a-b83b-1b44fb7f60d1)
-| |
-:---------------------------------------------------------------------------------------:
-|
+to me and my partner. Email is sent using [Amazon Simple Email Service](https://aws.amazon.com/ses/) 
+| <img width="742" alt="Screenshot 2025-03-01 at 6 16 48 PM" src="https://github.com/user-attachments/assets/3ff39709-fbd2-470e-86fd-75d7b4c74b38" /> |
+| :---------------------------------------------------------------------------------------: |
 
 #### Data:
 
@@ -54,11 +52,9 @@ file's latest state to S3. This state is synced with the Postgres database consu
 by [meals-go](https://github.com/andrewpollack/pi-infrastructure/tree/main/containers/meals-go). 
 
 While we could just pull from the GitHub repo itself, CD in this way is far more
-fun! |
-![Screenshot from 2024-09-28 13-27-38](https://github.com/user-attachments/assets/4b9abc7b-37e7-4730-8e1a-121b2c9d3536)
-| |
-:---------------------------------------------------------------------------------------------------------------------:
-|
+fun!
+| ![Screenshot from 2024-09-28 13-27-38](https://github.com/user-attachments/assets/4b9abc7b-37e7-4730-8e1a-121b2c9d3536) |
+| :---------------------------------------------------------------------------------------------------------------------: |
 
 ---
 
