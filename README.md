@@ -1,7 +1,7 @@
 # Pi Infrastructure
 
 Managing infrastructure as code and containerized applications on
-a k3s-managed Raspberry Pi cluster dedicated to home automation
+a k3s-managed Raspberry Pi cluster dedicated to home automation.
 
 | <img width="886" alt="image" src="https://github.com/user-attachments/assets/9d8c3f3f-555b-4c0e-8bbd-aa6bda790870" /> |
 | :---------------------------------------------------------------------------------------: |
