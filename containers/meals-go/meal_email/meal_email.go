@@ -152,7 +152,14 @@ func generateTable(meals []meal_collection.Meal) string {
 `)
 
 	for i := range fullDaysOfWeek {
-		sb.WriteString(fmt.Sprintf("            <td>%s</td>\n", meals[i].Name))
+		currMeal := meals[i]
+
+		if currMeal.URL != nil && *currMeal.URL != "" {
+			sb.WriteString(fmt.Sprintf("            <td><a href='%s'>%s</a></td>\n", *currMeal.URL, currMeal.Name))
+			continue
+		} else {
+			sb.WriteString(fmt.Sprintf("            <td>%s</td>\n", currMeal.Name))
+		}
 	}
 
 	sb.WriteString(`        </tr>
