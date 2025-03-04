@@ -201,7 +201,6 @@ func SendEmail(c *gin.Context) {
 		}
 	}
 
-	os.Setenv("USE_HARDCODE", "true")
 	os.Setenv("H_5", "LEFTOVERS")
 	os.Setenv("H_6", "OUT")
 	for i, meal := range currMeals {

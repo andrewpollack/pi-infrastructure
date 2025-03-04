@@ -23,8 +23,5 @@ go.work.sum
 
 # env file
 *.env
-
-creds/
-
 conf.toml
 variables.mk

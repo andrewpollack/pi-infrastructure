@@ -34,7 +34,5 @@ WORKDIR /app
 # Copy the compiled Go binary from the build stage
 COPY --from=builder /app/app .
 
-ENV SERVE_PORT=8000
-
 # Run the Go binary
 CMD ["./app"]

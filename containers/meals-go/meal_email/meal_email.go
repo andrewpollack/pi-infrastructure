@@ -219,7 +219,7 @@ func GenerateEmailForNextWeek(date Date, collection meal_collection.MealCollecti
 	var allMeals []meal_collection.Meal
 
 	// Decide how to get meals: either hardcoded or generated
-	useHardcoded := os.Getenv("USE_HARDCODE") == "true"
+	_, useHardcoded := os.LookupEnv("H_1")
 	if useHardcoded {
 		allMeals = useHardcodedValues(collection)
 	} else {
