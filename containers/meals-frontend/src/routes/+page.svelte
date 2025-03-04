@@ -8,11 +8,13 @@
 	const { isDev, allMeals, allCalendars } = data;
 </script>
 
-<h1>
+<h1 style="display: flex; align-items: center; justify-content: flex-start; gap: 1rem;">
 	{#if isDev}
 		((DEVMODE))
 	{/if}
-	Meals
+	<img src="/favicon.ico" alt="Favicon" style="height: 1em;" />
+	<span>Meals</span>
+	<img src="/favicon.ico" alt="Favicon" style="height: 1em;" />
 </h1>
 
 <CalendarMonth monthData={allCalendars.currMonthResponse} />
