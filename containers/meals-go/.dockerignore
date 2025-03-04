@@ -1,0 +1,7 @@
+data/
+conf.toml
+local.env
+README.md
+variables.mk
+*.md
+*_test.go

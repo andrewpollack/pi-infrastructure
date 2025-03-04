@@ -493,6 +493,7 @@ func (m MealCollection) GenerateMealsWholeYearNoCategories(currCalendar calendar
 	}
 
 	currItemInd := 0
+	totalShuffles := 0
 	Shuffle(allMeals)
 	appendItems := false
 	var selectedMeals []Meal
@@ -504,6 +505,7 @@ func (m MealCollection) GenerateMealsWholeYearNoCategories(currCalendar calendar
 
 		cal := calendar.NewCalendar(currCalendar.Year, time.Month(i))
 		for j := 1; j < cal.DaysInMonth()+1; j++ {
+			startingShuffleNum := totalShuffles
 			var item Meal
 
 			switch cal.GetWeekday(j) {
@@ -521,6 +523,7 @@ func (m MealCollection) GenerateMealsWholeYearNoCategories(currCalendar calendar
 							if currItemInd >= len(allMeals) {
 								Shuffle(allMeals)
 								currItemInd = 0
+								totalShuffles += 1
 							}
 						} else {
 							break
@@ -534,10 +537,14 @@ func (m MealCollection) GenerateMealsWholeYearNoCategories(currCalendar calendar
 				if currItemInd >= len(allMeals) {
 					Shuffle(allMeals)
 					currItemInd = 0
+					totalShuffles += 1
 				}
 			}
 
 			if appendItems {
+				if totalShuffles > startingShuffleNum {
+					item.Name = fmt.Sprintf("%s**", item.Name)
+				}
 				selectedMeals = append(selectedMeals, item)
 			}
 		}
