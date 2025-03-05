@@ -255,6 +255,10 @@ func OpenFromS3() (io.ReadCloser, error) {
 	if bucketName == "" {
 		return nil, fmt.Errorf("bucket name is not set")
 	}
+	bucketKey := os.Getenv("BUCKET_KEY")
+	if bucketKey == "" {
+		return nil, fmt.Errorf("bucket key is not set")
+	}
 
 	// Load AWS config
 	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("us-west-2"))
@@ -268,7 +272,7 @@ func OpenFromS3() (io.ReadCloser, error) {
 	// Get the object
 	resp, err := s3Client.GetObject(context.TODO(), &s3.GetObjectInput{
 		Bucket: aws.String(bucketName),
-		Key:    aws.String("recipes.json"),
+		Key:    aws.String(bucketKey),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get object from S3: %v", err)
