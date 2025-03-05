@@ -3,8 +3,16 @@
 Managing infrastructure as code and containerized applications on
 a k3s-managed Raspberry Pi cluster dedicated to home automation.
 
-| <img width="886" alt="image" src="https://github.com/user-attachments/assets/9d8c3f3f-555b-4c0e-8bbd-aa6bda790870" /> |
-| :---------------------------------------------------------------------------------------: |
+<table>
+  <tr>
+    <th>Pi Diagram</th>
+  </tr>
+  <tr>
+    <td align="center">
+      <img width="600" alt="Pi Diagram" src="https://github.com/user-attachments/assets/9d8c3f3f-555b-4c0e-8bbd-aa6bda790870" />
+    </td>
+  </tr>
+</table>
 
 ## What's hosted?
 
@@ -17,13 +25,29 @@ was born.
 selects and renders a month's worth of recipes, including related grocery list.
 Executes in two modes: frontend+backend service deployment, and email cronjob.
 
-| <img width="1241" alt="image" src="https://github.com/user-attachments/assets/438e51af-75c5-4d3b-bcf5-1834bba4d36a" /> |
-| :---------------------------------------------------------------------------------------------------------------------: |
+<table>
+  <tr>
+    <th>Meals Website</th>
+  </tr>
+  <tr>
+    <td align="center">
+      <img width="800" alt="Meals Website" src="https://github.com/user-attachments/assets/4271bbe3-b0bd-47e8-a858-0529da652c1a" />
+    </td>
+  </tr>
+</table>
 
 #### Meals Services:
 
-| <img width="648" alt="image" src="https://github.com/user-attachments/assets/5e68173c-f729-4eac-b710-cada1a3630c1" /> |
-| :---------------------------------------------------------------------------------------------------------------------: |
+<table>
+  <tr>
+    <th>Services Architecture Diagram</th>
+  </tr>
+  <tr>
+    <td align="center">
+      <img width="600" alt="Services Architecture Diagram" src="https://github.com/user-attachments/assets/5e68173c-f729-4eac-b710-cada1a3630c1" />
+    </td>
+  </tr>
+</table>
 
 Services on k3s using Deployments and a NodePort. This setup allows
 viewing this month's meals from my phone, laptop, or tablet by hitting a Tailscale
@@ -38,8 +62,17 @@ URL.
 * **email-cronjob** every Thursday, finds next week's recipes and compiles a grocery list for all items, combining like items by quantity, and assigning each item to its respective aisle. This is then formatted and emailed
 to me and my partner. Email is sent using [Amazon Simple Email Service](https://aws.amazon.com/ses/)
 
-| <img width="742" alt="Screenshot 2025-03-01 at 6 16 48 PM" src="https://github.com/user-attachments/assets/3ff39709-fbd2-470e-86fd-75d7b4c74b38" /> |
-| :---------------------------------------------------------------------------------------: |
+<table>
+  <tr>
+    <th>Example Email</th>
+    <th>Example PDF Attachment</th>
+  </tr>
+  <tr>
+    <td><img width="700" alt="Example Email" src="https://github.com/user-attachments/assets/3ff39709-fbd2-470e-86fd-75d7b4c74b38" /></td>
+    <td><img width="600" alt="Example PDF Attachment" src="https://github.com/user-attachments/assets/9c038346-114e-42f9-8691-5f237abdecec" /></td>
+  </tr>
+</table>
+
 
 ---
 
@@ -54,8 +87,16 @@ in the "closed" position. Metrics are exposed via a Prometheus exporter, which
 are scraped by a Prometheus deployment I'm using across these projects. Finally,
 a dashboard is available to view the yes/no question through Grafana.
 
-| ![image](https://github.com/user-attachments/assets/5e800534-3013-4760-a3e6-b6288c50d657) |
-| :---------------------------------------------------------------------------------------: |
+<table>
+  <tr>
+    <th>Garage Diagram</th>
+  </tr>
+  <tr>
+    <td align="center">
+      <img width="650" alt="Garage Diagram" src="https://github.com/user-attachments/assets/5e800534-3013-4760-a3e6-b6288c50d657" />
+    </td>
+  </tr>
+</table>
 
 _Note: Getting started with the Hardware portion, particularly reading the state
 of the GPIO pin, was super doable thanks to this book
@@ -108,4 +149,13 @@ Required non-checked files:
 ## Can I see the cluster?
 
 Sure! Mind the dust 😹
-![image_123650291](https://github.com/user-attachments/assets/8e0d6666-116b-43fb-9084-b6f32adf706a)
+<table>
+  <tr>
+    <th>Pi Setup</th>
+  </tr>
+  <tr>
+    <td align="center">
+      <img width="500" alt="Pi Setup" src="https://github.com/user-attachments/assets/8e0d6666-116b-43fb-9084-b6f32adf706a" />
+    </td>
+  </tr>
+</table>
