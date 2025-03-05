@@ -203,18 +203,18 @@ func TestMealsToIngredients(t *testing.T) {
 	got := MealsToIngredients(meals)
 	want := []Ingredient{
 		{
-			Name:         "Cheese",
-			Unit:         UnitCount,
-			Quantity:     4, // 2 + 2
-			Aisle:        AisleCheeseAndBakery,
-			RelatedMeals: []string{"Pizza", "Burger"},
-		},
-		{
 			Name:         "Bun",
 			Unit:         UnitCount,
 			Quantity:     4,
 			Aisle:        AisleCheeseAndBakery,
 			RelatedMeals: []string{"Burger"},
+		},
+		{
+			Name:         "Cheese",
+			Unit:         UnitCount,
+			Quantity:     4, // 2 + 2
+			Aisle:        AisleCheeseAndBakery,
+			RelatedMeals: []string{"Burger", "Pizza"},
 		},
 		{
 			Name:         "Tomato Sauce",
