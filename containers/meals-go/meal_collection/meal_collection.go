@@ -136,6 +136,35 @@ func (i Ingredient) String() string {
 	)
 }
 
+func (i Ingredient) StringBolded() string {
+	formatSignificant := func(f float64, sigDigits int) string {
+		if f == 0 {
+			return "0"
+		}
+		scale := math.Pow10(sigDigits - 1 - int(math.Floor(math.Log10(math.Abs(f)))))
+		result := math.Round(f*scale) / scale
+		return fmt.Sprintf("%g", result)
+	}
+
+	// Extract the final word of each item in RelatedMeals
+	mealWords := make([]string, len(i.RelatedMeals))
+	for idx, meal := range i.RelatedMeals {
+		words := strings.Fields(meal)
+		if len(words) > 0 {
+			mealWords[idx] = words[len(words)-1]
+		} else {
+			mealWords[idx] = meal
+		}
+	}
+
+	return fmt.Sprintf("<strong>%s</strong> - %s %s (%s)",
+		i.Name,                           // e.g. "Beef"
+		formatSignificant(i.Quantity, 4), // e.g. "2.75"
+		i.Unit,                           // e.g. "lb"
+		strings.Join(mealWords, ", "),    // e.g. "Burger, Tacos"
+	)
+}
+
 func MealsToIngredients(meals []Meal) []Ingredient {
 	type ingredientKey struct {
 		Name  string
@@ -162,6 +191,7 @@ func MealsToIngredients(meals []Meal) []Ingredient {
 			agg.Aisle = ing.Aisle
 			agg.Quantity += ing.Quantity
 			agg.RelatedMeals = append(agg.RelatedMeals, meal.Name)
+			sort.Strings(agg.RelatedMeals)
 
 			combined[key] = agg
 		}
@@ -172,6 +202,16 @@ func MealsToIngredients(meals []Meal) []Ingredient {
 	for _, ing := range combined {
 		result = append(result, ing)
 	}
+
+	// Sort by agg.RelatedMeals first, then by Name
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Name < result[j].Name
+	})
+
+	// Sort by agg.RelatedMeals
+	sort.Slice(result, func(i, j int) bool {
+		return strings.Join(result[i].RelatedMeals, ", ") < strings.Join(result[j].RelatedMeals, ", ")
+	})
 
 	return result
 }
