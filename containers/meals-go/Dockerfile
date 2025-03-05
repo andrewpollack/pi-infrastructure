@@ -1,14 +1,12 @@
 # Stage 1: Build the Go binary
-FROM golang:1.23-alpine AS builder
+FROM golang:1.24-alpine AS builder
 ARG TARGETPLATFORM
 
 WORKDIR /app
 
-# Copy the Go module files and download dependencies
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy the source code and build the binary
 COPY . .
 
 RUN case "$TARGETPLATFORM" in \
@@ -27,12 +25,15 @@ RUN case "$TARGETPLATFORM" in \
         *) echo "Unsupported architecture: $TARGETPLATFORM"; exit 1 ;; \
     esac
 
-FROM alpine:3.21.0
+# Stage 2: Build the Runtime environment, including the wkhtmltopdf binary for PDF generation
+FROM debian:bullseye-slim
 
 WORKDIR /app
 
-# Copy the compiled Go binary from the build stage
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends wkhtmltopdf ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
 COPY --from=builder /app/app .
 
-# Run the Go binary
 CMD ["./app"]
