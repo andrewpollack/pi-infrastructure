@@ -7,8 +7,6 @@ import (
 	"meals/meal_collection"
 	"net/http"
 	"os"
-	"sort"
-	"strings"
 	"time"
 )
 
@@ -23,7 +21,7 @@ func mealCalendarHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
 	// Decode the meal collection
-	collection, _ := meal_collection.ReadMealCollectionFromReader(mealData)
+	mealCollection, _ := meal_collection.ReadMealCollectionFromReader(mealData)
 
 	// Get current date info
 	currYear, currMonth, _ := time.Now().Date()
@@ -41,24 +39,12 @@ func mealCalendarHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Build two calendars: current month + next month
-	currMonthMealCalendar := NewCalendar(*calendar.NewCalendar(currYear, currMonth), collection)
-	nextMonthMealCalendar := NewCalendar(*calendar.NewCalendar(nextYear, nextMonth), collection)
-
-	// Flatten all items from the collection
-	var flattenedMeals []meal_collection.Meal
-	for _, item := range collection {
-		flattenedMeals = append(flattenedMeals, item.Items...)
-	}
-
-	// Sort items alphabetically (case-insensitive)
-	sort.Slice(flattenedMeals, func(i, j int) bool {
-		return strings.ToLower(flattenedMeals[i].Name) <
-			strings.ToLower(flattenedMeals[j].Name)
-	})
+	currMonthMealCalendar := NewCalendar(*calendar.NewCalendar(currYear, currMonth), mealCollection)
+	nextMonthMealCalendar := NewCalendar(*calendar.NewCalendar(nextYear, nextMonth), mealCollection)
 
 	// Build the HTML list of all items
 	endList := "<h2>ALL ITEMS</h2>\n\n<ul>\n"
-	for _, item := range flattenedMeals {
+	for _, item := range mealCollection {
 		itemName := item.Name
 		if len(item.Ingredients) == 0 &&
 			item.Name != "LEFTOVERS" &&

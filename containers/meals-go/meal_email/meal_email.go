@@ -89,12 +89,7 @@ type YearMonth struct {
 	Month int
 }
 
-func useHardcodedValues(collection meal_collection.MealCollection) []meal_collection.Meal {
-	var flattenedItems []meal_collection.Meal
-	for _, item := range collection {
-		flattenedItems = append(flattenedItems, item.Items...)
-	}
-
+func useHardcodedValues(mealCollection meal_collection.MealCollection) []meal_collection.Meal {
 	arr := [7]string{
 		os.Getenv("H_1"),
 		os.Getenv("H_2"),
@@ -116,7 +111,7 @@ func useHardcodedValues(collection meal_collection.MealCollection) []meal_collec
 			continue
 		}
 
-		for _, fullItem := range flattenedItems {
+		for _, fullItem := range mealCollection {
 			if fullItem.Name == v {
 				allMeals = append(allMeals, fullItem)
 				break

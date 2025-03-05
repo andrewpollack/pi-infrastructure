@@ -48,9 +48,9 @@ func TestMealListGenerationFromCollection(t *testing.T) {
 		t.Errorf("Something went wrong reading meals... %s", err)
 	}
 
-	items := collection.GenerateMealsList(*calendar.NewCalendar(2024, time.October))
-	if len(items) != 41 {
-		t.Errorf("Expected length of list: '%d', got: '%d'", 41, len(items))
+	items := collection.GenerateMealsWholeYearNoCategories(*calendar.NewCalendar(2024, time.October))
+	if len(items) != 31 {
+		t.Errorf("Expected length of list: '%d', got: '%d'", 31, len(items))
 	}
 }
 
@@ -65,8 +65,8 @@ func TestMealListGenerationUniquePerMonth(t *testing.T) {
 		t.Errorf("Something went wrong reading meals... %s", err)
 	}
 
-	itemsOctober := collection.GenerateMealsList(*calendar.NewCalendar(2024, time.October))
-	itemsNovember := collection.GenerateMealsList(*calendar.NewCalendar(2024, time.November))
+	itemsOctober := collection.GenerateMealsWholeYearNoCategories(*calendar.NewCalendar(2024, time.October))
+	itemsNovember := collection.GenerateMealsWholeYearNoCategories(*calendar.NewCalendar(2024, time.November))
 
 	// Items should match length within 2 items...
 	if len(itemsOctober)-len(itemsNovember) > 2 || len(itemsOctober)-len(itemsNovember) < -2 {
@@ -96,8 +96,8 @@ func TestMealListGenerationMatchAcrossMonth(t *testing.T) {
 		t.Errorf("Something went wrong reading meals... %s", err)
 	}
 
-	itemsOctober1 := collection.GenerateMealsList(*calendar.NewCalendar(2024, time.October))
-	itemsOctober2 := collection.GenerateMealsList(*calendar.NewCalendar(2024, time.October))
+	itemsOctober1 := collection.GenerateMealsWholeYearNoCategories(*calendar.NewCalendar(2024, time.October))
+	itemsOctober2 := collection.GenerateMealsWholeYearNoCategories(*calendar.NewCalendar(2024, time.October))
 
 	// Items should match length...
 	if len(itemsOctober1) != len(itemsOctober2) {
@@ -128,8 +128,8 @@ func TestGenerateMealsWholeYearMatchAcrossMonth(t *testing.T) {
 		t.Errorf("Something went wrong reading meals... %s", err)
 	}
 
-	itemsOctober1 := collection.GenerateMealsWholeYear(*calendar.NewCalendar(2024, time.October))
-	itemsOctober2 := collection.GenerateMealsWholeYear(*calendar.NewCalendar(2024, time.October))
+	itemsOctober1 := collection.GenerateMealsWholeYearNoCategories(*calendar.NewCalendar(2024, time.October))
+	itemsOctober2 := collection.GenerateMealsWholeYearNoCategories(*calendar.NewCalendar(2024, time.October))
 
 	// Items should match length...
 	if len(itemsOctober1) != len(itemsOctober2) {
@@ -160,8 +160,8 @@ func TestGenerateMealsWholeYearUniquePerMonth(t *testing.T) {
 		t.Errorf("Something went wrong reading meals... %s", err)
 	}
 
-	itemsOctober := collection.GenerateMealsWholeYear(*calendar.NewCalendar(2024, time.October))
-	itemsNovember := collection.GenerateMealsWholeYear(*calendar.NewCalendar(2024, time.November))
+	itemsOctober := collection.GenerateMealsWholeYearNoCategories(*calendar.NewCalendar(2024, time.October))
+	itemsNovember := collection.GenerateMealsWholeYearNoCategories(*calendar.NewCalendar(2024, time.November))
 
 	// Items should match length within 2 items...
 	if len(itemsOctober)-len(itemsNovember) > 2 || len(itemsOctober)-len(itemsNovember) < -2 {

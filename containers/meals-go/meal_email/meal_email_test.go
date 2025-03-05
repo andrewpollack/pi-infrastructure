@@ -173,7 +173,7 @@ func TestGroceryListGeneration(t *testing.T) {
 		t.Errorf("Something went wrong reading meals... %s", err)
 	}
 
-	itemsOctober := collection.GenerateMealsList(*calendar.NewCalendar(2024, time.October))
+	itemsOctober := collection.GenerateMealsWholeYearNoCategories(*calendar.NewCalendar(2024, time.October))
 	_ = GenerateGroceryList(itemsOctober)
 
 	// TODO: Actually test here. Golden tests are a pain comparing against a changing output...
