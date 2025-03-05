@@ -26,8 +26,8 @@ func SyncMeals() error {
 		return fmt.Errorf("error reading file: %w", err)
 	}
 
-	var categories []meal_collection.Category
-	if err := json.Unmarshal(jsonFile, &categories); err != nil {
+	var mealCollection meal_collection.MealCollection
+	if err := json.Unmarshal(jsonFile, &mealCollection); err != nil {
 		return fmt.Errorf("error unmarshaling JSON: %v", err)
 	}
 
@@ -56,38 +56,40 @@ func SyncMeals() error {
           )
     `
 
-	for _, cat := range categories {
-		for _, item := range cat.Items {
-			ingJSON, err := json.Marshal(item.Ingredients)
-			if err != nil {
-				return fmt.Errorf("error marshaling ingredients: %w", err)
-			}
+	for _, item := range mealCollection {
+		ingJSON, err := json.Marshal(item.Ingredients)
+		if err != nil {
+			return fmt.Errorf("error marshaling ingredients: %w", err)
+		}
 
-			if item.URL == nil {
-				item.URL = new(string)
-			}
+		if item.Category == nil {
+			item.Category = new(string)
+		}
 
-			res, err := conn.Exec(
-				context.Background(),
-				upsertQuery,
-				item.Name,
-				cat.Category,
-				item.URL,
-				ingJSON,
-			)
-			if err != nil {
-				return fmt.Errorf("upsert failed for recipe '%s': %v", item.Name, err)
-			}
+		if item.URL == nil {
+			item.URL = new(string)
+		}
 
-			rowsAffected := res.RowsAffected()
-			switch rowsAffected {
-			case 1:
-				fmt.Printf("Upserted recipe: [%s]\n", item.Name)
-			case 0:
-				fmt.Printf("No changes needed for recipe '%s'\n", item.Name)
-			default:
-				fmt.Printf("%d rows affected for recipe '%s' (unexpected)\n", rowsAffected, item.Name)
-			}
+		res, err := conn.Exec(
+			context.Background(),
+			upsertQuery,
+			item.Name,
+			item.Category,
+			item.URL,
+			ingJSON,
+		)
+		if err != nil {
+			return fmt.Errorf("upsert failed for recipe '%s': %v", item.Name, err)
+		}
+
+		rowsAffected := res.RowsAffected()
+		switch rowsAffected {
+		case 1:
+			fmt.Printf("Upserted recipe: [%s]\n", item.Name)
+		case 0:
+			fmt.Printf("No changes needed for recipe '%s'\n", item.Name)
+		default:
+			fmt.Printf("%d rows affected for recipe '%s' (unexpected)\n", rowsAffected, item.Name)
 		}
 	}
 

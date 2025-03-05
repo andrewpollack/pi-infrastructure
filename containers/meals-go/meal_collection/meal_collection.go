@@ -101,6 +101,7 @@ type Meal struct {
 	URL         *string      `json:"url,omitempty"`
 	Ingredients []Ingredient `json:"ingredients,omitempty"`
 	Disabled    bool         `json:"disabled,omitempty"`
+	Category    *string      `json:"category,omitempty"`
 }
 
 var MEAL_LEFTOVERS = Meal{
@@ -111,12 +112,7 @@ var MEAL_OUT = Meal{
 	Name: "OUT",
 }
 
-type Category struct {
-	Category string `json:"category"`
-	Items    []Meal `json:"items"`
-}
-
-type MealCollection []Category
+type MealCollection []Meal
 
 func (i Ingredient) String() string {
 	formatSignificant := func(f float64, sigDigits int) string {
@@ -240,12 +236,10 @@ func validateIngredient(ingredient Ingredient) error {
 }
 
 func validateMealCollection(mealCollection MealCollection) error {
-	for _, category := range mealCollection {
-		for _, item := range category.Items {
-			for _, ingredient := range item.Ingredients {
-				if err := validateIngredient(ingredient); err != nil {
-					return fmt.Errorf("error in item '%s' of category '%s': %v", item.Name, category.Category, err)
-				}
+	for _, item := range mealCollection {
+		for _, ingredient := range item.Ingredients {
+			if err := validateIngredient(ingredient); err != nil {
+				return fmt.Errorf("error in item '%s' of category '%s': %v", item.Name, *item.Category, err)
 			}
 		}
 	}
@@ -352,7 +346,7 @@ func ReadMealCollectionFromDB(recipeCreatedCutoff int64) (MealCollection, error)
 		return nil, fmt.Errorf("rows iteration error: %v", err)
 	}
 
-	categoryMap := make(map[string][]Meal)
+	var mealCollection MealCollection
 	for _, recipe := range recipes {
 		// Convert DBIngredients -> Ingredients
 		var ingredients []Ingredient
@@ -370,31 +364,16 @@ func ReadMealCollectionFromDB(recipeCreatedCutoff int64) (MealCollection, error)
 			URL:         &recipe.URL,
 			Ingredients: ingredients,
 			Disabled:    !recipe.Enabled,
+			Category:    &recipe.Category,
 		}
 
-		// Append directly; if the slice doesn't exist yet, append works fine with nil
-		categoryMap[recipe.Category] = append(categoryMap[recipe.Category], meal)
+		mealCollection = append(mealCollection, meal)
 	}
 
-	var mealCollection MealCollection
-	for category, meals := range categoryMap {
-		mealCollection = append(mealCollection, Category{
-			Category: category,
-			Items:    meals,
-		})
-	}
-
-	// Sort categories
+	// Sort meals by name
 	sort.Slice(mealCollection, func(i, j int) bool {
-		return strings.ToLower(mealCollection[i].Category) < strings.ToLower(mealCollection[j].Category)
+		return strings.ToLower(mealCollection[i].Name) < strings.ToLower(mealCollection[j].Name)
 	})
-
-	// Sort items within each category
-	for _, category := range mealCollection {
-		sort.Slice(category.Items, func(i, j int) bool {
-			return strings.ToLower(category.Items[i].Name) < strings.ToLower(category.Items[j].Name)
-		})
-	}
 
 	return mealCollection, nil
 }
@@ -457,17 +436,10 @@ func ReadMealCollectionFromReader(reader io.ReadCloser) (MealCollection, error) 
 		return nil, fmt.Errorf("error unmarshalling JSON: %v", err)
 	}
 
-	// Sort categories
+	// Sort meals by name
 	sort.Slice(mealCollection, func(i, j int) bool {
-		return strings.ToLower(mealCollection[i].Category) < strings.ToLower(mealCollection[j].Category)
+		return strings.ToLower(mealCollection[i].Name) < strings.ToLower(mealCollection[j].Name)
 	})
-
-	// Sort items within each category
-	for _, category := range mealCollection {
-		sort.Slice(category.Items, func(i, j int) bool {
-			return strings.ToLower(category.Items[i].Name) < strings.ToLower(category.Items[j].Name)
-		})
-	}
 
 	// Validate the meal collection
 	if err := validateMealCollection(mealCollection); err != nil {
@@ -505,14 +477,11 @@ func (m MealCollection) DeepCopy() MealCollection {
 	// Create a new MealCollection
 	mealCopy := make(MealCollection, len(m))
 
-	// Copy each Category and its Items
+	// Copy each Meal
 	for i, category := range m {
-		// Copy the Category struct (shallow copy)
 		mealCopy[i] = category
-
-		// Create a deep copy of the Items slice
-		mealCopy[i].Items = make([]Meal, len(category.Items))
-		copy(mealCopy[i].Items, category.Items)
+		mealCopy[i].Ingredients = make([]Ingredient, len(category.Ingredients))
+		copy(mealCopy[i].Ingredients, category.Ingredients)
 	}
 
 	return mealCopy
@@ -528,8 +497,8 @@ func (m MealCollection) GenerateMealsWholeYearNoCategories(currCalendar calendar
 	mealCopy := m.DeepCopy()
 
 	var allMeals []Meal
-	for _, category := range mealCopy {
-		allMeals = append(allMeals, category.Items...)
+	for _, item := range mealCopy {
+		allMeals = append(allMeals, item)
 	}
 
 	currItemInd := 0
@@ -587,126 +556,6 @@ func (m MealCollection) GenerateMealsWholeYearNoCategories(currCalendar calendar
 				}
 				selectedMeals = append(selectedMeals, item)
 			}
-		}
-	}
-
-	return selectedMeals
-}
-
-// GenerateMealsWholeYear generates a random list of meals by popping one item from each category at a time
-func (m MealCollection) GenerateMealsWholeYear(currCalendar calendar.Calendar) []Meal {
-	// Use Year+Month to make meal generation consistent
-	rand.Seed(uint64(currCalendar.Year))
-
-	// Create a copy of MealCollection so that the original isn't modified
-	mealCopy := m.DeepCopy()
-	// Shuffle categories
-	Shuffle(mealCopy)
-	// Shuffle items within each category
-	for i := range mealCopy {
-		Shuffle(mealCopy[i].Items)
-	}
-
-	appendItems := false
-	currMealCategoryIndex := 0
-	var selectedMeals []Meal
-	for i := 1; i <= int(currCalendar.Month); i++ {
-		if time.Month(i) == currCalendar.Month {
-			appendItems = true
-		}
-
-		pastCalendar := calendar.NewCalendar(currCalendar.Year, time.Month(i))
-
-		for j := 1; j < pastCalendar.DaysInMonth()+1; j++ {
-			var item Meal
-
-			switch pastCalendar.GetWeekday(j) {
-			case time.Thursday:
-				item = MEAL_LEFTOVERS
-			case time.Friday:
-				item = MEAL_OUT
-			default:
-				for {
-					// Reset...
-					if currMealCategoryIndex >= len(mealCopy) {
-						// Create a copy of MealCollection so that the original isn't modified
-						mealCopy = m.DeepCopy()
-						// Shuffle categories
-						Shuffle(mealCopy)
-						// Shuffle items within each category
-						for i := range mealCopy {
-							Shuffle(mealCopy[i].Items)
-						}
-
-						currMealCategoryIndex = 0
-					}
-
-					poppedItem, remainingItems, popped := PopItem(mealCopy[currMealCategoryIndex].Items)
-					if popped {
-						item = poppedItem
-						mealCopy[currMealCategoryIndex].Items = remainingItems
-						currMealCategoryIndex += 1
-						break
-					}
-					currMealCategoryIndex += 1
-				}
-			}
-
-			if appendItems {
-				selectedMeals = append(selectedMeals, item)
-			}
-		}
-	}
-
-	return selectedMeals
-}
-
-// GenerateMealsList generates a random list of meals by popping one item from each category at a time
-func (m MealCollection) GenerateMealsList(calendar calendar.Calendar) []Meal {
-	// Use Year+Month to make meal generation consistent
-	rand.Seed(uint64(calendar.Year) + uint64(calendar.Month*10))
-
-	// Create a copy of MealCollection so that the original isn't modified
-	mealCopy := m.DeepCopy()
-
-	// Shuffle items within each category
-	for i := range mealCopy {
-		Shuffle(mealCopy[i].Items)
-	}
-
-	var selectedMeals []Meal
-
-	runningDays := 1
-	for {
-		// Shuffle categories
-		Shuffle(mealCopy)
-
-		allPopped := true
-
-		for i := range mealCopy {
-			if calendar.GetWeekday(runningDays) == time.Thursday {
-				selectedMeals = append(selectedMeals, MEAL_LEFTOVERS)
-				runningDays += 1
-			}
-
-			if calendar.GetWeekday(runningDays) == time.Friday {
-				selectedMeals = append(selectedMeals, MEAL_OUT)
-				runningDays += 1
-			}
-
-			if len(mealCopy[i].Items) > 0 {
-				item, remainingItems, popped := PopItem(mealCopy[i].Items)
-				if popped {
-					selectedMeals = append(selectedMeals, item)
-					mealCopy[i].Items = remainingItems
-					allPopped = false
-					runningDays += 1
-				}
-			}
-		}
-
-		if allPopped {
-			break
 		}
 	}
 

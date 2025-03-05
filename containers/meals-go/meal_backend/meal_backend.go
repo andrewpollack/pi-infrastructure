@@ -113,7 +113,7 @@ func GetCalendar(c *gin.Context) {
 }
 
 func GetMeals(c *gin.Context) {
-	collection, err := getMealCollection(time.Now().Unix())
+	mealCollection, err := getMealCollection(time.Now().Unix())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err,
@@ -121,20 +121,15 @@ func GetMeals(c *gin.Context) {
 		return
 	}
 
-	var flattenedMeals []meal_collection.Meal
-	for _, item := range collection {
-		flattenedMeals = append(flattenedMeals, item.Items...)
-	}
-
 	// Sort items alphabetically (case-insensitive)
-	sort.Slice(flattenedMeals, func(i, j int) bool {
-		return strings.ToLower(flattenedMeals[i].Name) <
-			strings.ToLower(flattenedMeals[j].Name)
+	sort.Slice(mealCollection, func(i, j int) bool {
+		return strings.ToLower(mealCollection[i].Name) <
+			strings.ToLower(mealCollection[j].Name)
 	})
 
 	var allMeals []DayResponse
 
-	for _, item := range flattenedMeals {
+	for _, item := range mealCollection {
 		allMeals = append(allMeals, DayResponse{
 			Day:     0,
 			Meal:    item.Name,
@@ -169,7 +164,7 @@ func SendEmail(c *gin.Context) {
 	currYear, currMonth, _ := now.Date()
 	firstOfMonth := time.Date(currYear, currMonth, 1, 0, 0, 0, 0, now.Location())
 
-	collection, err := getMealCollection(firstOfMonth.Unix())
+	mealCollection, err := getMealCollection(firstOfMonth.Unix())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err,
@@ -177,16 +172,11 @@ func SendEmail(c *gin.Context) {
 		return
 	}
 
-	var flattenedMeals []meal_collection.Meal
-	for _, item := range collection {
-		flattenedMeals = append(flattenedMeals, item.Items...)
-	}
-
 	var currMeals []meal_collection.Meal
 	// Attach the meal name to the actual meal collection
 	for _, meal := range meals {
 		foundItem := false
-		for _, item := range flattenedMeals {
+		for _, item := range mealCollection {
 			if item.Name == meal {
 				currMeals = append(currMeals, item)
 				foundItem = true
@@ -235,7 +225,7 @@ func UpdateMeals(c *gin.Context) {
 		return
 	}
 
-	collection, err := getMealCollection(time.Now().Unix())
+	mealCollection, err := getMealCollection(time.Now().Unix())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err,
@@ -243,16 +233,11 @@ func UpdateMeals(c *gin.Context) {
 		return
 	}
 
-	var flattenedMeals []meal_collection.Meal
-	for _, item := range collection {
-		flattenedMeals = append(flattenedMeals, item.Items...)
-	}
-
 	// Filter out only those updates that differ from the current state
 	var updatesToApply []meal_collection.MealUpdate
 	for _, update := range mealUpdates {
 		foundItem := false
-		for _, item := range flattenedMeals {
+		for _, item := range mealCollection {
 			if item.Name == update.Name {
 				foundItem = true
 				// Only include updates if the desired state differs from the current state.
