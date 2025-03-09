@@ -35,6 +35,7 @@ func SyncMeals() error {
 	if postgresURL == "" {
 		return fmt.Errorf("POSTGRES_URL is not set")
 	}
+
 	conn, err := pgx.Connect(ctx, postgresURL)
 	if err != nil {
 		return fmt.Errorf("error connecting to database: %w", err)
@@ -91,6 +92,26 @@ func SyncMeals() error {
 		default:
 			fmt.Printf("%d rows affected for recipe '%s' (unexpected)\n", rowsAffected, item.Name)
 		}
+	}
+
+	cleanTable := false
+	if os.Getenv("CLEAN_TABLE") == "true" {
+		cleanTable = true
+	}
+
+	if cleanTable {
+		var names []string
+		for _, item := range mealCollection {
+			names = append(names, item.Name)
+		}
+
+		// Delete rows that do not match any of the meal names
+		deleteQuery := "DELETE FROM recipes WHERE NOT (name = ANY($1))"
+		deleteRes, err := conn.Exec(ctx, deleteQuery, names)
+		if err != nil {
+			return fmt.Errorf("error deleting recipes not in sync: %w", err)
+		}
+		fmt.Printf("Deleted %d recipes that are not in the current meal collection\n", deleteRes.RowsAffected())
 	}
 
 	return nil
