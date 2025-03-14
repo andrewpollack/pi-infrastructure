@@ -1,7 +1,7 @@
 package calendar
 
 import (
-	"fmt"
+	"log"
 	"time"
 )
 
@@ -101,17 +101,17 @@ func (c *Calendar) GetWeekday(day int) time.Weekday {
 // PrintMonthCalendar prints the calendar for the current month.
 func (c *Calendar) PrintMonthCalendar() {
 	// Print the header for days of the week
-	fmt.Println("Su Mo Tu We Th Fr Sa")
+	log.Println("Su Mo Tu We Th Fr Sa")
 
 	// Loop through the weeks and print each day
 	for _, week := range c.Weeks {
 		for _, day := range week {
 			if day.Number == 0 {
-				fmt.Print("   ")
+				log.Print("   ")
 			} else {
-				fmt.Printf("%2d ", day.Number)
+				log.Printf("%2d ", day.Number)
 			}
 		}
-		fmt.Println()
+		log.Println()
 	}
 }

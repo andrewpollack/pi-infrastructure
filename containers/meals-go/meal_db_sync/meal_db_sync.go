@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"meals/meal_collection"
 	"os"
 
@@ -86,11 +87,11 @@ func SyncMeals() error {
 		rowsAffected := res.RowsAffected()
 		switch rowsAffected {
 		case 1:
-			fmt.Printf("Upserted recipe: [%s]\n", item.Name)
+			log.Printf("Upserted recipe: [%s]\n", item.Name)
 		case 0:
-			fmt.Printf("No changes needed for recipe '%s'\n", item.Name)
+			log.Printf("No changes needed for recipe '%s'\n", item.Name)
 		default:
-			fmt.Printf("%d rows affected for recipe '%s' (unexpected)\n", rowsAffected, item.Name)
+			log.Printf("%d rows affected for recipe '%s' (unexpected)\n", rowsAffected, item.Name)
 		}
 	}
 
@@ -111,7 +112,7 @@ func SyncMeals() error {
 		if err != nil {
 			return fmt.Errorf("error deleting recipes not in sync: %w", err)
 		}
-		fmt.Printf("Deleted %d recipes that are not in the current meal collection\n", deleteRes.RowsAffected())
+		log.Printf("Deleted %d recipes that are not in the current meal collection\n", deleteRes.RowsAffected())
 	}
 
 	return nil

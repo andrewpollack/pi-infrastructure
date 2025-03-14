@@ -1,7 +1,6 @@
 package meal_collection
 
 import (
-	"fmt"
 	"log"
 	"meals/calendar"
 	"reflect"
@@ -108,7 +107,7 @@ func TestMealListGenerationMatchAcrossMonth(t *testing.T) {
 	allMatch := true
 	for i := 0; i < len(itemsOctober1); i++ {
 		if itemsOctober1[i].Name != itemsOctober2[i].Name {
-			fmt.Printf("These items do not match: '%s' '%s'", itemsOctober1[i].Name, itemsOctober2[i].Name)
+			log.Printf("These items do not match: '%s' '%s'", itemsOctober1[i].Name, itemsOctober2[i].Name)
 			allMatch = false
 		}
 	}
@@ -140,7 +139,7 @@ func TestGenerateMealsWholeYearMatchAcrossMonth(t *testing.T) {
 	allMatch := true
 	for i := 0; i < len(itemsOctober1); i++ {
 		if itemsOctober1[i].Name != itemsOctober2[i].Name {
-			fmt.Printf("These items do not match: '%s' '%s'", itemsOctober1[i].Name, itemsOctober2[i].Name)
+			log.Printf("These items do not match: '%s' '%s'", itemsOctober1[i].Name, itemsOctober2[i].Name)
 			allMatch = false
 		}
 	}
