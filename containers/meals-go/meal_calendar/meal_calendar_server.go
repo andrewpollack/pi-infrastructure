@@ -92,9 +92,9 @@ func RunServer() {
 
 	http.HandleFunc("/", mealCalendarHandler)
 
-	fmt.Printf("Starting server on :%s...", port)
+	log.Printf("Starting server on :%s...", port)
 	err := http.ListenAndServe(fmt.Sprintf(":%s", port), nil)
 	if err != nil {
-		fmt.Println("Error starting server:", err)
+		log.Println("Error starting server:", err)
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"log"
 	"meals/calendar"
 	"meals/meal_collection"
 	"mime/quotedprintable"
@@ -89,7 +90,11 @@ type YearMonth struct {
 	Month int
 }
 
-func useHardcodedValues(mealCollection meal_collection.MealCollection) []meal_collection.Meal {
+func useHardcodedValues() []meal_collection.Meal {
+	// TODO(andrew.pollack): Handle error case.
+	// When using hardcoded values, allow any possible meals to be used
+	collection, _ := meal_collection.ReadMealCollectionFromDB(time.Now().Unix())
+
 	arr := [7]string{
 		os.Getenv("H_1"),
 		os.Getenv("H_2"),
@@ -111,7 +116,7 @@ func useHardcodedValues(mealCollection meal_collection.MealCollection) []meal_co
 			continue
 		}
 
-		for _, fullItem := range mealCollection {
+		for _, fullItem := range collection {
 			if fullItem.Name == v {
 				allMeals = append(allMeals, fullItem)
 				break
@@ -229,7 +234,7 @@ func GetMealsForNextWeek(date Date, collection meal_collection.MealCollection) [
 	// Decide how to get meals: either hardcoded or generated
 	_, useHardcoded := os.LookupEnv("H_1")
 	if useHardcoded {
-		allMeals = useHardcodedValues(collection)
+		allMeals = useHardcodedValues()
 	} else {
 		for _, day := range daysOfWeek {
 			currYearMonth := YearMonth{Year: day.Year, Month: day.Month}
@@ -286,8 +291,22 @@ func generateIngredientsPDF(meals []meal_collection.Meal) ([]byte, error) {
 	return pdfBytes, nil
 }
 
+func contains(slice []meal_collection.Aisle, item meal_collection.Aisle) bool {
+	for _, v := range slice {
+		if v == item {
+			return true
+		}
+	}
+	return false
+}
+
 func buildHTMLContent(ingredients []meal_collection.Ingredient) string {
-	const CELLS_PER_ROW = 3
+	const FONT_SIZE = 16
+	const CHECKBOX_SIZE = FONT_SIZE - 2
+	const LARGER_FONT_SIZE = 18
+	const LARGER_CHECKBOX_SIZE = LARGER_FONT_SIZE - 2
+	const CELLS_PER_ROW = 2
+	const CELLS_PER_COLUMN = 2
 
 	// Preallocate an estimated capacity for the builder.
 	var sb strings.Builder
@@ -306,71 +325,123 @@ func buildHTMLContent(ingredients []meal_collection.Ingredient) string {
 			width: 100%;
 			height: 100%;
 		}
+
 		table {
 			width: 100%;
-			height: 100%;
+			height: 50%;
 			border-collapse: collapse;
 			table-layout: fixed; /* Forces fixed column widths */
 		}
+
 		tr {
-			height: calc(100% / 3); /* Each row is 1/3 of the page height */
+			height: 50%;
 		}
+
 		td {
-			width: 33.33%; /* Each column takes 1/3 of the table width */
+			box-sizing: border-box;
 			border: 1px solid #333;
 			background-color: #ffffff;
 			vertical-align: top;
 			padding: 5px;
 		}
+		
+		.cell-three {
+			width: calc(100% / 3);
+		}
+		.cell-two {
+			width: calc(100% / 2);
+		}
+		
 		h3 {
 			margin: 0 0 5px;
 			padding: 2px;
 			background-color: #00d5ff;
 			text-align: center;
-			font-size: 14px;
+			font-size: 16px;
 		}
+		
 		.checkbox-group label {
-			font-size: 12px;
-			margin: 0; /* Remove extra margin */
+			font-size: ` + fmt.Sprintf("%d", FONT_SIZE) + `px;
+			margin: 0;  /* Remove extra margin */
 			padding: 0; /* Remove extra padding */
 		}
+		
+		.cell-two .checkbox-group label {
+			font-size: ` + fmt.Sprintf("%d", LARGER_FONT_SIZE) + `px;
+		}
+		
 		input[type="checkbox"] {
-			width: 12px;
-			height: 12px;
-			margin: 0; /* Remove default checkbox margin */
+			width: ` + fmt.Sprintf("%d", CHECKBOX_SIZE) + `px;
+			height: ` + fmt.Sprintf("%d", CHECKBOX_SIZE) + `px;
+			margin: 2px;  /* Add 2px margin around checkboxes */
 			padding: 0;
+		}
+		
+		.cell-two input[type="checkbox"] {
+			width: ` + fmt.Sprintf("%d", LARGER_CHECKBOX_SIZE) + `px;
+			height: ` + fmt.Sprintf("%d", LARGER_CHECKBOX_SIZE) + `px;
+		}
+		
+		.page-break {
+			page-break-after: always;
+			break-after: page;
 		}
 	</style>
 </head>
 <body>
-<table>
 `)
 
-	// Generate table rows: three aisles per row.
+	// Function to open a new table.
+	openTable := func() {
+		sb.WriteString("<table>\n")
+	}
+	// Function to close the current table.
+	closeTable := func() {
+		sb.WriteString("</table>\n")
+	}
+
+	rowStarters := []meal_collection.Aisle{meal_collection.AisleCheeseAndBakery, meal_collection.AisleFreezer, meal_collection.AisleBreakfastAndBaking, meal_collection.AisleProduce}
+	rowClosers := []meal_collection.Aisle{meal_collection.AisleAlcoholButterCheese, meal_collection.AisleBeveragesAndSnacks, meal_collection.AislePastaGlobalCanned, meal_collection.AisleMeatAndYogurt}
+	rowThree := []meal_collection.Aisle{meal_collection.AisleFreezer, meal_collection.AisleNoFoodItems, meal_collection.AisleBeveragesAndSnacks}
+	// Generate table cells.
 	for i, aisle := range meal_collection.AllAisles {
-		if i%CELLS_PER_ROW == 0 {
+		// Start a new row if needed.
+		if contains(rowStarters, aisle) {
+			openTable()
 			sb.WriteString("  <tr>\n")
 		}
 
-		aisleHTML := buildAisleCellHTML(aisle, ingredients)
+		var aisleHTML string
+		if contains(rowThree, aisle) {
+			aisleHTML = buildAisleCellHTML(aisle, ingredients, "cell-three")
+		} else {
+			aisleHTML = buildAisleCellHTML(aisle, ingredients, "cell-two")
+		}
 		sb.WriteString(aisleHTML)
 
-		if i%CELLS_PER_ROW == CELLS_PER_ROW-1 {
+		if contains(rowClosers, aisle) {
 			sb.WriteString("  </tr>\n")
+			closeTable()
+		}
+
+		if i == 4 {
+			sb.WriteString(`<div class="page-break"></div>` + "\n")
 		}
 	}
 
-	// Write closing tags.
-	sb.WriteString(`</table>
-</body>
+	// Write the closing tags.
+	sb.WriteString(`</body>
 </html>`)
 
 	return sb.String()
 }
 
-func buildAisleCellHTML(aisle meal_collection.Aisle, ingredients []meal_collection.Ingredient) string {
+func buildAisleCellHTML(aisle meal_collection.Aisle, ingredients []meal_collection.Ingredient, cellClass string) string {
+	longerColumns := []meal_collection.Aisle{meal_collection.AisleFreezer, meal_collection.AisleNoFoodItems, meal_collection.AisleBeveragesAndSnacks}
+
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("    <td>\n      <h3>%s</h3>\n", aisle))
+	// Use the provided cellClass in the td element.
+	sb.WriteString(fmt.Sprintf("    <td class=\"%s\">\n      <h3>%s</h3>\n", cellClass, aisle))
 
 	// Filter ingredients for the current aisle.
 	var itemsForAisle []meal_collection.Ingredient
@@ -380,14 +451,20 @@ func buildAisleCellHTML(aisle meal_collection.Aisle, ingredients []meal_collecti
 		}
 	}
 
-	if len(itemsForAisle) > 0 {
-		sb.WriteString("      <div class=\"checkbox-group\">\n")
-		for _, ing := range itemsForAisle {
-			sb.WriteString(fmt.Sprintf("        <label><input type=\"checkbox\" disabled> %s</label><br>\n", ing.StringBolded()))
-		}
-		sb.WriteString("      </div>\n")
+	sb.WriteString("      <div class=\"checkbox-group\">\n")
+	totalCheckboxes := 30
+	if contains(longerColumns, aisle) {
+		totalCheckboxes = 35
 	}
-
+	for i := 0; i < totalCheckboxes; i++ {
+		if i < len(itemsForAisle) {
+			ing := itemsForAisle[i]
+			sb.WriteString(fmt.Sprintf("        <label><input type=\"checkbox\" disabled> %s</label><br>\n", ing.StringBolded()))
+		} else {
+			sb.WriteString("        <label><input type=\"checkbox\" disabled> </label><br>\n")
+		}
+	}
+	sb.WriteString("      </div>\n")
 	sb.WriteString("    </td>\n")
 	return sb.String()
 }
@@ -414,7 +491,7 @@ func CreateAndSendEmail(useSES bool) error {
 
 	dryRun := os.Getenv("DRY_RUN")
 	if dryRun == "true" {
-		fmt.Printf(`I would've sent an email, but I won't...
+		log.Printf(`I would've sent an email, but I won't...
 FROM: %s
 TO: %s
 SUBJECT: %s
@@ -432,7 +509,10 @@ BODY:
 			return fmt.Errorf("failed to generate ingredients PDF: %v", err)
 		}
 
-		err = sendEmailSESWithAttachmentBytes(from, to, subject, bodyHtml, pdfBytes, "grocery_list.pdf")
+		daysOfWeek := GetDaysOfNextWeek(currDate)
+		first := daysOfWeek[0]
+		pdfName := fmt.Sprintf("%d-%02d-%02d-grocery-list.pdf", first.Year, first.Month, first.Day)
+		err = sendEmailSESWithAttachmentBytes(from, to, subject, bodyHtml, pdfBytes, pdfName)
 		if err != nil {
 			return fmt.Errorf("failed to send SES email: %v", err)
 		}
@@ -537,6 +617,8 @@ func sendEmailSESWithAttachmentBytes(from, to, subject, bodyHtml string, attachm
 	if err != nil {
 		return fmt.Errorf("failed to send raw email: %v", err)
 	}
+
+	log.Printf("📧 Email sent to %s.", toHeader)
 
 	return nil
 }

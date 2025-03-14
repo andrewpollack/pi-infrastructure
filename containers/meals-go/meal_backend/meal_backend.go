@@ -160,11 +160,7 @@ func SendEmail(c *gin.Context) {
 		return
 	}
 
-	now := time.Now()
-	currYear, currMonth, _ := now.Date()
-	firstOfMonth := time.Date(currYear, currMonth, 1, 0, 0, 0, 0, now.Location())
-
-	mealCollection, err := getMealCollection(firstOfMonth.Unix())
+	mealCollection, err := getMealCollection(time.Now().Unix())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err,

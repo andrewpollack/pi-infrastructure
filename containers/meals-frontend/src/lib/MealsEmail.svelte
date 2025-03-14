@@ -6,6 +6,7 @@
 	let selectedMeals: string[] = [];
 	let errorMessage: string | null = null;
 	let successMessage: string | null = null;
+	let isLoading = false;
 
 	function toggleMeal(meal: string, checked: boolean) {
 		if (checked) {
@@ -19,6 +20,7 @@
 		event.preventDefault();
 		errorMessage = null;
 		successMessage = null;
+		isLoading = true;
 
 		try {
 			const res = await fetch('/api/email', {
@@ -46,11 +48,19 @@
 				errorMessage += String(error);
 			}
 			alert(errorMessage);
+		} finally {
+			isLoading = false;
 		}
 	}
 </script>
 
 <h2>Email</h2>
+
+{#if isLoading}
+	<div class="success" style="color: blue;">
+		<p>loading...</p>
+	</div>
+{/if}
 
 {#if successMessage}
 	<div class="success" style="color: green;">
