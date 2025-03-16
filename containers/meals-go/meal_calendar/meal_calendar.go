@@ -48,7 +48,7 @@ func (mc *MealCalendar) RenderHTMLCalendar() string {
 				item := items[day.Number-1]
 				itemName := item.Name
 				if len(item.Ingredients) == 0 {
-					if item.Name != "LEFTOVERS" && item.Name != "OUT" {
+					if item.Name != "Leftovers" && item.Name != "Out" {
 						itemName += "*"
 					}
 				}

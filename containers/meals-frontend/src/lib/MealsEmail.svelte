@@ -8,6 +8,7 @@
 	let successMessage: string | null = null;
 	let isLoading = false;
 
+	const indexToDay = ["sunday", "monday", "tuesday", "wednesday", "saturday"];
 	function toggleMeal(meal: string, checked: boolean) {
 		if (checked) {
 			selectedMeals = [...selectedMeals, meal];
@@ -89,6 +90,9 @@
 							toggleMeal(meal.Meal, input.checked);
 						}}
 					/>
+					{#if selectedMeals.includes(meal.Meal)}
+						(<strong>{indexToDay[selectedMeals.indexOf(meal.Meal)]}</strong>)
+					{/if}
 					{meal.Meal}
 				</label>
 			</div>
