@@ -105,11 +105,11 @@ type Meal struct {
 }
 
 var MEAL_LEFTOVERS = Meal{
-	Name: "LEFTOVERS",
+	Name: "Leftovers",
 }
 
 var MEAL_OUT = Meal{
-	Name: "OUT",
+	Name: "Out",
 }
 
 type MealCollection []Meal

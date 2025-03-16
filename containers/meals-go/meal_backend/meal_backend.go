@@ -2,6 +2,7 @@ package meal_backend
 
 import (
 	"fmt"
+	"log"
 	"meals/calendar"
 	"meals/meal_calendar"
 	"meals/meal_collection"
@@ -15,7 +16,9 @@ import (
 )
 
 type Config struct {
-	PostgresURL string
+	PostgresURL    string
+	SenderEmail    string
+	ReceiverEmails string
 }
 
 type DayResponse struct {
@@ -88,6 +91,7 @@ func (c Config) GetCalendar(ctx *gin.Context) {
 
 	collection, err := getMealCollection(c.PostgresURL, firstOfMonth.Unix())
 	if err != nil {
+		log.Println("Error in GetCalendar while fetching meal collection:", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": err,
 		})
@@ -118,6 +122,7 @@ func (c Config) GetCalendar(ctx *gin.Context) {
 func (c Config) GetMeals(ctx *gin.Context) {
 	mealCollection, err := getMealCollection(c.PostgresURL, time.Now().Unix())
 	if err != nil {
+		log.Println("Error in GetMeals while fetching meal collection:", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": err,
 		})
@@ -149,6 +154,7 @@ func (c Config) GetMeals(ctx *gin.Context) {
 func (c Config) SendEmail(ctx *gin.Context) {
 	var meals []string
 	if err := ctx.BindJSON(&meals); err != nil {
+		log.Println("Error in SendEmail while binding JSON:", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"error": err,
 		})
@@ -157,14 +163,17 @@ func (c Config) SendEmail(ctx *gin.Context) {
 
 	// Verify only 5 meals are selected
 	if len(meals) != 5 {
+		errMsg := "Exactly 5 meals must be selected"
+		log.Println("Error in SendEmail:", errMsg)
 		ctx.JSON(http.StatusBadRequest, gin.H{
-			"error": "Exactly 5 meals must be selected",
+			"error": errMsg,
 		})
 		return
 	}
 
 	mealCollection, err := getMealCollection(c.PostgresURL, time.Now().Unix())
 	if err != nil {
+		log.Println("Error in SendEmail while fetching meal collection:", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": err,
 		})
@@ -176,8 +185,10 @@ func (c Config) SendEmail(ctx *gin.Context) {
 	for i, meal := range meals {
 		// If the meal isn't found in the map, return an error.
 		if _, found := mealMap[meal]; !found {
+			errMsg := fmt.Sprintf("Meal not found: %s", meal)
+			log.Println("Error in SendEmail:", errMsg)
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"error": fmt.Sprintf("Meal not found: %s", meal),
+				"error": errMsg,
 			})
 			return
 		}
@@ -193,9 +204,12 @@ func (c Config) SendEmail(ctx *gin.Context) {
 		PostgresURL:    c.PostgresURL,
 		UseSES:         true,
 		HardcodedMeals: currMealNames,
+		SenderEmail:    c.SenderEmail,
+		ReceiverEmails: c.ReceiverEmails,
 	}
 	err = mealEmailConfig.CreateAndSendEmail()
 	if err != nil {
+		log.Println("Error in SendEmail while creating and sending email:", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": err,
 		})
@@ -210,6 +224,7 @@ func (c Config) SendEmail(ctx *gin.Context) {
 func (c Config) DisableMeals(ctx *gin.Context) {
 	var mealUpdates []meal_collection.MealUpdate
 	if err := ctx.BindJSON(&mealUpdates); err != nil {
+		log.Println("Error in DisableMeals while binding JSON:", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"error": err,
 		})
@@ -218,6 +233,7 @@ func (c Config) DisableMeals(ctx *gin.Context) {
 
 	mealCollection, err := getMealCollection(c.PostgresURL, time.Now().Unix())
 	if err != nil {
+		log.Println("Error in DisableMeals while fetching meal collection:", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": err,
 		})
@@ -230,8 +246,10 @@ func (c Config) DisableMeals(ctx *gin.Context) {
 	for _, update := range mealUpdates {
 		meal, ok := mealMap[update.Name]
 		if !ok {
+			errMsg := fmt.Sprintf("Meal not found: %s", update.Name)
+			log.Println("Error in DisableMeals:", errMsg)
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"error": fmt.Sprintf("Meal not found: %s", update.Name),
+				"error": errMsg,
 			})
 			return
 		}
@@ -251,6 +269,7 @@ func (c Config) DisableMeals(ctx *gin.Context) {
 
 	err = meal_collection.UpdateMealsInDB(c.PostgresURL, updatesToApply)
 	if err != nil {
+		log.Println("Error in DisableMeals while updating meals in DB:", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": err,
 		})

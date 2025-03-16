@@ -52,8 +52,8 @@ func (c Config) mealCalendarHandler(w http.ResponseWriter, r *http.Request) {
 	for _, item := range mealCollection {
 		itemName := item.Name
 		if len(item.Ingredients) == 0 &&
-			item.Name != "LEFTOVERS" &&
-			item.Name != "OUT" {
+			item.Name != "Leftovers" &&
+			item.Name != "Out" {
 			itemName += "*"
 		}
 

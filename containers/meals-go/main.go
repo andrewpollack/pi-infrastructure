@@ -65,7 +65,9 @@ func main() {
 	switch c.RunMode {
 	case "backend":
 		mealBackendConfig := meal_backend.Config{
-			PostgresURL: c.PostgresURL,
+			PostgresURL:    c.PostgresURL,
+			SenderEmail:    c.SenderEmail,
+			ReceiverEmails: c.ReceiverEmails,
 		}
 
 		mealBackendConfig.RunBackend()

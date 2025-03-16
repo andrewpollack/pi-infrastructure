@@ -437,9 +437,9 @@ func buildAisleCellHTML(aisle meal_collection.Aisle, ingredients []meal_collecti
 	}
 
 	sb.WriteString("      <div class=\"checkbox-group\">\n")
-	totalCheckboxes := 30
+	totalCheckboxes := 28
 	if contains(longerColumns, aisle) {
-		totalCheckboxes = 35
+		totalCheckboxes = 33
 	}
 	for i := 0; i < totalCheckboxes; i++ {
 		if i < len(itemsForAisle) {
