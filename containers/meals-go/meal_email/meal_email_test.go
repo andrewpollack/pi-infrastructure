@@ -178,18 +178,3 @@ func TestGroceryListGeneration(t *testing.T) {
 
 	// TODO: Actually test here. Golden tests are a pain comparing against a changing output...
 }
-
-func TestEmailGeneration(t *testing.T) {
-	mealData, err := meal_collection.OpenMealData(MEALS_JSON)
-	if err != nil {
-		log.Fatalf("Error fetching mealData: %v", err)
-	}
-
-	collection, err := meal_collection.ReadMealCollectionFromReader(mealData)
-	if err != nil {
-		t.Errorf("Something went wrong reading meals... %s", err)
-	}
-
-	_ = GenerateEmailForNextWeek(Date{Year: 2024, Month: 10, Day: 28}, collection)
-	// TODO: Actually test here. Golden tests are a pain comparing against a changing output...
-}

@@ -7,13 +7,16 @@ import (
 	"meals/meal_collection"
 	"meals/meal_email"
 	"net/http"
-	"os"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
+
+type Config struct {
+	PostgresURL string
+}
 
 type DayResponse struct {
 	Day     int
@@ -69,8 +72,8 @@ func CreateBackendCalendarResponse(collection meal_collection.MealCollection, ye
 	return resp
 }
 
-func getMealCollection(recipeCreatedCutoff int64) (meal_collection.MealCollection, error) {
-	collection, err := meal_collection.ReadMealCollectionFromDB(recipeCreatedCutoff)
+func getMealCollection(postgresURL string, recipeCreatedCutoff int64) (meal_collection.MealCollection, error) {
+	collection, err := meal_collection.ReadMealCollectionFromDB(postgresURL, recipeCreatedCutoff)
 	if err != nil {
 		return nil, err
 	}
@@ -78,14 +81,14 @@ func getMealCollection(recipeCreatedCutoff int64) (meal_collection.MealCollectio
 	return collection, nil
 }
 
-func GetCalendar(c *gin.Context) {
+func (c Config) GetCalendar(ctx *gin.Context) {
 	now := time.Now()
 	currYear, currMonth, _ := now.Date()
 	firstOfMonth := time.Date(currYear, currMonth, 1, 0, 0, 0, 0, now.Location())
 
-	collection, err := getMealCollection(firstOfMonth.Unix())
+	collection, err := getMealCollection(c.PostgresURL, firstOfMonth.Unix())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
+		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": err,
 		})
 		return
@@ -106,16 +109,16 @@ func GetCalendar(c *gin.Context) {
 	currMonthResponse := CreateBackendCalendarResponse(collection, currYear, currMonth)
 	nextMonthResponse := CreateBackendCalendarResponse(collection, nextYear, nextMonth)
 
-	c.JSON(http.StatusOK, gin.H{
+	ctx.JSON(http.StatusOK, gin.H{
 		"currMonthResponse": currMonthResponse,
 		"nextMonthResponse": nextMonthResponse,
 	})
 }
 
-func GetMeals(c *gin.Context) {
-	mealCollection, err := getMealCollection(time.Now().Unix())
+func (c Config) GetMeals(ctx *gin.Context) {
+	mealCollection, err := getMealCollection(c.PostgresURL, time.Now().Unix())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
+		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": err,
 		})
 		return
@@ -138,15 +141,15 @@ func GetMeals(c *gin.Context) {
 		})
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	ctx.JSON(http.StatusOK, gin.H{
 		"allMeals": allMeals,
 	})
 }
 
-func SendEmail(c *gin.Context) {
+func (c Config) SendEmail(ctx *gin.Context) {
 	var meals []string
-	if err := c.BindJSON(&meals); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+	if err := ctx.BindJSON(&meals); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
 			"error": err,
 		})
 		return
@@ -154,120 +157,107 @@ func SendEmail(c *gin.Context) {
 
 	// Verify only 5 meals are selected
 	if len(meals) != 5 {
-		c.JSON(http.StatusBadRequest, gin.H{
+		ctx.JSON(http.StatusBadRequest, gin.H{
 			"error": "Exactly 5 meals must be selected",
 		})
 		return
 	}
 
-	mealCollection, err := getMealCollection(time.Now().Unix())
+	mealCollection, err := getMealCollection(c.PostgresURL, time.Now().Unix())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
+		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": err,
 		})
 		return
 	}
 
-	var currMeals []meal_collection.Meal
-	// Attach the meal name to the actual meal collection
-	for _, meal := range meals {
-		foundItem := false
-		for _, item := range mealCollection {
-			if item.Name == meal {
-				currMeals = append(currMeals, item)
-				foundItem = true
-				break
-			}
-		}
-		if !foundItem {
-			c.JSON(http.StatusBadRequest, gin.H{
+	mealMap := mealCollection.MapNameToMeal()
+	var currMealNames []string
+	for i, meal := range meals {
+		// If the meal isn't found in the map, return an error.
+		if _, found := mealMap[meal]; !found {
+			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error": fmt.Sprintf("Meal not found: %s", meal),
 			})
 			return
 		}
-	}
 
-	os.Setenv("H_5", "LEFTOVERS")
-	os.Setenv("H_6", "OUT")
-	for i, meal := range currMeals {
+		// Add Leftovers / Out before the 4th meal.
 		if i == 4 {
-			os.Setenv("H_7", meal.Name)
-			continue
+			currMealNames = append(currMealNames, meal_collection.MEAL_LEFTOVERS.Name, meal_collection.MEAL_OUT.Name)
 		}
-		envVar := fmt.Sprintf("H_%d", i+1)
-		os.Setenv(envVar, meal.Name)
+		currMealNames = append(currMealNames, meal)
 	}
 
-	useSES := true
-	err = meal_email.CreateAndSendEmail(useSES)
+	mealEmailConfig := meal_email.Config{
+		PostgresURL:    c.PostgresURL,
+		UseSES:         true,
+		HardcodedMeals: currMealNames,
+	}
+	err = mealEmailConfig.CreateAndSendEmail()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
+		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": err,
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	ctx.JSON(http.StatusOK, gin.H{
 		"status": "success",
 	})
 }
 
-func UpdateMeals(c *gin.Context) {
+func (c Config) DisableMeals(ctx *gin.Context) {
 	var mealUpdates []meal_collection.MealUpdate
-	if err := c.BindJSON(&mealUpdates); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+	if err := ctx.BindJSON(&mealUpdates); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
 			"error": err,
 		})
 		return
 	}
 
-	mealCollection, err := getMealCollection(time.Now().Unix())
+	mealCollection, err := getMealCollection(c.PostgresURL, time.Now().Unix())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
+		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": err,
 		})
 		return
 	}
 
-	// Filter out only those updates that differ from the current state
+	mealMap := mealCollection.MapNameToMeal()
+
 	var updatesToApply []meal_collection.MealUpdate
 	for _, update := range mealUpdates {
-		foundItem := false
-		for _, item := range mealCollection {
-			if item.Name == update.Name {
-				foundItem = true
-				// Only include updates if the desired state differs from the current state.
-				if item.Disabled != update.Disabled {
-					updatesToApply = append(updatesToApply, update)
-				}
-				break
-			}
-		}
-		if !foundItem {
-			c.JSON(http.StatusBadRequest, gin.H{
+		meal, ok := mealMap[update.Name]
+		if !ok {
+			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error": fmt.Sprintf("Meal not found: %s", update.Name),
 			})
 			return
+		}
+		// Only include updates if the desired state differs from the current state.
+		if meal.Disabled != update.Disabled {
+			updatesToApply = append(updatesToApply, update)
 		}
 	}
 
 	// If no updates are needed, return early
 	if len(updatesToApply) == 0 {
-		c.JSON(http.StatusOK, gin.H{
+		ctx.JSON(http.StatusOK, gin.H{
 			"status": "no updates needed",
 		})
 		return
 	}
 
-	err = meal_collection.UpdateMealsInDB(updatesToApply)
+	err = meal_collection.UpdateMealsInDB(c.PostgresURL, updatesToApply)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
+		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": err,
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	ctx.JSON(http.StatusOK, gin.H{
 		"status": "success",
 	})
 }
@@ -279,17 +269,17 @@ func HealthCheck(c *gin.Context) {
 	})
 }
 
-func RunBackend() {
+func (c Config) RunBackend() {
 	router := gin.Default()
 
 	router.GET("/health", HealthCheck)
 
 	api := router.Group("/api")
 
-	api.GET("/calendar", GetCalendar)
-	api.GET("/meals", GetMeals)
-	api.POST("/email", SendEmail)
-	api.POST("/update", UpdateMeals)
+	api.GET("/calendar", c.GetCalendar)
+	api.GET("/meals", c.GetMeals)
+	api.POST("/email", c.SendEmail)
+	api.POST("/update", c.DisableMeals)
 
 	router.Run()
 }
