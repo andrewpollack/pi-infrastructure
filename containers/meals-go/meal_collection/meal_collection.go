@@ -114,6 +114,19 @@ var MEAL_OUT = Meal{
 
 type MealCollection []Meal
 
+func (m MealCollection) MapNameToMeal() map[string]Meal {
+	mealMap := map[string]Meal{
+		MEAL_LEFTOVERS.Name: MEAL_LEFTOVERS,
+		MEAL_OUT.Name:       MEAL_OUT,
+	}
+
+	for _, meal := range m {
+		mealMap[meal.Name] = meal
+	}
+
+	return mealMap
+}
+
 func (i Ingredient) String() string {
 	formatSignificant := func(f float64, sigDigits int) string {
 		if f == 0 {
@@ -250,12 +263,10 @@ func OpenMealData(filename string) (io.ReadCloser, error) {
 	return os.Open(filename)
 }
 
-func OpenFromS3() (io.ReadCloser, error) {
-	bucketName := os.Getenv("BUCKET_NAME")
+func OpenFromS3(bucketName string, bucketKey string) (io.ReadCloser, error) {
 	if bucketName == "" {
 		return nil, fmt.Errorf("bucket name is not set")
 	}
-	bucketKey := os.Getenv("BUCKET_KEY")
 	if bucketKey == "" {
 		return nil, fmt.Errorf("bucket key is not set")
 	}
@@ -281,7 +292,7 @@ func OpenFromS3() (io.ReadCloser, error) {
 	return resp.Body, nil
 }
 
-func ReadMealCollectionFromDB(recipeCreatedCutoff int64) (MealCollection, error) {
+func ReadMealCollectionFromDB(postgresURL string, recipeCreatedCutoff int64) (MealCollection, error) {
 	// Temporary types just for DB scans and JSON unmarshaling.
 	type DBIngredient struct {
 		Item     string  `json:"item"`
@@ -301,7 +312,6 @@ func ReadMealCollectionFromDB(recipeCreatedCutoff int64) (MealCollection, error)
 		Enabled      bool           `json:"enabled"`
 	}
 
-	postgresURL := os.Getenv("POSTGRES_URL")
 	if postgresURL == "" {
 		return nil, fmt.Errorf("POSTGRES_URL is not set")
 	}
@@ -387,12 +397,11 @@ type MealUpdate struct {
 	Disabled bool   `json:"disabled"`
 }
 
-func UpdateMealsInDB(updates []MealUpdate) error {
+func UpdateMealsInDB(postgresURL string, updates []MealUpdate) error {
 	if len(updates) == 0 {
 		return nil
 	}
 
-	postgresURL := os.Getenv("POSTGRES_URL")
 	if postgresURL == "" {
 		return fmt.Errorf("POSTGRES_URL is not set")
 	}

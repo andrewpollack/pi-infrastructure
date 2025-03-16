@@ -7,16 +7,22 @@ import (
 	"io"
 	"log"
 	"meals/meal_collection"
-	"os"
 
 	"github.com/jackc/pgx/v5"
 )
 
-func SyncMeals() error {
+type Config struct {
+	BucketName  string
+	BucketKey   string
+	PostgresURL string
+	CleanTable  bool
+}
+
+func (c Config) SyncMeals() error {
 	ctx := context.Background()
 
 	// Fetch meal data from S3
-	mealData, err := meal_collection.OpenFromS3()
+	mealData, err := meal_collection.OpenFromS3(c.BucketKey, c.BucketName)
 	if err != nil {
 		return fmt.Errorf("error fetching meal data from S3: %w", err)
 	}
@@ -32,12 +38,11 @@ func SyncMeals() error {
 		return fmt.Errorf("error unmarshaling JSON: %v", err)
 	}
 
-	postgresURL := os.Getenv("POSTGRES_URL")
-	if postgresURL == "" {
+	if c.PostgresURL == "" {
 		return fmt.Errorf("POSTGRES_URL is not set")
 	}
 
-	conn, err := pgx.Connect(ctx, postgresURL)
+	conn, err := pgx.Connect(ctx, c.PostgresURL)
 	if err != nil {
 		return fmt.Errorf("error connecting to database: %w", err)
 	}
@@ -95,12 +100,7 @@ func SyncMeals() error {
 		}
 	}
 
-	cleanTable := false
-	if os.Getenv("CLEAN_TABLE") == "true" {
-		cleanTable = true
-	}
-
-	if cleanTable {
+	if c.CleanTable {
 		var names []string
 		for _, item := range mealCollection {
 			names = append(names, item.Name)

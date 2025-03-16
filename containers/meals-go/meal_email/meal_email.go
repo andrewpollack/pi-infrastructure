@@ -10,7 +10,6 @@ import (
 	"meals/meal_collection"
 	"mime/quotedprintable"
 	"net/textproto"
-	"os"
 	"strings"
 	"time"
 
@@ -19,6 +18,15 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ses"
 	"github.com/aws/aws-sdk-go-v2/service/ses/types"
 )
+
+type Config struct {
+	PostgresURL    string
+	UseSES         bool
+	SenderEmail    string
+	ReceiverEmails string
+	HardcodedMeals []string
+	DryRun         bool
+}
 
 type Date struct {
 	Year  int
@@ -88,43 +96,6 @@ func GetDaysOfNextWeek(date Date) []Date {
 type YearMonth struct {
 	Year  int
 	Month int
-}
-
-func useHardcodedValues() []meal_collection.Meal {
-	// TODO(andrew.pollack): Handle error case.
-	// When using hardcoded values, allow any possible meals to be used
-	collection, _ := meal_collection.ReadMealCollectionFromDB(time.Now().Unix())
-
-	arr := [7]string{
-		os.Getenv("H_1"),
-		os.Getenv("H_2"),
-		os.Getenv("H_3"),
-		os.Getenv("H_4"),
-		os.Getenv("H_5"),
-		os.Getenv("H_6"),
-		os.Getenv("H_7"),
-	}
-
-	var allMeals []meal_collection.Meal
-	for i, v := range arr {
-		if i == 4 {
-			allMeals = append(allMeals, meal_collection.MEAL_LEFTOVERS)
-			continue
-		}
-		if i == 5 {
-			allMeals = append(allMeals, meal_collection.MEAL_OUT)
-			continue
-		}
-
-		for _, fullItem := range collection {
-			if fullItem.Name == v {
-				allMeals = append(allMeals, fullItem)
-				break
-			}
-		}
-	}
-
-	return allMeals
 }
 
 func generateHeader() string {
@@ -214,8 +185,11 @@ func generateCloser() string {
 </html>`
 }
 
-func GenerateEmailForNextWeek(date Date, collection meal_collection.MealCollection) string {
-	allMeals := GetMealsForNextWeek(date, collection)
+func (c Config) GenerateEmailForNextWeek(date Date, collection meal_collection.MealCollection) (string, error) {
+	allMeals, err := c.GetMealsForNextWeek(date, collection)
+	if err != nil {
+		return "", fmt.Errorf("failed to get meals for next week: %v", err)
+	}
 
 	var sb strings.Builder
 	sb.WriteString(generateHeader())
@@ -223,19 +197,30 @@ func GenerateEmailForNextWeek(date Date, collection meal_collection.MealCollecti
 	sb.WriteString(GenerateGroceryList(allMeals))
 	sb.WriteString(generateCloser())
 
-	return sb.String()
+	return sb.String(), nil
 }
 
-func GetMealsForNextWeek(date Date, collection meal_collection.MealCollection) []meal_collection.Meal {
-	daysOfWeek := GetDaysOfNextWeek(date)
-	calendars := make(map[YearMonth][]meal_collection.Meal)
+func (c Config) GetMealsForNextWeek(date Date, collection meal_collection.MealCollection) ([]meal_collection.Meal, error) {
 	var allMeals []meal_collection.Meal
-
 	// Decide how to get meals: either hardcoded or generated
-	_, useHardcoded := os.LookupEnv("H_1")
-	if useHardcoded {
-		allMeals = useHardcodedValues()
+	if len(c.HardcodedMeals) == 7 {
+		fullCollection, err := meal_collection.ReadMealCollectionFromDB(c.PostgresURL, time.Now().Unix())
+		if err != nil {
+			return nil, fmt.Errorf("something went wrong reading meals: %s", err)
+		}
+		mealMap := fullCollection.MapNameToMeal()
+		for _, v := range c.HardcodedMeals {
+			meal, ok := mealMap[v]
+			if !ok {
+				return nil, fmt.Errorf("meal not found: %s", v)
+			}
+
+			allMeals = append(allMeals, meal)
+		}
 	} else {
+		daysOfWeek := GetDaysOfNextWeek(date)
+		calendars := make(map[YearMonth][]meal_collection.Meal)
+
 		for _, day := range daysOfWeek {
 			currYearMonth := YearMonth{Year: day.Year, Month: day.Month}
 			if _, exists := calendars[currYearMonth]; !exists {
@@ -247,7 +232,7 @@ func GetMealsForNextWeek(date Date, collection meal_collection.MealCollection) [
 		}
 	}
 
-	return allMeals
+	return allMeals, nil
 }
 
 func GenerateHeaderForNextWeek(date Date) string {
@@ -469,7 +454,7 @@ func buildAisleCellHTML(aisle meal_collection.Aisle, ingredients []meal_collecti
 	return sb.String()
 }
 
-func CreateAndSendEmail(useSES bool) error {
+func (c Config) CreateAndSendEmail() error {
 	currentTime := time.Now()
 
 	// Extract the year, month, and day
@@ -478,19 +463,21 @@ func CreateAndSendEmail(useSES bool) error {
 	day := currentTime.Day()
 	firstOfMonth := time.Date(year, month, 1, 0, 0, 0, 0, currentTime.Location())
 
-	collection, err := meal_collection.ReadMealCollectionFromDB(firstOfMonth.Unix())
+	collection, err := meal_collection.ReadMealCollectionFromDB(c.PostgresURL, firstOfMonth.Unix())
 	if err != nil {
 		return fmt.Errorf("something went wrong reading meals: %s", err)
 	}
 
 	currDate := Date{Year: year, Month: int(month), Day: day}
-	from := os.Getenv("SENDER_EMAIL")
-	to := os.Getenv("RECEIVER_EMAILS")
+	from := c.SenderEmail
+	to := c.ReceiverEmails
 	subject := GenerateHeaderForNextWeek(currDate)
-	bodyHtml := GenerateEmailForNextWeek(currDate, collection)
+	bodyHtml, err := c.GenerateEmailForNextWeek(currDate, collection)
+	if err != nil {
+		return fmt.Errorf("failed to generate email: %v", err)
+	}
 
-	dryRun := os.Getenv("DRY_RUN")
-	if dryRun == "true" {
+	if c.DryRun {
 		log.Printf(`I would've sent an email, but I won't...
 FROM: %s
 TO: %s
@@ -502,8 +489,11 @@ BODY:
 		return nil
 	}
 
-	if useSES {
-		meals := GetMealsForNextWeek(currDate, collection)
+	if c.UseSES {
+		meals, err := c.GetMealsForNextWeek(currDate, collection)
+		if err != nil {
+			return fmt.Errorf("failed to get meals for next week: %v", err)
+		}
 		pdfBytes, err := generateIngredientsPDF(meals)
 		if err != nil {
 			return fmt.Errorf("failed to generate ingredients PDF: %v", err)

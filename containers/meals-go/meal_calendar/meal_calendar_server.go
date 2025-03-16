@@ -6,13 +6,18 @@ import (
 	"meals/calendar"
 	"meals/meal_collection"
 	"net/http"
-	"os"
 	"time"
 )
 
-func mealCalendarHandler(w http.ResponseWriter, r *http.Request) {
+type Config struct {
+	BucketName string
+	BucketKey  string
+	Port       int
+}
+
+func (c Config) mealCalendarHandler(w http.ResponseWriter, r *http.Request) {
 	// Fetch meal data from S3
-	mealData, err := meal_collection.OpenFromS3()
+	mealData, err := meal_collection.OpenFromS3(c.BucketName, c.BucketKey)
 	if err != nil {
 		log.Fatalf("Error fetching mealData: %v", err)
 	}
@@ -87,13 +92,11 @@ func mealCalendarHandler(w http.ResponseWriter, r *http.Request) {
 	)
 }
 
-func RunServer() {
-	port := os.Getenv("SERVE_PORT")
+func (c Config) RunServer() {
+	http.HandleFunc("/", c.mealCalendarHandler)
 
-	http.HandleFunc("/", mealCalendarHandler)
-
-	log.Printf("Starting server on :%s...", port)
-	err := http.ListenAndServe(fmt.Sprintf(":%s", port), nil)
+	log.Printf("Starting server on :%d...", c.Port)
+	err := http.ListenAndServe(fmt.Sprintf(":%d", c.Port), nil)
 	if err != nil {
 		log.Println("Error starting server:", err)
 	}
