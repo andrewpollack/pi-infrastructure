@@ -290,8 +290,6 @@ func buildHTMLContent(ingredients []meal_collection.Ingredient) string {
 	const CHECKBOX_SIZE = FONT_SIZE - 2
 	const LARGER_FONT_SIZE = 18
 	const LARGER_CHECKBOX_SIZE = LARGER_FONT_SIZE - 2
-	const CELLS_PER_ROW = 2
-	const CELLS_PER_COLUMN = 2
 
 	// Preallocate an estimated capacity for the builder.
 	var sb strings.Builder
