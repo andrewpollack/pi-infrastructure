@@ -1,6 +1,15 @@
-# Stage 1: Build the Go binary
-FROM golang:1.24-alpine AS builder
-ARG TARGETPLATFORM
+# ------------------------------------------------------------------------------
+# Stage 1: Build the Go binary, using an AMD64 container
+# ------------------------------------------------------------------------------
+# Force the builder platform to be linux/amd64 for the Go build, since we can
+# target different architectures using GOOS/GOARCH while retaining non-emulator
+# build speed.
+ARG BUILDERPLATFORM=linux/amd64
+
+FROM --platform=$BUILDERPLATFORM golang:1.24-alpine AS builder
+
+ARG TARGETOS
+ARG TARGETARCH
 
 WORKDIR /app
 
@@ -9,23 +18,11 @@ RUN go mod download
 
 COPY . .
 
-RUN case "$TARGETPLATFORM" in \
-        "linux/amd64") \
-            echo "Building for x86_64"; \
-            GOARCH=amd64 go build -o app .; \
-            ;; \
-        "linux/arm/v7") \
-            echo "Building for ARMv7 (Raspberry Pi)"; \
-            GOARCH=arm GOARM=7 go build -o app .; \
-            ;; \
-        "linux/arm64") \
-            echo "Building for ARM64 (Raspberry Pi 64-bit)"; \
-            GOARCH=arm64 go build -o app .; \
-            ;; \
-        *) echo "Unsupported architecture: $TARGETPLATFORM"; exit 1 ;; \
-    esac
+RUN GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o app .
 
-# Stage 2: Build the Runtime environment, including the wkhtmltopdf binary for PDF generation
+# ------------------------------------------------------------------------------
+# Stage 2: Build the final image for the target architecture
+# ------------------------------------------------------------------------------
 FROM debian:bullseye-slim
 
 WORKDIR /app
