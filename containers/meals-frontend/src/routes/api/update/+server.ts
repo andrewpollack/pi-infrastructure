@@ -13,7 +13,6 @@ export const POST: RequestHandler = async ({ request }) => {
 		});
 
 		const contentType = res.headers.get('content-type') || '';
-		let data;
 		if (!res.ok) {
 			if (contentType.includes('application/json')) {
 				const errorData = await res.json();
@@ -24,7 +23,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			}
 		}
 
-		data = contentType.includes('application/json') ? await res.json() : await res.text();
+		const data = contentType.includes('application/json') ? await res.json() : await res.text();
 		return new Response(JSON.stringify(data), {
 			status: res.status,
 			headers: { 'Content-Type': 'application/json' }

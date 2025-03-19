@@ -151,9 +151,14 @@ func (c Config) GetMeals(ctx *gin.Context) {
 	})
 }
 
+type SendEmailRequest struct {
+	Meals  []string `json:"meals"`
+	Emails []string `json:"emails"`
+}
+
 func (c Config) SendEmail(ctx *gin.Context) {
-	var meals []string
-	if err := ctx.BindJSON(&meals); err != nil {
+	var emailRequest SendEmailRequest
+	if err := ctx.BindJSON(&emailRequest); err != nil {
 		log.Println("Error in SendEmail while binding JSON:", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"error": err,
@@ -161,9 +166,21 @@ func (c Config) SendEmail(ctx *gin.Context) {
 		return
 	}
 
-	// Verify only 5 meals are selected
-	if len(meals) != 5 {
-		errMsg := "Exactly 5 meals must be selected"
+	meals := emailRequest.Meals
+	emails := emailRequest.Emails
+
+	if len(emails) == 0 {
+		errMsg := "At least one email must be provided"
+		log.Println("Error in SendEmail:", errMsg)
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": errMsg,
+		})
+		return
+	}
+
+	// Verify 7 meals are selected
+	if len(meals) != 7 {
+		errMsg := "Exactly 7 meals must be selected"
 		log.Println("Error in SendEmail:", errMsg)
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"error": errMsg,
@@ -182,7 +199,7 @@ func (c Config) SendEmail(ctx *gin.Context) {
 
 	mealMap := mealCollection.MapNameToMeal()
 	var currMealNames []string
-	for i, meal := range meals {
+	for _, meal := range meals {
 		// If the meal isn't found in the map, return an error.
 		if _, found := mealMap[meal]; !found {
 			errMsg := fmt.Sprintf("Meal not found: %s", meal)
@@ -193,10 +210,6 @@ func (c Config) SendEmail(ctx *gin.Context) {
 			return
 		}
 
-		// Add Leftovers / Out before the 4th meal.
-		if i == 4 {
-			currMealNames = append(currMealNames, meal_collection.MEAL_LEFTOVERS.Name, meal_collection.MEAL_OUT.Name)
-		}
 		currMealNames = append(currMealNames, meal)
 	}
 
@@ -205,7 +218,7 @@ func (c Config) SendEmail(ctx *gin.Context) {
 		UseSES:         true,
 		HardcodedMeals: currMealNames,
 		SenderEmail:    c.SenderEmail,
-		ReceiverEmails: c.ReceiverEmails,
+		ReceiverEmails: strings.Join(emails, ","),
 	}
 	err = mealEmailConfig.CreateAndSendEmail()
 	if err != nil {
@@ -300,5 +313,8 @@ func (c Config) RunBackend() {
 	api.POST("/email", c.SendEmail)
 	api.POST("/update", c.DisableMeals)
 
-	router.Run()
+	err := router.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
