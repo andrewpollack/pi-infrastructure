@@ -6,7 +6,7 @@
 
 <h2>{monthData.Month} {monthData.Year}</h2>
 
-<table border="1">
+<table border="1" style="border-collapse: collapse;">
 	<thead>
 		<tr>
 			<th>Sunday</th>

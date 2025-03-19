@@ -1,20 +1,54 @@
 <script lang="ts">
 	import type { Meal } from '$lib/types';
+	import EmailMealItem from './EmailMealItem.svelte';
 
 	export let meals: Meal[];
+	export let emails: string[];
 
 	let selectedMeals: string[] = [];
+	let selectedEmails: string[] = [];
 	let errorMessage: string | null = null;
 	let successMessage: string | null = null;
 	let isLoading = false;
 
-	const indexToDay = ["sunday", "monday", "tuesday", "wednesday", "saturday"];
+	const maxMeals = 7;
+	const staticMeals: Meal[] = [
+		{ Day: 0, Meal: 'Out', URL: null, Enabled: null },
+		{ Day: 0, Meal: 'Leftovers', URL: null, Enabled: null }
+	];
+	const allMealItems: Meal[] = [...staticMeals, ...meals];
+	const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+	const shortenedDaysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thur', 'Fri', 'Sat'];
+
 	function toggleMeal(meal: string, checked: boolean) {
 		if (checked) {
+			// Enforce a maximum of maxMeals selections
+			if (selectedMeals.length >= maxMeals) {
+				alert(`error: You can only select up to ${maxMeals} meals.`);
+				return;
+			}
 			selectedMeals = [...selectedMeals, meal];
 		} else {
 			selectedMeals = selectedMeals.filter((m) => m !== meal);
 		}
+	}
+
+	function toggleEmail(email: string, checked: boolean) {
+		if (checked) {
+			selectedEmails = [...selectedEmails, email];
+		} else {
+			selectedEmails = selectedEmails.filter((em) => em !== email);
+		}
+	}
+
+	const numColumns = 2;
+	const itemsPerColumn = Math.ceil(allMealItems.length / numColumns);
+
+	const chunkedMeals: Meal[][] = [];
+	for (let i = 0; i < numColumns; i++) {
+		const start = i * itemsPerColumn;
+		const end = start + itemsPerColumn;
+		chunkedMeals.push(allMealItems.slice(start, end));
 	}
 
 	async function handleSubmit(event: Event) {
@@ -22,6 +56,12 @@
 		errorMessage = null;
 		successMessage = null;
 		isLoading = true;
+		var paddedMeals = selectedMeals;
+
+		if (paddedMeals.length < 7) {
+			// Pad selectedMeals with "Out" strings to ensure there are 7 meals
+			paddedMeals = [...paddedMeals, ...Array(7 - paddedMeals.length).fill('Out')];
+		}
 
 		try {
 			const res = await fetch('/api/email', {
@@ -29,19 +69,22 @@
 				headers: {
 					'Content-Type': 'application/json'
 				},
-				body: JSON.stringify(selectedMeals)
+				body: JSON.stringify({
+					meals: paddedMeals,
+					emails: selectedEmails
+				})
 			});
 
 			if (!res.ok) {
 				const errorData = await res.json();
-				throw new Error(errorData.error || 'An error occurred while sending meals.');
+				throw new Error(errorData.error || 'An error occurred while sending data.');
 			}
 
 			const data = await res.json();
 			console.log('Response:', data);
 			successMessage = 'Email sent successfully!';
 		} catch (error) {
-			console.error('Error sending meals:', error);
+			console.error('Error sending meals and emails:', error);
 			errorMessage = 'error: ';
 			if (error instanceof Error) {
 				errorMessage += error.message;
@@ -58,46 +101,83 @@
 <h2>Email</h2>
 
 {#if isLoading}
-	<div class="success" style="color: blue;">
+	<div style="color: blue;">
 		<p>loading...</p>
 	</div>
 {/if}
 
 {#if successMessage}
-	<div class="success" style="color: green;">
+	<div style="color: green;">
 		<p>{successMessage}</p>
 	</div>
 {/if}
 
-{#if meals && meals.length > 0}
-	<form on:submit={handleSubmit}>
-		<button type="submit">Send Email</button>
-		{#each meals as meal, index (meal.Meal + meal.Day)}
-			<div class="meal-item">
+<form on:submit={handleSubmit}>
+	<button type="submit">Send Email</button>
+
+	<table border="1" style="margin-top: 1rem; border-collapse: collapse;">
+		<thead>
+			<tr>
+				{#each daysOfWeek as day}
+					<th>{day}</th>
+				{/each}
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				{#each [...Array(maxMeals).keys()] as i}
+					<td
+						style="
+						max-width: 75px;
+						overflow: hidden;
+						text-overflow: ellipsis;
+						white-space: nowrap;
+						"
+					>
+						{#if selectedMeals[i]}
+							{selectedMeals[i]}
+						{:else}
+							&nbsp;
+						{/if}
+					</td>
+				{/each}
+			</tr>
+		</tbody>
+	</table>
+
+	<div>
+		<h3>Emails</h3>
+		{#each emails as email}
+			<div>
 				<label>
 					<input
 						type="checkbox"
-						name="meals"
-						checked={selectedMeals.includes(meal.Meal)}
-						on:change={(e) => {
-							const input = e.target as HTMLInputElement;
-							// If checking this box would be the 6th selection, uncheck it immediately and alert.
-							if (input.checked && selectedMeals.length >= 5) {
-								input.checked = false;
-								alert('error: You can only select up to 5 meals.');
-								return;
-							}
-							toggleMeal(meal.Meal, input.checked);
-						}}
+						checked={selectedEmails.includes(email)}
+						on:change={(e) => toggleEmail(email, (e.target as HTMLInputElement).checked)}
 					/>
-					{#if selectedMeals.includes(meal.Meal)}
-						(<strong>{indexToDay[selectedMeals.indexOf(meal.Meal)]}</strong>)
-					{/if}
-					{meal.Meal}
+					{email}
 				</label>
 			</div>
 		{/each}
-	</form>
-{:else}
-	<p>No meals found.</p>
-{/if}
+	</div>
+
+	<div>
+		<h3>Meals</h3>
+		<div style="display: flex; gap: 2rem;">
+			{#each chunkedMeals as chunk}
+				<div>
+					{#each chunk as meal}
+						<EmailMealItem
+							{meal}
+							isSelected={selectedMeals.includes(meal.Meal)}
+							dayOfWeek={shortenedDaysOfWeek[selectedMeals.indexOf(meal.Meal)]}
+							{maxMeals}
+							selectedMealsCount={selectedMeals.length}
+							onToggle={toggleMeal}
+						/>
+					{/each}
+				</div>
+			{/each}
+		</div>
+	</div>
+</form>

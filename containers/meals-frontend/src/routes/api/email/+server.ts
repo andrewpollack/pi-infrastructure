@@ -23,7 +23,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			}
 		});
 	} catch (error) {
-		return new Response(JSON.stringify({ error: 'Request failed' }), {
+		return new Response(JSON.stringify({ error: `Request failed: ${error}` }), {
 			status: 500,
 			headers: {
 				'Content-Type': 'application/json'
