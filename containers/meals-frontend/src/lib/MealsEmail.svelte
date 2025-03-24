@@ -1,15 +1,17 @@
 <script lang="ts">
 	import type { Meal } from '$lib/types';
 	import EmailMealItem from './EmailMealItem.svelte';
+	import StatusIndicator from './StatusIndicator.svelte';
+
+	let errorMessage: string | null = null;
+	let successMessage: string | null = null;
+	let isLoading = false;
 
 	export let meals: Meal[];
 	export let emails: string[];
 
 	let selectedMeals: string[] = [];
 	let selectedEmails: string[] = [];
-	let errorMessage: string | null = null;
-	let successMessage: string | null = null;
-	let isLoading = false;
 
 	const maxMeals = 7;
 	const staticMeals: Meal[] = [
@@ -100,17 +102,7 @@
 
 <h2>Email</h2>
 
-{#if isLoading}
-	<div style="color: blue;">
-		<p>loading...</p>
-	</div>
-{/if}
-
-{#if successMessage}
-	<div style="color: green;">
-		<p>{successMessage}</p>
-	</div>
-{/if}
+<StatusIndicator {isLoading} {successMessage} {errorMessage} />
 
 <form on:submit={handleSubmit}>
 	<button type="submit">Send Email</button>
