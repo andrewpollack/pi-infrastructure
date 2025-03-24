@@ -1,10 +1,7 @@
 <script lang="ts">
-	import { StatusType } from "$lib/types"
+	import { StatusType } from '$lib/types';
 
-	let {
-		message = '',
-		type = StatusType.SUCCESS,
-	}:  { message: string, type: StatusType } = $props();
+	let { message = '', type = StatusType.SUCCESS }: { message: string; type: StatusType } = $props();
 
 	let color = $derived.by(() => {
 		switch (type) {

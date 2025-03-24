@@ -5,10 +5,12 @@
 
 	let { meals }: { meals: Meal[] } = $props();
 
-	let message = $state('')
-	let statusType = $state(StatusType.SUCCESS); 
+	let message = $state('');
+	let statusType = $state(StatusType.SUCCESS);
 	let localMeals = $state(meals.map((m) => ({ ...m })));
-	let isDifferent = $derived(localMeals.some((meal, index) => meal.Enabled !== meals[index].Enabled));
+	let isDifferent = $derived(
+		localMeals.some((meal, index) => meal.Enabled !== meals[index].Enabled)
+	);
 
 	function toggleMeal(index: number) {
 		localMeals[index].Enabled = !localMeals[index].Enabled;
@@ -33,7 +35,7 @@
 			});
 			const data = await res.json();
 			console.log('Update response:', data);
-			message =  'Meal status updated!';
+			message = 'Meal status updated!';
 			statusType = StatusType.SUCCESS;
 		} catch (error) {
 			message = 'error updating meals: ';
@@ -50,7 +52,9 @@
 
 {#if localMeals && localMeals.length > 0}
 	<form>
-		<button type="button" disabled={!isDifferent} onclick={updateMeals}> Update Meal Status </button>
+		<button type="button" disabled={!isDifferent} onclick={updateMeals}>
+			Update Meal Status
+		</button>
 		<br />
 		{#each localMeals as meal, index (meal.Meal)}
 			<div>

@@ -4,7 +4,7 @@
 	import EmailMealItem from './EmailMealItem.svelte';
 	import StatusIndicator from './StatusIndicator.svelte';
 
-	let {meals, emails}: { meals: Meal[], emails: [] } = $props();
+	let { meals, emails }: { meals: Meal[]; emails: [] } = $props();
 
 	let message = $state('');
 	let statusType = $state(StatusType.SUCCESS);
@@ -133,11 +133,7 @@
 		{#each emails as email}
 			<div>
 				<label>
-					<input
-						type="checkbox"
-						value={email}
-						bind:group={selectedEmails}
-					/>
+					<input type="checkbox" value={email} bind:group={selectedEmails} />
 					{email}
 				</label>
 			</div>
