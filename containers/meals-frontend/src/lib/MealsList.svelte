@@ -24,7 +24,6 @@
 			.filter((meal, index) => meal.Enabled !== meals[index].Enabled)
 			.map((m) => ({ name: m.Meal, disabled: !m.Enabled }));
 
-		console.log('Meal updates:', updates);
 		try {
 			const res = await fetch('/api/update', {
 				method: 'POST',
@@ -34,13 +33,11 @@
 				body: JSON.stringify(updates)
 			});
 			const data = await res.json();
-			console.log('Update response:', data);
 			message = 'Meal status updated!';
 			statusType = StatusType.SUCCESS;
 		} catch (error) {
-			message = 'error updating meals: ';
+			message = 'error updating meals: ' + (error instanceof Error ? error.message : String(error));
 			statusType = StatusType.ERROR;
-			message += error instanceof Error ? error.message : String(error);
 			alert(message);
 		}
 	}
