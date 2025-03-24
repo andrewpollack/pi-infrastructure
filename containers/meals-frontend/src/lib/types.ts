@@ -18,3 +18,10 @@ export interface MonthResponse {
 export interface CalendarResponse {
 	currMonthResponse: MonthResponse;
 }
+
+export enum StatusType {
+	LOADING = 'LOADING',
+	ERROR = 'ERROR',
+	SUCCESS = 'SUCCESS',
+	UNKNOWN = 'UNKNOWN'
+}

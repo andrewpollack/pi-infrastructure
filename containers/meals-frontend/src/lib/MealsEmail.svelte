@@ -1,17 +1,17 @@
 <script lang="ts">
 	import type { Meal } from '$lib/types';
+	import { StatusType } from '$lib/types';
 	import EmailMealItem from './EmailMealItem.svelte';
 	import StatusIndicator from './StatusIndicator.svelte';
 
-	let errorMessage: string | null = null;
-	let successMessage: string | null = null;
-	let isLoading = false;
+	let { meals, emails }: { meals: Meal[]; emails: [] } = $props();
 
-	export let meals: Meal[];
-	export let emails: string[];
-
-	let selectedMeals: string[] = [];
-	let selectedEmails: string[] = [];
+	let message = $state('');
+	let statusType = $state(StatusType.SUCCESS);
+	let selectedMeals = $state([] as string[]);
+	let selectedEmails = $state([] as string[]);
+	let isEmailSelected = $derived(selectedEmails.length > 0);
+	let isMealsSelected = $derived(selectedMeals.length > 0);
 
 	const maxMeals = 7;
 	const staticMeals: Meal[] = [
@@ -35,14 +35,6 @@
 		}
 	}
 
-	function toggleEmail(email: string, checked: boolean) {
-		if (checked) {
-			selectedEmails = [...selectedEmails, email];
-		} else {
-			selectedEmails = selectedEmails.filter((em) => em !== email);
-		}
-	}
-
 	const numColumns = 2;
 	const itemsPerColumn = Math.ceil(allMealItems.length / numColumns);
 
@@ -55,9 +47,8 @@
 
 	async function handleSubmit(event: Event) {
 		event.preventDefault();
-		errorMessage = null;
-		successMessage = null;
-		isLoading = true;
+		message = 'Sending email...';
+		statusType = StatusType.LOADING;
 		var paddedMeals = selectedMeals;
 
 		if (paddedMeals.length < 7) {
@@ -84,28 +75,28 @@
 
 			const data = await res.json();
 			console.log('Response:', data);
-			successMessage = 'Email sent successfully!';
+			message = 'Email sent successfully!';
+			statusType = StatusType.SUCCESS;
 		} catch (error) {
 			console.error('Error sending meals and emails:', error);
-			errorMessage = 'error: ';
+			message = 'error: ';
+			statusType = StatusType.ERROR;
 			if (error instanceof Error) {
-				errorMessage += error.message;
+				message += error.message;
 			} else {
-				errorMessage += String(error);
+				message += String(error);
 			}
-			alert(errorMessage);
-		} finally {
-			isLoading = false;
+			alert(message);
 		}
 	}
 </script>
 
 <h2>Email</h2>
 
-<StatusIndicator {isLoading} {successMessage} {errorMessage} />
+<StatusIndicator {message} type={statusType} />
 
-<form on:submit={handleSubmit}>
-	<button type="submit">Send Email</button>
+<form onsubmit={handleSubmit}>
+	<button disabled={!isEmailSelected || !isMealsSelected} type="submit">Send Email</button>
 
 	<table border="1" style="margin-top: 1rem; border-collapse: collapse;">
 		<thead>
@@ -142,11 +133,7 @@
 		{#each emails as email}
 			<div>
 				<label>
-					<input
-						type="checkbox"
-						checked={selectedEmails.includes(email)}
-						on:change={(e) => toggleEmail(email, (e.target as HTMLInputElement).checked)}
-					/>
+					<input type="checkbox" value={email} bind:group={selectedEmails} />
 					{email}
 				</label>
 			</div>

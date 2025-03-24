@@ -1,26 +1,22 @@
 <script lang="ts">
-	export let isLoading: boolean = false;
-	export let loadingMessage: string = 'loading...';
-	export let loadingColor: string = 'blue';
+	import { StatusType } from '$lib/types';
 
-	export let successMessage: string | null = null;
-	export let errorMessage: string | null = null;
+	let { message = '', type = StatusType.SUCCESS }: { message: string; type: StatusType } = $props();
+
+	let color = $derived.by(() => {
+		switch (type) {
+			case StatusType.SUCCESS:
+				return 'green';
+			case StatusType.ERROR:
+				return 'red';
+			case StatusType.LOADING:
+				return 'blue';
+		}
+	});
 </script>
 
-{#if isLoading}
-	<div style="color: {loadingColor};">
-		<p>{loadingMessage}</p>
-	</div>
-{/if}
-
-{#if successMessage}
-	<div style="color: green;">
-		<p>{successMessage}</p>
-	</div>
-{/if}
-
-{#if errorMessage}
-	<div style="color: red;">
-		<p>{errorMessage}</p>
+{#if message}
+	<div style="color: {color};">
+		<p>{message}</p>
 	</div>
 {/if}
