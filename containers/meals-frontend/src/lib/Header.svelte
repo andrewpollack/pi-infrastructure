@@ -1,15 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 
-	export let title: string;
-
-	function goToHome() {
-		goto('/');
-	}
-
-	function goToUpdate() {
-		goto('/update');
-	}
+	let { title }: { title: string } = $props();
 </script>
 
 <h1 style="display: flex; align-items: center; justify-content: flex-start; gap: 1rem;">
@@ -19,7 +11,7 @@
 </h1>
 
 <div>
-	<button on:click={goToHome}> Go Home </button>
+	<button onclick={() => goto('/')}> Home </button>
 
-	<button on:click={goToUpdate}> Update Meals </button>
+	<button onclick={() => goto('/update')}> Update Meals </button>
 </div>
