@@ -12,6 +12,6 @@
 
 <style>
 	h1 {
-		color: #B7B1F2;
+		color: #b7b1f2;
 	}
 </style>

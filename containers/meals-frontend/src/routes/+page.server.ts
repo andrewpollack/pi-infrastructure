@@ -14,7 +14,6 @@ export const load: PageServerLoad = async () => {
 			fetch(`${env.API_BASE_URL}/api/calendar`)
 		]);
 
-		// Check for non-OK responses
 		if (!mealsRes.ok) {
 			throw error(mealsRes.status, 'Failed to fetch meals');
 		}
