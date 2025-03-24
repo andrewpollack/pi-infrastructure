@@ -4,7 +4,7 @@
 	import EmailMealItem from './EmailMealItem.svelte';
 	import StatusIndicator from './StatusIndicator.svelte';
 
-	let { meals, emails }: { meals: Meal[]; emails: [] } = $props();
+	let { meals, emails }: { meals: Meal[]; emails: string[] } = $props();
 
 	let message = $state('');
 	let statusType = $state(StatusType.SUCCESS);
@@ -74,12 +74,10 @@
 			}
 
 			const data = await res.json();
-			console.log('Response:', data);
 			message = 'Email sent successfully!';
 			statusType = StatusType.SUCCESS;
 		} catch (error) {
-			console.error('Error sending meals and emails:', error);
-			message = 'error: ';
+			message = 'error sending email: ' + (error instanceof Error ? error.message : String(error));
 			statusType = StatusType.ERROR;
 			if (error instanceof Error) {
 				message += error.message;

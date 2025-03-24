@@ -1,16 +1,15 @@
 <script lang="ts">
-	import type { PageData } from './$types';
 	import CalendarMonth from '$lib/CalendarMonth.svelte';
 	import MealsEmail from '$lib/MealsEmail.svelte';
-	import Header from '$lib/Header.svelte';
+	import Navbar from '$lib/Navbar.svelte';
 
-	export let data: PageData;
-	const { allMeals, allCalendars, allEmails } = data;
+	let { data } = $props();
+	const { allMeals, currMonthResponse, allEmails } = data;
 </script>
 
-<Header title="Meals" />
+<Navbar title="Meals" />
 
-<CalendarMonth monthData={allCalendars.currMonthResponse} />
+<CalendarMonth monthData={currMonthResponse} />
 
 <div>
 	<MealsEmail meals={allMeals} emails={allEmails} />

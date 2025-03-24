@@ -1,12 +1,11 @@
 <script lang="ts">
-	import type { PageData } from './$types';
 	import MealsList from '$lib/MealsList.svelte';
-	import Header from '$lib/Header.svelte';
+	import Navbar from '$lib/Navbar.svelte';
 
-	export let data: PageData;
+	let { data } = $props();
 	const { meals } = data;
 </script>
 
-<Header title="Update Meals" />
+<Navbar title="Update Meals" />
 
 <MealsList {meals} />
