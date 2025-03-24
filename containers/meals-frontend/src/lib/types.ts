@@ -23,5 +23,5 @@ export enum StatusType {
 	LOADING = 'LOADING',
 	ERROR = 'ERROR',
 	SUCCESS = 'SUCCESS',
-	UNKNOWN = 'UNKNOWN',
+	UNKNOWN = 'UNKNOWN'
 }
