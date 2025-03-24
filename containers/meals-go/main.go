@@ -20,6 +20,8 @@ type Config struct {
 	HardcodedMeals []string
 	ReceiverEmails string
 	DryRun         bool
+	LongLive       bool
+	IgnoreCutoff   bool
 }
 
 func parseFlags() Config {
@@ -30,6 +32,8 @@ func parseFlags() Config {
 	syncCleanTable := flag.Bool("clean_table", os.Getenv("CLEAN_TABLE") == "true", "Remove any unseen keys from database on sync")
 	senderEmail := flag.String("sender_email", os.Getenv("SENDER_EMAIL"), "Email address to send from")
 	receiverEmails := flag.String("receiver_emails", os.Getenv("RECEIVER_EMAILS"), "Comma-separated email addresses to send to")
+	longLive := flag.Bool("long_live", os.Getenv("LONG_LIVE") == "true", "Whether sync job should run indefinitely")
+	ignoreCutoff := flag.Bool("ignore_cutoff", os.Getenv("IGNORE_CUTOFF") == "true", "Whether to ignore first of month meal cutoff")
 	hardcodedMeal1 := flag.String("h_1", os.Getenv("H_1"), "1 hardcoded meal")
 	hardcodedMeal2 := flag.String("h_2", os.Getenv("H_2"), "2 hardcoded meal")
 	hardcodedMeal3 := flag.String("h_3", os.Getenv("H_3"), "3 hardcoded meal")
@@ -56,6 +60,8 @@ func parseFlags() Config {
 		ReceiverEmails: *receiverEmails,
 		DryRun:         *dryRun,
 		HardcodedMeals: hardcodedMeals,
+		LongLive:       *longLive,
+		IgnoreCutoff:   *ignoreCutoff,
 	}
 }
 
@@ -68,6 +74,7 @@ func main() {
 			PostgresURL:    c.PostgresURL,
 			SenderEmail:    c.SenderEmail,
 			ReceiverEmails: c.ReceiverEmails,
+			IgnoreCutoff:   c.IgnoreCutoff,
 		}
 
 		mealBackendConfig.RunBackend()
@@ -79,6 +86,7 @@ func main() {
 			ReceiverEmails: c.ReceiverEmails,
 			HardcodedMeals: c.HardcodedMeals,
 			DryRun:         c.DryRun,
+			IgnoreCutoff:   c.IgnoreCutoff,
 		}
 
 		err := mealEmailConfig.CreateAndSendEmail()
@@ -91,9 +99,10 @@ func main() {
 			BucketName:  c.BucketName,
 			BucketKey:   c.BucketKey,
 			CleanTable:  c.SyncCleanTable,
+			LongLive:    c.LongLive,
 		}
 
-		err := mealDbSyncConfig.SyncMeals()
+		err := mealDbSyncConfig.SyncMealsWrapper()
 		if err != nil {
 			log.Printf("Error: %s\n", err)
 		}

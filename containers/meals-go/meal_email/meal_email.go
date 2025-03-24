@@ -26,6 +26,7 @@ type Config struct {
 	ReceiverEmails string
 	HardcodedMeals []string
 	DryRun         bool
+	IgnoreCutoff   bool
 }
 
 type Date struct {
@@ -461,7 +462,13 @@ func (c Config) CreateAndSendEmail() error {
 	day := currentTime.Day()
 	firstOfMonth := time.Date(year, month, 1, 0, 0, 0, 0, currentTime.Location())
 
-	collection, err := meal_collection.ReadMealCollectionFromDB(c.PostgresURL, firstOfMonth.Unix())
+	var collection meal_collection.MealCollection
+	var err error
+	if c.IgnoreCutoff {
+		collection, err = meal_collection.ReadMealCollectionFromDB(c.PostgresURL, currentTime.Unix())
+	} else {
+		collection, err = meal_collection.ReadMealCollectionFromDB(c.PostgresURL, firstOfMonth.Unix())
+	}
 	if err != nil {
 		return fmt.Errorf("something went wrong reading meals: %s", err)
 	}

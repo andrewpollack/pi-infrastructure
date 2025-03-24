@@ -1,9 +1,13 @@
 <script lang="ts">
 	import type { Meal } from '$lib/types';
+	import StatusIndicator from './StatusIndicator.svelte';
 
 	export let meals: Meal[];
 
+	let errorMessage: string | null = null;
 	let successMessage: string | null = null;
+	let isLoading = false;
+
 	let localMeals = meals.map((m) => ({ ...m }));
 
 	function toggleMeal(index: number) {
@@ -11,7 +15,9 @@
 	}
 
 	async function updateMeals() {
+		errorMessage = null;
 		successMessage = null;
+		isLoading = true;
 
 		const updates = localMeals
 			.filter((meal, index) => meal.Enabled !== meals[index].Enabled)
@@ -29,22 +35,19 @@
 			const data = await res.json();
 			console.log('Update response:', data);
 			successMessage = 'Meal status updated!';
-			window.location.reload();
 		} catch (error) {
-			let errorMessage = 'error updating meals: ';
+			errorMessage = 'error updating meals: ';
 			errorMessage += error instanceof Error ? error.message : String(error);
 			alert(errorMessage);
+		} finally {
+			isLoading = false;
 		}
 	}
 </script>
 
 <h2>Meal Status</h2>
 
-{#if successMessage}
-	<div class="success" style="color: green;">
-		<p>{successMessage}</p>
-	</div>
-{/if}
+<StatusIndicator {isLoading} {successMessage} {errorMessage} />
 
 {#if localMeals && localMeals.length > 0}
 	<form>
