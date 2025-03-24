@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"meals/meal_collection"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -16,13 +17,14 @@ type Config struct {
 	BucketKey   string
 	PostgresURL string
 	CleanTable  bool
+	LongLive    bool
 }
 
 func (c Config) SyncMeals() error {
 	ctx := context.Background()
 
 	// Fetch meal data from S3
-	mealData, err := meal_collection.OpenFromS3(c.BucketKey, c.BucketName)
+	mealData, err := meal_collection.OpenFromS3(c.BucketName, c.BucketKey)
 	if err != nil {
 		return fmt.Errorf("error fetching meal data from S3: %w", err)
 	}
@@ -113,6 +115,23 @@ func (c Config) SyncMeals() error {
 			return fmt.Errorf("error deleting recipes not in sync: %w", err)
 		}
 		log.Printf("Deleted %d recipes that are not in the current meal collection\n", deleteRes.RowsAffected())
+	}
+
+	return nil
+}
+
+func (c Config) SyncMealsWrapper() error {
+	if c.LongLive {
+		for {
+			if err := c.SyncMeals(); err != nil {
+				log.Printf("Failed to sync meals: %v\n", err)
+			}
+			time.Sleep(20 * time.Minute)
+		}
+	} else {
+		if err := c.SyncMeals(); err != nil {
+			return fmt.Errorf("failed to sync meals: %v", err)
+		}
 	}
 
 	return nil

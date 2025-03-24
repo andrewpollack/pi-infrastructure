@@ -19,6 +19,7 @@ type Config struct {
 	PostgresURL    string
 	SenderEmail    string
 	ReceiverEmails string
+	IgnoreCutoff   bool
 }
 
 type DayResponse struct {
@@ -75,21 +76,18 @@ func CreateBackendCalendarResponse(collection meal_collection.MealCollection, ye
 	return resp
 }
 
-func getMealCollection(postgresURL string, recipeCreatedCutoff int64) (meal_collection.MealCollection, error) {
-	collection, err := meal_collection.ReadMealCollectionFromDB(postgresURL, recipeCreatedCutoff)
-	if err != nil {
-		return nil, err
-	}
-
-	return collection, nil
-}
-
 func (c Config) GetCalendar(ctx *gin.Context) {
 	now := time.Now()
 	currYear, currMonth, _ := now.Date()
 	firstOfMonth := time.Date(currYear, currMonth, 1, 0, 0, 0, 0, now.Location())
 
-	collection, err := getMealCollection(c.PostgresURL, firstOfMonth.Unix())
+	var collection meal_collection.MealCollection
+	var err error
+	if c.IgnoreCutoff {
+		collection, err = meal_collection.ReadMealCollectionFromDB(c.PostgresURL, now.Unix())
+	} else {
+		collection, err = meal_collection.ReadMealCollectionFromDB(c.PostgresURL, firstOfMonth.Unix())
+	}
 	if err != nil {
 		log.Println("Error in GetCalendar while fetching meal collection:", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -120,7 +118,7 @@ func (c Config) GetCalendar(ctx *gin.Context) {
 }
 
 func (c Config) GetMeals(ctx *gin.Context) {
-	mealCollection, err := getMealCollection(c.PostgresURL, time.Now().Unix())
+	mealCollection, err := meal_collection.ReadMealCollectionFromDB(c.PostgresURL, time.Now().Unix())
 	if err != nil {
 		log.Println("Error in GetMeals while fetching meal collection:", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -188,7 +186,7 @@ func (c Config) SendEmail(ctx *gin.Context) {
 		return
 	}
 
-	mealCollection, err := getMealCollection(c.PostgresURL, time.Now().Unix())
+	mealCollection, err := meal_collection.ReadMealCollectionFromDB(c.PostgresURL, time.Now().Unix())
 	if err != nil {
 		log.Println("Error in SendEmail while fetching meal collection:", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -244,7 +242,7 @@ func (c Config) DisableMeals(ctx *gin.Context) {
 		return
 	}
 
-	mealCollection, err := getMealCollection(c.PostgresURL, time.Now().Unix())
+	mealCollection, err := meal_collection.ReadMealCollectionFromDB(c.PostgresURL, time.Now().Unix())
 	if err != nil {
 		log.Println("Error in DisableMeals while fetching meal collection:", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{
