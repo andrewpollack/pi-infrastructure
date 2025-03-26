@@ -15,6 +15,14 @@ export interface MonthResponse {
 	MealsEachWeek: Meal[][];
 }
 
+export interface ExtraItem {
+	Name: string;
+}
+
+export interface ExtraItemsResponse {
+	allItems: ExtraItem[];
+}
+
 export interface CalendarResponse {
 	currMonthResponse: MonthResponse;
 }
