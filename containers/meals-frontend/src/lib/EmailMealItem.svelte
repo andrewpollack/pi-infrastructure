@@ -7,7 +7,8 @@
 		dayOfWeek,
 		maxMeals,
 		selectedMealsCount,
-		onToggle
+		onToggle,
+		disableLinks
 	}: {
 		meal: Meal;
 		isSelected: boolean;
@@ -15,6 +16,7 @@
 		maxMeals: number;
 		selectedMealsCount: number;
 		onToggle: (meal: string, checked: boolean) => void;
+		disableLinks: boolean;
 	} = $props();
 
 	function handleChange(e: Event) {
@@ -37,7 +39,7 @@
 			onchange={handleChange}
 			style="margin-right: 15px;"
 		/>
-		{#if meal.URL}
+		{#if meal.URL && !disableLinks}
 			<a href={meal.URL} target="_blank" rel="noopener noreferrer">
 				{#if isSelected}
 					<span>(<strong>{dayOfWeek}</strong>)</span>

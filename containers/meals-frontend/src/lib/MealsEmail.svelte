@@ -15,6 +15,7 @@
 	let selectedExtraItems = $state([] as string[]);
 	let isEmailSelected = $derived(selectedEmails.length > 0);
 	let isMealsSelected = $derived(selectedMeals.length > 0);
+	let disableLinks: boolean = $state(false);
 
 	const maxMeals = 7;
 	const staticMeals: Meal[] = [
@@ -122,10 +123,10 @@
 					{#each [...Array(maxMeals).keys()] as i}
 						<td
 							style="
-						overflow: hidden;
-						text-overflow: ellipsis;
-						white-space: nowrap;
-						"
+								overflow: hidden;
+								text-overflow: ellipsis;
+								white-space: nowrap;
+							"
 						>
 							{#if selectedMeals[i]}
 								{selectedMeals[i]}
@@ -179,7 +180,14 @@
 		</div>
 
 		<div>
-			<h3>Meals</h3>
+			<div style="display: flex; align-items: center; gap: 1rem;">
+				<h3>Meals</h3>
+				<label>
+					<input type="checkbox" bind:checked={disableLinks} />
+					Disable Hyperlinks
+				</label>
+			</div>
+
 			<div style="display: flex; gap: 1rem; flex-wrap: nowrap;">
 				{#each chunkedMeals as chunk}
 					<div style="flex: 0 0 50%;">
@@ -191,6 +199,7 @@
 								{maxMeals}
 								selectedMealsCount={selectedMeals.length}
 								onToggle={toggleMeal}
+								{disableLinks}
 							/>
 						{/each}
 					</div>
@@ -213,7 +222,6 @@
 
 	th,
 	td {
-		/* Force text wrapping instead of overflow */
 		word-wrap: break-word;
 		white-space: normal;
 		text-align: center;
