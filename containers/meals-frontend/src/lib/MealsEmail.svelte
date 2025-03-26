@@ -1,15 +1,18 @@
 <script lang="ts">
-	import type { Meal } from '$lib/types';
+	import type { Meal, ExtraItem } from '$lib/types';
 	import { StatusType } from '$lib/types';
+	import { daysOfWeek } from '$lib/const';
 	import EmailMealItem from './EmailMealItem.svelte';
 	import StatusIndicator from './StatusIndicator.svelte';
 
-	let { meals, emails }: { meals: Meal[]; emails: string[] } = $props();
+	let { meals, emails, extraItems }: { meals: Meal[]; emails: string[]; extraItems: ExtraItem[] } =
+		$props();
 
 	let message = $state('');
 	let statusType = $state(StatusType.SUCCESS);
 	let selectedMeals = $state([] as string[]);
 	let selectedEmails = $state([] as string[]);
+	let selectedExtraItems = $state([] as string[]);
 	let isEmailSelected = $derived(selectedEmails.length > 0);
 	let isMealsSelected = $derived(selectedMeals.length > 0);
 
@@ -19,8 +22,6 @@
 		{ Day: 0, Meal: 'Leftovers', URL: null, Enabled: null }
 	];
 	const allMealItems: Meal[] = [...staticMeals, ...meals];
-	const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-	const shortenedDaysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thur', 'Fri', 'Sat'];
 
 	function toggleMeal(meal: string, checked: boolean) {
 		if (checked) {
@@ -36,13 +37,21 @@
 	}
 
 	const numColumns = 2;
-	const itemsPerColumn = Math.ceil(allMealItems.length / numColumns);
 
 	const chunkedMeals: Meal[][] = [];
+	const mealsPerColumn = Math.ceil(allMealItems.length / numColumns);
 	for (let i = 0; i < numColumns; i++) {
-		const start = i * itemsPerColumn;
-		const end = start + itemsPerColumn;
+		const start = i * mealsPerColumn;
+		const end = start + mealsPerColumn;
 		chunkedMeals.push(allMealItems.slice(start, end));
+	}
+
+	const chunkedExtraItems: ExtraItem[][] = [];
+	const extraItemsPerColumn = Math.ceil(extraItems.length / numColumns);
+	for (let i = 0; i < numColumns; i++) {
+		const start = i * extraItemsPerColumn;
+		const end = start + extraItemsPerColumn;
+		chunkedExtraItems.push(extraItems.slice(start, end));
 	}
 
 	async function handleSubmit(event: Event) {
@@ -64,7 +73,8 @@
 				},
 				body: JSON.stringify({
 					meals: paddedMeals,
-					emails: selectedEmails
+					emails: selectedEmails,
+					extraItems: selectedExtraItems
 				})
 			});
 
@@ -93,68 +103,129 @@
 
 <StatusIndicator {message} type={statusType} />
 
-<form onsubmit={handleSubmit}>
-	<button disabled={!isEmailSelected || !isMealsSelected} type="submit">Send Email</button>
+<div class="table-container">
+	<form onsubmit={handleSubmit}>
+		<button disabled={!isEmailSelected || !isMealsSelected} type="submit">Send Email</button>
 
-	<table border="1" style="margin-top: 1rem; border-collapse: collapse;">
-		<thead>
-			<tr>
-				{#each daysOfWeek as day}
-					<th>{day}</th>
-				{/each}
-			</tr>
-		</thead>
-		<tbody>
-			<tr>
-				{#each [...Array(maxMeals).keys()] as i}
-					<td
-						style="
-						max-width: 75px;
+		<br /> <br />
+
+		<table border="1" style="border-collapse: collapse;">
+			<thead>
+				<tr style="background-color: #FFDCCC;">
+					{#each daysOfWeek as day}
+						<th>{day}</th>
+					{/each}
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					{#each [...Array(maxMeals).keys()] as i}
+						<td
+							style="
 						overflow: hidden;
 						text-overflow: ellipsis;
 						white-space: nowrap;
 						"
-					>
-						{#if selectedMeals[i]}
-							{selectedMeals[i]}
-						{:else}
-							&nbsp;
-						{/if}
-					</td>
-				{/each}
-			</tr>
-		</tbody>
-	</table>
-
-	<div>
-		<h3>Emails</h3>
-		{#each emails as email}
-			<div>
-				<label>
-					<input type="checkbox" value={email} bind:group={selectedEmails} />
-					{email}
-				</label>
-			</div>
-		{/each}
-	</div>
-
-	<div>
-		<h3>Meals</h3>
-		<div style="display: flex; gap: 2rem;">
-			{#each chunkedMeals as chunk}
-				<div>
-					{#each chunk as meal}
-						<EmailMealItem
-							{meal}
-							isSelected={selectedMeals.includes(meal.Meal)}
-							dayOfWeek={shortenedDaysOfWeek[selectedMeals.indexOf(meal.Meal)]}
-							{maxMeals}
-							selectedMealsCount={selectedMeals.length}
-							onToggle={toggleMeal}
-						/>
+						>
+							{#if selectedMeals[i]}
+								{selectedMeals[i]}
+							{:else}
+								&nbsp;
+							{/if}
+						</td>
 					{/each}
+				</tr>
+			</tbody>
+		</table>
+
+		<div>
+			<h3>Emails</h3>
+			{#each emails as email}
+				<div>
+					<label style="display: flex; align-items: center;">
+						<input
+							type="checkbox"
+							value={email}
+							bind:group={selectedEmails}
+							style="margin-right: 15px;"
+						/>
+						{email}
+					</label>
 				</div>
 			{/each}
 		</div>
-	</div>
-</form>
+
+		<div>
+			<h3>Extra Items</h3>
+			<div style="display: flex; gap: 1rem; flex-wrap: nowrap;">
+				{#each chunkedExtraItems as chunk}
+					<div style="flex: 0 0 50%;">
+						{#each chunk as item}
+							<div>
+								<label style="display: flex; align-items: center;">
+									<input
+										type="checkbox"
+										value={item.Name}
+										bind:group={selectedExtraItems}
+										style="margin-right: 15px;"
+									/>
+									{item.Name}
+								</label>
+							</div>
+						{/each}
+					</div>
+				{/each}
+			</div>
+		</div>
+
+		<div>
+			<h3>Meals</h3>
+			<div style="display: flex; gap: 1rem; flex-wrap: nowrap;">
+				{#each chunkedMeals as chunk}
+					<div style="flex: 0 0 50%;">
+						{#each chunk as meal}
+							<EmailMealItem
+								{meal}
+								isSelected={selectedMeals.includes(meal.Meal)}
+								dayOfWeek={daysOfWeek[selectedMeals.indexOf(meal.Meal)]}
+								{maxMeals}
+								selectedMealsCount={selectedMeals.length}
+								onToggle={toggleMeal}
+							/>
+						{/each}
+					</div>
+				{/each}
+			</div>
+		</div>
+	</form>
+</div>
+
+<style>
+	.table-container {
+		max-width: 100%;
+	}
+
+	table {
+		width: 100%;
+		border-collapse: collapse;
+		table-layout: fixed;
+	}
+
+	th,
+	td {
+		/* Force text wrapping instead of overflow */
+		word-wrap: break-word;
+		white-space: normal;
+		text-align: center;
+		vertical-align: top;
+		padding: 0.5rem;
+
+		/* 
+		 * clamp(min, preferred, max)
+		 *  - min font size: 0.70rem
+		 *  - let the browser choose in between based on available space via 2vw
+		 *  - max font size: 1rem
+		 */
+		font-size: clamp(0.7rem, 2vw, 1rem);
+	}
+</style>

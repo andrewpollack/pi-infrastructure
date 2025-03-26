@@ -1,12 +1,21 @@
 <script lang="ts">
 	import type { Meal } from '$lib/types';
 
-	export let meal: Meal;
-	export let isSelected: boolean;
-	export let dayOfWeek: string;
-	export let maxMeals: number;
-	export let selectedMealsCount: number;
-	export let onToggle: (meal: string, checked: boolean) => void;
+	let {
+		meal,
+		isSelected,
+		dayOfWeek,
+		maxMeals,
+		selectedMealsCount,
+		onToggle
+	}: {
+		meal: Meal;
+		isSelected: boolean;
+		dayOfWeek: string;
+		maxMeals: number;
+		selectedMealsCount: number;
+		onToggle: (meal: string, checked: boolean) => void;
+	} = $props();
 
 	function handleChange(e: Event) {
 		const input = e.target as HTMLInputElement;
@@ -19,18 +28,29 @@
 	}
 </script>
 
-<div class="meal-item">
-	<label>
-		<input type="checkbox" name="meals" checked={isSelected} on:change={handleChange} />
-		{#if isSelected}
-			(<strong>{dayOfWeek}</strong>)
-		{/if}
+<div>
+	<label style="display: flex; align-items: center;">
+		<input
+			type="checkbox"
+			name="meals"
+			checked={isSelected}
+			onchange={handleChange}
+			style="margin-right: 15px;"
+		/>
 		{#if meal.URL}
 			<a href={meal.URL} target="_blank" rel="noopener noreferrer">
+				{#if isSelected}
+					<span>(<strong>{dayOfWeek}</strong>)</span>
+				{/if}
 				{meal.Meal}
 			</a>
 		{:else}
-			{meal.Meal}
+			<span>
+				{#if isSelected}
+					<span>(<strong>{dayOfWeek}</strong>)</span>
+				{/if}
+				{meal.Meal}</span
+			>
 		{/if}
 	</label>
 </div>

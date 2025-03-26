@@ -12,10 +12,6 @@
 		localMeals.some((meal, index) => meal.Enabled !== meals[index].Enabled)
 	);
 
-	function toggleMeal(index: number) {
-		localMeals[index].Enabled = !localMeals[index].Enabled;
-	}
-
 	async function updateMeals() {
 		message = 'Updating meal status...';
 		statusType = StatusType.LOADING;
@@ -60,8 +56,7 @@
 					id={meal.Meal}
 					name={meal.Meal}
 					value={meal.Meal}
-					checked={meal.Enabled}
-					onchange={() => toggleMeal(index)}
+					bind:checked={meal.Enabled}
 				/>
 				<label for={meal.Meal}>
 					{#if meal.URL}

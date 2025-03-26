@@ -9,9 +9,10 @@ export const load: PageServerLoad = async () => {
 		: ['user@example.com'];
 
 	try {
-		const [mealsRes, calendarRes] = await Promise.all([
+		const [mealsRes, calendarRes, extraItemsRes] = await Promise.all([
 			fetch(`${env.API_BASE_URL}/api/meals`),
-			fetch(`${env.API_BASE_URL}/api/calendar`)
+			fetch(`${env.API_BASE_URL}/api/calendar`),
+			fetch(`${env.API_BASE_URL}/api/items`)
 		]);
 
 		if (!mealsRes.ok) {
@@ -20,14 +21,19 @@ export const load: PageServerLoad = async () => {
 		if (!calendarRes.ok) {
 			throw error(calendarRes.status, 'Failed to fetch calendar');
 		}
+		if (!extraItemsRes.ok) {
+			throw error(extraItemsRes.status, 'Failed to fetch extra items');
+		}
 
 		const mealsData: MealsResponse = await mealsRes.json();
 		const calendarData: CalendarResponse = await calendarRes.json();
+		const extraItemsData = await extraItemsRes.json();
 
 		return {
 			allMeals: mealsData.allMeals,
 			currMonthResponse: calendarData.currMonthResponse,
-			allEmails: emails
+			allEmails: emails,
+			allExtraItems: extraItemsData.allItems
 		};
 	} catch (err: any) {
 		console.error('Error loading page data:', err);

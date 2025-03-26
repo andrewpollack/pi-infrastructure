@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"math"
 	"meals/calendar"
 	"os"
@@ -114,6 +115,12 @@ var MEAL_OUT = Meal{
 
 type MealCollection []Meal
 
+// TODO: Name this something more logical... maybe just "Item"?
+type ExtraItem struct {
+	Name  string `json:"name"`
+	Aisle Aisle  `json:"aisle"`
+}
+
 func (m MealCollection) MapNameToMeal() map[string]Meal {
 	mealMap := map[string]Meal{
 		MEAL_LEFTOVERS.Name: MEAL_LEFTOVERS,
@@ -128,6 +135,9 @@ func (m MealCollection) MapNameToMeal() map[string]Meal {
 }
 
 func (i Ingredient) String() string {
+	if i.Quantity == 0 {
+		return fmt.Sprintf("%s", i.Name)
+	}
 	formatSignificant := func(f float64, sigDigits int) string {
 		if f == 0 {
 			return "0"
@@ -146,6 +156,9 @@ func (i Ingredient) String() string {
 }
 
 func (i Ingredient) StringBolded() string {
+	if i.Quantity == 0 {
+		return fmt.Sprintf("<strong>%s</strong>", i.Name)
+	}
 	formatSignificant := func(f float64, sigDigits int) string {
 		if f == 0 {
 			return "0"
@@ -435,6 +448,82 @@ func UpdateMealsInDB(postgresURL string, updates []MealUpdate) error {
 	}
 
 	return nil
+}
+
+func ReadExtraItemsFromDB(postgresURL string) ([]ExtraItem, error) {
+	type DBItem struct {
+		ID           int       `json:"id"`
+		Aisle        string    `json:"aisle"`
+		Name         string    `json:"name"`
+		DateCreated  time.Time `json:"date_created"`
+		DateModified time.Time `json:"date_modified"`
+	}
+
+	if postgresURL == "" {
+		return nil, fmt.Errorf("POSTGRES_URL is not set")
+	}
+
+	conn, err := pgx.Connect(context.Background(), postgresURL)
+	if err != nil {
+		return nil, fmt.Errorf("unable to connect to database: %v", err)
+	}
+	defer conn.Close(context.Background())
+
+	rows, err := conn.Query(context.Background(), `
+        SELECT
+            id,
+            aisle,
+            name,
+            date_created,
+            date_modified
+        FROM item
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("query failed: %v", err)
+	}
+	defer rows.Close()
+
+	var items []DBItem
+
+	for rows.Next() {
+		var i DBItem
+
+		err := rows.Scan(
+			&i.ID,
+			&i.Aisle,
+			&i.Name,
+			&i.DateCreated,
+			&i.DateModified,
+		)
+		if err != nil {
+			log.Fatalf("Scan failed: %v", err)
+		}
+
+		items = append(items, i)
+	}
+
+	// Sort items by name
+	sort.Slice(items, func(i, j int) bool {
+		return strings.ToLower(items[i].Name) < strings.ToLower(items[j].Name)
+	})
+
+	var itemsOut []ExtraItem
+	for _, item := range items {
+		itemsOut = append(itemsOut, ExtraItem{
+			Name:  item.Name,
+			Aisle: Aisle(item.Aisle),
+		})
+	}
+
+	return itemsOut, nil
+}
+
+func ExtraItemToIngredient(ei ExtraItem) Ingredient {
+	return Ingredient{
+		Name:     ei.Name,
+		Aisle:    ei.Aisle,
+		Quantity: 0,
+	}
 }
 
 func ReadMealCollectionFromReader(reader io.ReadCloser) (MealCollection, error) {

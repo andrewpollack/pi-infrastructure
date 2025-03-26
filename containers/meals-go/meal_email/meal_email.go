@@ -25,6 +25,7 @@ type Config struct {
 	SenderEmail    string
 	ReceiverEmails string
 	HardcodedMeals []string
+	ExtraItems     []string
 	DryRun         bool
 	IgnoreCutoff   bool
 }
@@ -146,7 +147,7 @@ func generateTable(meals []meal_collection.Meal) string {
 	return sb.String()
 }
 
-func GenerateGroceryList(meals []meal_collection.Meal) string {
+func GenerateGroceryList(meals []meal_collection.Meal, extraItems []meal_collection.ExtraItem) string {
 	var sb strings.Builder
 
 	ingredients := meal_collection.MealsToIngredients(meals)
@@ -160,6 +161,14 @@ func GenerateGroceryList(meals []meal_collection.Meal) string {
 		for _, ing := range ingredients {
 			if ing.Aisle == aisle {
 				itemsForAisle = append(itemsForAisle, ing)
+			}
+		}
+		for _, extraItem := range extraItems {
+			if extraItem.Aisle == aisle {
+				itemsForAisle = append(itemsForAisle, meal_collection.Ingredient{
+					Name:  extraItem.Name,
+					Aisle: extraItem.Aisle,
+				})
 			}
 		}
 
@@ -191,11 +200,15 @@ func (c Config) GenerateEmailForNextWeek(date Date, collection meal_collection.M
 	if err != nil {
 		return "", fmt.Errorf("failed to get meals for next week: %v", err)
 	}
+	allExtraItems, err := c.GetExtraItems()
+	if err != nil {
+		return "", fmt.Errorf("failed to get extra items: %v", err)
+	}
 
 	var sb strings.Builder
 	sb.WriteString(generateHeader())
 	sb.WriteString(generateTable(allMeals))
-	sb.WriteString(GenerateGroceryList(allMeals))
+	sb.WriteString(GenerateGroceryList(allMeals, allExtraItems))
 	sb.WriteString(generateCloser())
 
 	return sb.String(), nil
@@ -236,6 +249,32 @@ func (c Config) GetMealsForNextWeek(date Date, collection meal_collection.MealCo
 	return allMeals, nil
 }
 
+func (c Config) GetExtraItems() ([]meal_collection.ExtraItem, error) {
+	if len(c.ExtraItems) == 0 {
+		return nil, nil
+	}
+	extraItemsDB, err := meal_collection.ReadExtraItemsFromDB(c.PostgresURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read extra items from DB: %v", err)
+	}
+
+	extraItemsMap := map[string]meal_collection.ExtraItem{}
+	for _, extraItem := range extraItemsDB {
+		extraItemsMap[extraItem.Name] = extraItem
+	}
+	var extraItems []meal_collection.ExtraItem
+	for _, extraItem := range c.ExtraItems {
+		// If the extraItem isn't found in the map, return an error.
+		if _, found := extraItemsMap[extraItem]; !found {
+			return nil, fmt.Errorf("Extra Item not found: %s", extraItem)
+		}
+
+		extraItems = append(extraItems, extraItemsMap[extraItem])
+	}
+
+	return extraItems, nil
+}
+
 func GenerateHeaderForNextWeek(date Date) string {
 	daysOfWeek := GetDaysOfNextWeek(date)
 	first := daysOfWeek[0]
@@ -266,8 +305,11 @@ func convertHTMLToPDF(html string) ([]byte, error) {
 	return pdfg.Bytes(), nil
 }
 
-func generateIngredientsPDF(meals []meal_collection.Meal) ([]byte, error) {
+func generateIngredientsPDF(meals []meal_collection.Meal, allExtraItems []meal_collection.ExtraItem) ([]byte, error) {
 	ingredients := meal_collection.MealsToIngredients(meals)
+	for _, extraItem := range allExtraItems {
+		ingredients = append(ingredients, meal_collection.ExtraItemToIngredient(extraItem))
+	}
 
 	htmlContent := buildHTMLContent(ingredients)
 	pdfBytes, err := convertHTMLToPDF(htmlContent)
@@ -499,7 +541,11 @@ BODY:
 		if err != nil {
 			return fmt.Errorf("failed to get meals for next week: %v", err)
 		}
-		pdfBytes, err := generateIngredientsPDF(meals)
+		allExtraItems, err := c.GetExtraItems()
+		if err != nil {
+			return fmt.Errorf("failed to get extra items: %v", err)
+		}
+		pdfBytes, err := generateIngredientsPDF(meals, allExtraItems)
 		if err != nil {
 			return fmt.Errorf("failed to generate ingredients PDF: %v", err)
 		}

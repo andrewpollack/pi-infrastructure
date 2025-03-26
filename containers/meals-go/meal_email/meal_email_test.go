@@ -174,7 +174,7 @@ func TestGroceryListGeneration(t *testing.T) {
 	}
 
 	itemsOctober := collection.GenerateMealsWholeYearNoCategories(*calendar.NewCalendar(2024, time.October))
-	_ = GenerateGroceryList(itemsOctober)
+	_ = GenerateGroceryList(itemsOctober, nil)
 
 	// TODO: Actually test here. Golden tests are a pain comparing against a changing output...
 }

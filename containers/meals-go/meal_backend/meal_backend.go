@@ -29,6 +29,10 @@ type DayResponse struct {
 	Enabled bool
 }
 
+type ExtraItemResponse struct {
+	Items []meal_collection.ExtraItem
+}
+
 type BackendCalendarResponse struct {
 	Year          int
 	Month         string
@@ -149,9 +153,42 @@ func (c Config) GetMeals(ctx *gin.Context) {
 	})
 }
 
+func (c Config) GetItems(ctx *gin.Context) {
+	type ExtraItemResponse struct {
+		Name string `json:"Name"`
+	}
+
+	extraItems, err := meal_collection.ReadExtraItemsFromDB(c.PostgresURL)
+	if err != nil {
+		log.Println("Error in GetMeals while fetching meal collection:", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": err,
+		})
+		return
+	}
+
+	// Sort items alphabetically (case-insensitive)
+	sort.Slice(extraItems, func(i, j int) bool {
+		return strings.ToLower(extraItems[i].Name) <
+			strings.ToLower(extraItems[j].Name)
+	})
+
+	var extraItemsResponse []ExtraItemResponse
+	for _, item := range extraItems {
+		extraItemsResponse = append(extraItemsResponse, ExtraItemResponse{
+			Name: item.Name,
+		})
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"allItems": extraItemsResponse,
+	})
+}
+
 type SendEmailRequest struct {
-	Meals  []string `json:"meals"`
-	Emails []string `json:"emails"`
+	Meals      []string `json:"meals"`
+	Emails     []string `json:"emails"`
+	ExtraItems []string `json:"extraItems"`
 }
 
 func (c Config) SendEmail(ctx *gin.Context) {
@@ -166,6 +203,7 @@ func (c Config) SendEmail(ctx *gin.Context) {
 
 	meals := emailRequest.Meals
 	emails := emailRequest.Emails
+	extraItems := emailRequest.ExtraItems
 
 	if len(emails) == 0 {
 		errMsg := "At least one email must be provided"
@@ -195,6 +233,15 @@ func (c Config) SendEmail(ctx *gin.Context) {
 		return
 	}
 
+	extraItemsDB, err := meal_collection.ReadExtraItemsFromDB(c.PostgresURL)
+	if err != nil {
+		log.Println("Error in GetMeals while fetching meal collection:", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": err,
+		})
+		return
+	}
+
 	mealMap := mealCollection.MapNameToMeal()
 	var currMealNames []string
 	for _, meal := range meals {
@@ -211,12 +258,32 @@ func (c Config) SendEmail(ctx *gin.Context) {
 		currMealNames = append(currMealNames, meal)
 	}
 
+	extraItemsMap := map[string]meal_collection.ExtraItem{}
+	for _, extraItem := range extraItemsDB {
+		extraItemsMap[extraItem.Name] = extraItem
+	}
+	var extraItemNames []string
+	for _, extraItem := range extraItems {
+		// If the extraItem isn't found in the map, return an error.
+		if _, found := extraItemsMap[extraItem]; !found {
+			errMsg := fmt.Sprintf("Extra Item not found: %s", extraItem)
+			log.Println("Error in SendEmail:", errMsg)
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error": errMsg,
+			})
+			return
+		}
+
+		extraItemNames = append(extraItemNames, extraItem)
+	}
+
 	mealEmailConfig := meal_email.Config{
 		PostgresURL:    c.PostgresURL,
 		UseSES:         true,
 		HardcodedMeals: currMealNames,
 		SenderEmail:    c.SenderEmail,
 		ReceiverEmails: strings.Join(emails, ","),
+		ExtraItems:     extraItemNames,
 	}
 	err = mealEmailConfig.CreateAndSendEmail()
 	if err != nil {
@@ -308,6 +375,7 @@ func (c Config) RunBackend() {
 
 	api.GET("/calendar", c.GetCalendar)
 	api.GET("/meals", c.GetMeals)
+	api.GET("/items", c.GetItems)
 	api.POST("/email", c.SendEmail)
 	api.POST("/update", c.DisableMeals)
 
