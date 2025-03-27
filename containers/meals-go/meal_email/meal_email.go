@@ -156,7 +156,7 @@ func generateCloser() string {
 </html>`
 }
 
-func (c Config) GenerateEmailHTML(date Date, collection meal_collection.MealCollection, meals []meal_collection.Meal, ingredients []meal_collection.Ingredient) (string, error) {
+func (c Config) GenerateEmailContentHTML(date Date, collection meal_collection.MealCollection, meals []meal_collection.Meal, ingredients []meal_collection.Ingredient) (string, error) {
 	var sb strings.Builder
 	sb.WriteString(generateHeader())
 	sb.WriteString(generateTable(meals))
@@ -502,7 +502,7 @@ func (c Config) CreateAndSendEmail() error {
 
 	// 3) Build email subject and HTML body
 	subject := GenerateHeaderForNextWeek(currDate)
-	bodyHTML, err := c.GenerateEmailHTML(currDate, collection, meals, ingredients)
+	bodyHTML, err := c.GenerateEmailContentHTML(currDate, collection, meals, ingredients)
 	if err != nil {
 		return fmt.Errorf("failed to generate email HTML: %w", err)
 	}
