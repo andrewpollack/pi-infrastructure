@@ -1,11 +1,7 @@
 package meal_email
 
 import (
-	"log"
-	"meals/calendar"
-	"meals/meal_collection"
 	"testing"
-	"time"
 )
 
 const MEALS_JSON = "../data/recipes.json"
@@ -160,21 +156,4 @@ func TestNextWeekGeneration(t *testing.T) {
 			}
 		}
 	}
-}
-
-func TestGroceryListGeneration(t *testing.T) {
-	mealData, err := meal_collection.OpenMealData(MEALS_JSON)
-	if err != nil {
-		log.Fatalf("Error fetching mealData: %v", err)
-	}
-
-	collection, err := meal_collection.ReadMealCollectionFromReader(mealData)
-	if err != nil {
-		t.Errorf("Something went wrong reading meals... %s", err)
-	}
-
-	itemsOctober := collection.GenerateMealsWholeYearNoCategories(*calendar.NewCalendar(2024, time.October))
-	_ = GenerateGroceryList(itemsOctober, nil)
-
-	// TODO: Actually test here. Golden tests are a pain comparing against a changing output...
 }

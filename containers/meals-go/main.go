@@ -19,7 +19,6 @@ type Config struct {
 	SenderEmail    string
 	HardcodedMeals []string
 	ReceiverEmails string
-	DryRun         bool
 	LongLive       bool
 	IgnoreCutoff   bool
 }
@@ -41,7 +40,6 @@ func parseFlags() Config {
 	hardcodedMeal5 := flag.String("h_5", os.Getenv("H_5"), "5 hardcoded meal")
 	hardcodedMeal6 := flag.String("h_6", os.Getenv("H_6"), "6 hardcoded meal")
 	hardcodedMeal7 := flag.String("h_7", os.Getenv("H_7"), "7 hardcoded meal")
-	dryRun := flag.Bool("dry_run", os.Getenv("DRY_RUN") == "true", "Dry run mode for testing email")
 	flag.Parse()
 
 	// Check if hardcoded meals are set
@@ -58,7 +56,6 @@ func parseFlags() Config {
 		SyncCleanTable: *syncCleanTable,
 		SenderEmail:    *senderEmail,
 		ReceiverEmails: *receiverEmails,
-		DryRun:         *dryRun,
 		HardcodedMeals: hardcodedMeals,
 		LongLive:       *longLive,
 		IgnoreCutoff:   *ignoreCutoff,
@@ -85,7 +82,6 @@ func main() {
 			SenderEmail:    c.SenderEmail,
 			ReceiverEmails: c.ReceiverEmails,
 			HardcodedMeals: c.HardcodedMeals,
-			DryRun:         c.DryRun,
 			IgnoreCutoff:   c.IgnoreCutoff,
 		}
 
