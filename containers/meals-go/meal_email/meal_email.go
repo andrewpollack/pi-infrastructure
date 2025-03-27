@@ -26,7 +26,6 @@ type Config struct {
 	ReceiverEmails string
 	HardcodedMeals []string
 	ExtraItems     []string
-	DryRun         bool
 	IgnoreCutoff   bool
 }
 
@@ -36,63 +35,35 @@ type Date struct {
 	Day   int
 }
 
-func GetDaysOfCurrentWeek(date Date) []Date {
-	currMonthCalendar := calendar.NewCalendar(date.Year, time.Month(date.Month))
-	var nextMonthCalendar *calendar.Calendar
-	if date.Month == 12 {
-		nextMonthCalendar = calendar.NewCalendar(date.Year+1, 1)
-	} else {
-		nextMonthCalendar = calendar.NewCalendar(date.Year, time.Month(date.Month+1))
-	}
+func (d Date) ToTime() time.Time {
+	return time.Date(d.Year, time.Month(d.Month), d.Day, 0, 0, 0, 0, time.UTC)
+}
 
-	dayIndex := currMonthCalendar.GetWeekIndexOfDay(date.Day)
+func FromTime(t time.Time) Date {
+	return Date{
+		Year:  t.Year(),
+		Month: int(t.Month()),
+		Day:   t.Day(),
+	}
+}
+
+func GetDaysOfCurrentWeek(date Date) []Date {
+	t := date.ToTime()
+	offset := int(t.Weekday())
+	startOfWeek := t.AddDate(0, 0, -offset)
 
 	var fullWeek []Date
-	currCalendarWeek := currMonthCalendar.Weeks[dayIndex]
-	nextMonthStartWeek := nextMonthCalendar.Weeks[0]
 	for i := 0; i < 7; i++ {
-		if currCalendarWeek[i].Number == 0 {
-			// Use next month instead.
-			fullWeek = append(fullWeek, Date{
-				Year:  nextMonthCalendar.Year,
-				Month: int(nextMonthCalendar.Month),
-				Day:   nextMonthStartWeek[i].Number,
-			})
-		} else {
-			fullWeek = append(fullWeek, Date{
-				Year:  currMonthCalendar.Year,
-				Month: int(currMonthCalendar.Month),
-				Day:   currCalendarWeek[i].Number,
-			})
-		}
+		day := startOfWeek.AddDate(0, 0, i)
+		fullWeek = append(fullWeek, FromTime(day))
 	}
-
 	return fullWeek
 }
 
 func GetDaysOfNextWeek(date Date) []Date {
-	currMonthCalendar := calendar.NewCalendar(date.Year, time.Month(date.Month))
-	daysInMonth := currMonthCalendar.DaysInMonth()
-
-	nextWeekYear := date.Year
-	nextWeekMonth := date.Month
-	nextWeekDay := date.Day + 7
-
-	if nextWeekDay > daysInMonth {
-		if nextWeekMonth == 12 {
-			nextWeekMonth = 1
-			nextWeekYear += 1
-		} else {
-			nextWeekMonth += 1
-		}
-		nextWeekDay -= daysInMonth
-	}
-
-	return GetDaysOfCurrentWeek(Date{
-		Year:  nextWeekYear,
-		Month: nextWeekMonth,
-		Day:   nextWeekDay,
-	})
+	t := date.ToTime()
+	nextWeekStart := t.AddDate(0, 0, 7)
+	return GetDaysOfCurrentWeek(FromTime(nextWeekStart))
 }
 
 type YearMonth struct {
@@ -147,10 +118,8 @@ func generateTable(meals []meal_collection.Meal) string {
 	return sb.String()
 }
 
-func GenerateGroceryList(meals []meal_collection.Meal, extraItems []meal_collection.ExtraItem) string {
+func GenerateGroceryList(ingredients []meal_collection.Ingredient) string {
 	var sb strings.Builder
-
-	ingredients := meal_collection.MealsToIngredients(meals)
 
 	for _, aisle := range meal_collection.AllAisles {
 		// Write a header for the aisle
@@ -161,14 +130,6 @@ func GenerateGroceryList(meals []meal_collection.Meal, extraItems []meal_collect
 		for _, ing := range ingredients {
 			if ing.Aisle == aisle {
 				itemsForAisle = append(itemsForAisle, ing)
-			}
-		}
-		for _, extraItem := range extraItems {
-			if extraItem.Aisle == aisle {
-				itemsForAisle = append(itemsForAisle, meal_collection.Ingredient{
-					Name:  extraItem.Name,
-					Aisle: extraItem.Aisle,
-				})
 			}
 		}
 
@@ -195,27 +156,39 @@ func generateCloser() string {
 </html>`
 }
 
-func (c Config) GenerateEmailForNextWeek(date Date, collection meal_collection.MealCollection) (string, error) {
-	allMeals, err := c.GetMealsForNextWeek(date, collection)
-	if err != nil {
-		return "", fmt.Errorf("failed to get meals for next week: %v", err)
-	}
-	allExtraItems, err := c.GetExtraItems()
-	if err != nil {
-		return "", fmt.Errorf("failed to get extra items: %v", err)
-	}
-
+func (c Config) GenerateEmailHTML(date Date, collection meal_collection.MealCollection, meals []meal_collection.Meal, ingredients []meal_collection.Ingredient) (string, error) {
 	var sb strings.Builder
 	sb.WriteString(generateHeader())
-	sb.WriteString(generateTable(allMeals))
-	sb.WriteString(GenerateGroceryList(allMeals, allExtraItems))
+	sb.WriteString(generateTable(meals))
+	sb.WriteString(GenerateGroceryList(ingredients))
 	sb.WriteString(generateCloser())
 
 	return sb.String(), nil
 }
 
+func (c Config) GetIngredientsForNextWeek(date Date, collection meal_collection.MealCollection) ([]meal_collection.Ingredient, error) {
+	var ingredients []meal_collection.Ingredient
+
+	allMeals, err := c.GetMealsForNextWeek(date, collection)
+	if err != nil {
+		return ingredients, fmt.Errorf("failed to get meals for next week: %v", err)
+	}
+	allExtraItems, err := c.GetExtraItems()
+	if err != nil {
+		return ingredients, fmt.Errorf("failed to get extra items: %v", err)
+	}
+
+	ingredients = meal_collection.MealsToIngredients(allMeals)
+	for _, extraItem := range allExtraItems {
+		ingredients = append(ingredients, meal_collection.ExtraItemToIngredient(extraItem))
+	}
+
+	return ingredients, nil
+}
+
 func (c Config) GetMealsForNextWeek(date Date, collection meal_collection.MealCollection) ([]meal_collection.Meal, error) {
 	var allMeals []meal_collection.Meal
+
 	// Decide how to get meals: either hardcoded or generated
 	if len(c.HardcodedMeals) == 7 {
 		fullCollection, err := meal_collection.ReadMealCollectionFromDB(c.PostgresURL, time.Now().Unix())
@@ -305,12 +278,13 @@ func convertHTMLToPDF(html string) ([]byte, error) {
 	return pdfg.Bytes(), nil
 }
 
-func generateIngredientsPDF(meals []meal_collection.Meal, allExtraItems []meal_collection.ExtraItem) ([]byte, error) {
-	ingredients := meal_collection.MealsToIngredients(meals)
-	for _, extraItem := range allExtraItems {
-		ingredients = append(ingredients, meal_collection.ExtraItemToIngredient(extraItem))
-	}
+type PDFGenerator interface {
+	GenerateIngredientsPDF(ingredients []meal_collection.Ingredient) ([]byte, error)
+}
 
+type DefaultPDFGenerator struct{}
+
+func (d DefaultPDFGenerator) GenerateIngredientsPDF(ingredients []meal_collection.Ingredient) ([]byte, error) {
 	htmlContent := buildHTMLContent(ingredients)
 	pdfBytes, err := convertHTMLToPDF(htmlContent)
 	if err != nil {
@@ -496,83 +470,93 @@ func buildAisleCellHTML(aisle meal_collection.Aisle, ingredients []meal_collecti
 }
 
 func (c Config) CreateAndSendEmail() error {
-	currentTime := time.Now()
+	now := time.Now()
 
-	// Extract the year, month, and day
-	year := currentTime.Year()
-	month := currentTime.Month()
-	day := currentTime.Day()
-	firstOfMonth := time.Date(year, month, 1, 0, 0, 0, 0, currentTime.Location())
-
-	var collection meal_collection.MealCollection
-	var err error
-	if c.IgnoreCutoff {
-		collection, err = meal_collection.ReadMealCollectionFromDB(c.PostgresURL, currentTime.Unix())
-	} else {
-		collection, err = meal_collection.ReadMealCollectionFromDB(c.PostgresURL, firstOfMonth.Unix())
+	// Decide which timestamp to use (current vs. “first of the month”)
+	cutoff := now
+	if !c.IgnoreCutoff {
+		cutoff = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
 	}
+
+	// 1) Read the meal collection
+	collection, err := meal_collection.ReadMealCollectionFromDB(c.PostgresURL, cutoff.Unix())
 	if err != nil {
-		return fmt.Errorf("something went wrong reading meals: %s", err)
+		return fmt.Errorf("failed to read meals from DB: %w", err)
 	}
 
-	currDate := Date{Year: year, Month: int(month), Day: day}
-	from := c.SenderEmail
-	to := c.ReceiverEmails
+	// 2) Get the next week’s meals/ingredients
+	currDate := Date{
+		Year:  now.Year(),
+		Month: int(now.Month()),
+		Day:   now.Day(),
+	}
+	meals, err := c.GetMealsForNextWeek(currDate, collection)
+	if err != nil {
+		return fmt.Errorf("failed to get meals for next week: %w", err)
+	}
+
+	ingredients, err := c.GetIngredientsForNextWeek(currDate, collection)
+	if err != nil {
+		return fmt.Errorf("failed to get ingredients for next week: %w", err)
+	}
+
+	// 3) Build email subject and HTML body
 	subject := GenerateHeaderForNextWeek(currDate)
-	bodyHtml, err := c.GenerateEmailForNextWeek(currDate, collection)
+	bodyHTML, err := c.GenerateEmailHTML(currDate, collection, meals, ingredients)
 	if err != nil {
-		return fmt.Errorf("failed to generate email: %v", err)
+		return fmt.Errorf("failed to generate email HTML: %w", err)
 	}
 
-	if c.DryRun {
-		log.Printf(`I would've sent an email, but I won't...
-FROM: %s
-TO: %s
-SUBJECT: %s
-
-BODY:
-%s
-`, from, to, subject, bodyHtml)
-		return nil
+	// 4) Generate PDF attachment
+	pdfBytes, err := DefaultPDFGenerator{}.GenerateIngredientsPDF(ingredients)
+	if err != nil {
+		return fmt.Errorf("failed to generate ingredients PDF: %w", err)
 	}
 
+	// 5) Generating the PDF name as the first day of the next week
+	nextWeekDays := GetDaysOfNextWeek(currDate)
+	if len(nextWeekDays) == 0 {
+		return fmt.Errorf("GetDaysOfNextWeek returned no days")
+	}
+	first := nextWeekDays[0]
+	pdfName := fmt.Sprintf("%d-%02d-%02d-grocery-list.pdf", first.Year, first.Month, first.Day)
+
+	var sender EmailSender
 	if c.UseSES {
-		meals, err := c.GetMealsForNextWeek(currDate, collection)
-		if err != nil {
-			return fmt.Errorf("failed to get meals for next week: %v", err)
-		}
-		allExtraItems, err := c.GetExtraItems()
-		if err != nil {
-			return fmt.Errorf("failed to get extra items: %v", err)
-		}
-		pdfBytes, err := generateIngredientsPDF(meals, allExtraItems)
-		if err != nil {
-			return fmt.Errorf("failed to generate ingredients PDF: %v", err)
-		}
-
-		daysOfWeek := GetDaysOfNextWeek(currDate)
-		first := daysOfWeek[0]
-		pdfName := fmt.Sprintf("%d-%02d-%02d-grocery-list.pdf", first.Year, first.Month, first.Day)
-		err = sendEmailSESWithAttachmentBytes(from, to, subject, bodyHtml, pdfBytes, pdfName)
-		if err != nil {
-			return fmt.Errorf("failed to send SES email: %v", err)
+		sender = SESEmailSender{
+			From: c.SenderEmail,
+			To:   c.ReceiverEmails,
 		}
 	} else {
 		gs, err := AuthenticateGmail()
 		if err != nil {
-			return fmt.Errorf("failed to authenticate with Gmail: %s", err.Error())
+			return fmt.Errorf("failed to authenticate with Gmail: %w", err)
 		}
+		sender = GmailSender{
+			From:    c.SenderEmail,
+			To:      c.ReceiverEmails,
+			Service: gs,
+		}
+	}
 
-		err = gs.SendEmail(from, to, subject, bodyHtml)
-		if err != nil {
-			return fmt.Errorf("failed to send Gmail email: %v", err)
-		}
+	err = sender.SendEmail(subject, bodyHTML, pdfBytes, pdfName)
+	if err != nil {
+		return fmt.Errorf("failed to send email: %w", err)
 	}
 
 	return nil
 }
 
-func sendEmailSESWithAttachmentBytes(from, to, subject, bodyHtml string, attachmentBytes []byte, attachmentFilename string) error {
+type EmailSender interface {
+	SendEmail(subject, bodyHtml string, attachmentBytes []byte, attachmentFilename string) error
+}
+
+type SESEmailSender struct {
+	From string
+	To   string
+}
+
+func (s SESEmailSender) SendEmail(subject, body string, attachmentBytes []byte, attachmentFilename string) error {
 	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("us-west-2"))
 	if err != nil {
 		return fmt.Errorf("unable to load SDK config, %v", err)
@@ -581,7 +565,7 @@ func sendEmailSESWithAttachmentBytes(from, to, subject, bodyHtml string, attachm
 
 	// Process multiple recipients.
 	recipientList := []string{}
-	for _, addr := range strings.Split(to, ",") {
+	for _, addr := range strings.Split(s.To, ",") {
 		trimmed := strings.TrimSpace(addr)
 		if trimmed != "" {
 			recipientList = append(recipientList, trimmed)
@@ -594,7 +578,7 @@ func sendEmailSESWithAttachmentBytes(from, to, subject, bodyHtml string, attachm
 	boundaryAlternative := "NextPartAlternativeBoundary"
 
 	// Headers
-	emailRaw.WriteString(fmt.Sprintf("From: %s\r\n", from))
+	emailRaw.WriteString(fmt.Sprintf("From: %s\r\n", s.From))
 	emailRaw.WriteString(fmt.Sprintf("To: %s\r\n", toHeader))
 	emailRaw.WriteString(fmt.Sprintf("Subject: %s\r\n", subject))
 	emailRaw.WriteString("MIME-Version: 1.0\r\n")
@@ -613,7 +597,7 @@ func sendEmailSESWithAttachmentBytes(from, to, subject, bodyHtml string, attachm
 	emailRaw.WriteString("Content-Transfer-Encoding: quoted-printable\r\n")
 	emailRaw.WriteString("\r\n")
 	qp := quotedprintable.NewWriter(&emailRaw)
-	_, err = qp.Write([]byte(bodyHtml))
+	_, err = qp.Write([]byte(body))
 	if err != nil {
 		return fmt.Errorf("failed to write html body: %v", err)
 	}
@@ -661,5 +645,19 @@ func sendEmailSESWithAttachmentBytes(from, to, subject, bodyHtml string, attachm
 
 	log.Printf("📧 Email sent to %s.", toHeader)
 
+	return nil
+}
+
+type GmailSender struct {
+	From    string
+	To      string
+	Service GmailService
+}
+
+func (gs GmailSender) SendEmail(subject, body string, attachmentBytes []byte, attachmentFilename string) error {
+	err := gs.Service.SendEmail(gs.From, gs.To, subject, body)
+	if err != nil {
+		return fmt.Errorf("failed to send email: %v", err)
+	}
 	return nil
 }
