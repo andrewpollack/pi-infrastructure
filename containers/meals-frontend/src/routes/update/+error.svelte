@@ -1,9 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import Navbar from '$lib/Navbar.svelte';
 </script>
-
-<Navbar title="" />
 
 <div class="error-container">
 	<h1>Error {page?.status}</h1>
