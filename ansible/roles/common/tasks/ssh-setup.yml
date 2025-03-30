@@ -11,6 +11,13 @@
         state: present
         key: "{{ lookup('file', pub_ssh_key_path) }}"
       register: ssh_key_changed
+    
+    - name: SSH> Set authorized key taken from macbook file
+      ansible.posix.authorized_key:
+        user: "{{ ansible_user }}"
+        state: present
+        key: "{{ lookup('file', macbook_ssh_key_path) }}"
+      register: ssh_macbook_key_changed
 
     - name: SSH> Disallow SSH password authentication
       lineinfile:
@@ -37,4 +44,4 @@
     - name: SSH> Reboot to allow SSH changes to take effect
       reboot:
         reboot_timeout: 3600
-      when: ssh_key_changed.changed or ssh_config_changed.changed or ssh_cloud_init_changed.changed
+      when: ssh_key_changed.changed or ssh_macbook_key_changed.changed or ssh_config_changed.changed or ssh_cloud_init_changed.changed
