@@ -595,6 +595,9 @@ func (m MealCollection) GenerateMealsWholeYearNoCategories(currCalendar calendar
 	// Use Year to make meal generation consistent
 	rand.Seed(uint64(currCalendar.Year))
 
+	// Check if the target month is before or after the current calendar month
+	futureMonth := time.Now().Month() <= currCalendar.Month
+
 	// Create a copy of MealCollection so that the original isn't modified
 	mealCopy := m.DeepCopy()
 
@@ -615,19 +618,18 @@ func (m MealCollection) GenerateMealsWholeYearNoCategories(currCalendar calendar
 		}
 
 		cal := calendar.NewCalendar(currCalendar.Year, time.Month(i))
-		for j := 1; j < cal.DaysInMonth()+1; j++ {
+		for j := 1; j <= cal.DaysInMonth(); j++ {
 			startingShuffleNum := totalShuffles
 			var item Meal
-
 			switch cal.GetWeekday(j) {
 			case time.Thursday:
 				item = MEAL_LEFTOVERS
 			case time.Friday:
 				item = MEAL_OUT
 			default:
-				if appendItems {
+				if appendItems || futureMonth {
 					// Skip until finding a meal that is enabled. Makes shuffling more consistent
-					// month to month.
+					// month to month for previous months.
 					for {
 						if allMeals[currItemInd].Disabled {
 							currItemInd += 1
@@ -650,12 +652,12 @@ func (m MealCollection) GenerateMealsWholeYearNoCategories(currCalendar calendar
 					currItemInd = 0
 					totalShuffles += 1
 				}
-			}
-
-			if appendItems {
 				if totalShuffles > startingShuffleNum {
 					item.Name = fmt.Sprintf("%s**", item.Name)
 				}
+			}
+
+			if appendItems {
 				selectedMeals = append(selectedMeals, item)
 			}
 		}

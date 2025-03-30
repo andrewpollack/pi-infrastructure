@@ -479,14 +479,8 @@ func buildAisleCellHTML(aisle meal_collection.Aisle, ingredients []meal_collecti
 func (c Config) CreateAndSendEmail() error {
 	now := time.Now()
 
-	// Decide which timestamp to use (current vs. “first of the month”)
-	cutoff := now
-	if !c.IgnoreCutoff {
-		cutoff = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
-	}
-
 	// 1) Read the meal collection
-	collection, err := meal_collection.ReadMealCollectionFromDB(c.PostgresURL, cutoff.Unix())
+	collection, err := meal_collection.ReadMealCollectionFromDB(c.PostgresURL, now.Unix())
 	if err != nil {
 		return fmt.Errorf("failed to read meals from DB: %w", err)
 	}
