@@ -1,21 +1,25 @@
-import { error } from '@sveltejs/kit';
+import { error, redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import type { MealsResponse } from '$lib/types';
 import { env } from '$env/dynamic/private';
 
-export const load: PageServerLoad = async ({ fetch }) => {
-	try {
-		const response = await fetch(`${env.API_BASE_URL}/api/meals`);
+export const load: PageServerLoad = async ({ cookies, fetch }) => {
+	const token = cookies.get('token');
 
-		if (!response.ok) {
-			throw error(response.status, 'Failed to fetch meals');
+	const response = await fetch(`${env.API_BASE_URL}/api/meals`, {
+		headers: {
+			Cookie: `token=${token ?? ''}`
 		}
+	});
 
-		const data: MealsResponse = await response.json();
-
-		return { meals: data.allMeals };
-	} catch (err: any) {
-		console.error('Error loading page data:', err);
-		throw error(500, 'Unable to load page data at the moment. Please try again later.');
+	if (!response.ok) {
+		if (response.status === 401) {
+			throw redirect(302, '/login');
+		}
+		throw error(response.status, 'Failed to fetch meals');
 	}
+
+	const data: MealsResponse = await response.json();
+
+	return { meals: data.allMeals };
 };
