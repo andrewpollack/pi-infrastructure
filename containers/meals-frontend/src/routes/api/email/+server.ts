@@ -1,4 +1,3 @@
-// src/routes/api/email/+server.ts
 import type { RequestHandler } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 
