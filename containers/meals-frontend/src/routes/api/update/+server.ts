@@ -3,12 +3,24 @@ import type { RequestHandler } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 
 export const POST: RequestHandler = async ({ request }) => {
+	const cookieHeader = request.headers.get('cookie');
+	let token = '';
+	if (cookieHeader) {
+		const tokenCookie = cookieHeader.split('; ').find((row) => row.startsWith('token='));
+		if (tokenCookie) {
+			token = tokenCookie.split('=')[1];
+		}
+	}
+
 	try {
 		const mealUpdates = await request.json();
 
 		const res = await fetch(`${env.API_BASE_URL}/api/update`, {
 			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
+			headers: {
+				'Content-Type': 'application/json',
+				Cookie: `token=${token ?? ''}`
+			},
 			body: JSON.stringify(mealUpdates)
 		});
 

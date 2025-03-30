@@ -12,14 +12,19 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
 type Config struct {
-	PostgresURL    string
-	SenderEmail    string
-	ReceiverEmails string
-	IgnoreCutoff   bool
+	PostgresURL        string
+	EmailSender        string
+	EmailReceivers     string
+	IgnoreCutoff       bool
+	AllowOrigins       []string
+	DomainName         string
+	JWTSigningKey      []byte
+	DeploymentPassword string
 }
 
 type DayResponse struct {
@@ -279,10 +284,10 @@ func (c Config) SendEmail(ctx *gin.Context) {
 
 	mealEmailConfig := meal_email.Config{
 		PostgresURL:    c.PostgresURL,
-		UseSES:         true,
+		EmailService:   meal_email.SES,
 		HardcodedMeals: currMealNames,
-		SenderEmail:    c.SenderEmail,
-		ReceiverEmails: strings.Join(emails, ","),
+		Sender:         c.EmailSender,
+		Receivers:      strings.Join(emails, ","),
 		ExtraItems:     extraItemNames,
 	}
 	err = mealEmailConfig.CreateAndSendEmail()
@@ -366,18 +371,40 @@ func HealthCheck(c *gin.Context) {
 	})
 }
 
+func (c Config) Login(ctx *gin.Context) {
+	password := ctx.PostForm("password")
+
+	if password == c.DeploymentPassword {
+		tokenString, err := createToken(c.JWTSigningKey)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create token"})
+			return
+		}
+		ctx.SetCookie("token", tokenString, 2.628e+6, "/", "", false, true)
+	} else {
+		time.Sleep(2 * time.Second)
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+	}
+}
+
 func (c Config) RunBackend() {
 	router := gin.Default()
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     c.AllowOrigins,
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Content-Type", "Authorization"},
+		AllowCredentials: true,
+	}))
 
 	router.GET("/health", HealthCheck)
 
 	api := router.Group("/api")
-
-	api.GET("/calendar", c.GetCalendar)
-	api.GET("/meals", c.GetMeals)
-	api.GET("/items", c.GetItems)
-	api.POST("/email", c.SendEmail)
-	api.POST("/update", c.DisableMeals)
+	api.POST("/login", c.Login)
+	api.GET("/calendar", c.authenticateMiddleware, c.GetCalendar)
+	api.GET("/meals", c.authenticateMiddleware, c.GetMeals)
+	api.GET("/items", c.authenticateMiddleware, c.GetItems)
+	api.POST("/email", c.authenticateMiddleware, c.SendEmail)
+	api.POST("/update", c.authenticateMiddleware, c.DisableMeals)
 
 	err := router.Run()
 	if err != nil {

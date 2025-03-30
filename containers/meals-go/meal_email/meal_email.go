@@ -19,20 +19,27 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ses/types"
 )
 
-type Config struct {
-	PostgresURL    string
-	UseSES         bool
-	SenderEmail    string
-	ReceiverEmails string
-	HardcodedMeals []string
-	ExtraItems     []string
-	IgnoreCutoff   bool
-}
+type EmailService int
+
+const (
+	Gmail = iota
+	SES
+)
 
 type Date struct {
 	Year  int
 	Month int
 	Day   int
+}
+
+type Config struct {
+	PostgresURL    string
+	EmailService   EmailService
+	Sender         string
+	Receivers      string
+	HardcodedMeals []string
+	ExtraItems     []string
+	IgnoreCutoff   bool
 }
 
 func (d Date) ToTime() time.Time {
@@ -522,19 +529,20 @@ func (c Config) CreateAndSendEmail() error {
 	pdfName := fmt.Sprintf("%d-%02d-%02d-grocery-list.pdf", first.Year, first.Month, first.Day)
 
 	var sender EmailSender
-	if c.UseSES {
+	switch c.EmailService {
+	case SES:
 		sender = SESEmailSender{
-			From: c.SenderEmail,
-			To:   c.ReceiverEmails,
+			From: c.Sender,
+			To:   c.Receivers,
 		}
-	} else {
+	case Gmail:
 		gs, err := AuthenticateGmail()
 		if err != nil {
 			return fmt.Errorf("failed to authenticate with Gmail: %w", err)
 		}
 		sender = GmailSender{
-			From:    c.SenderEmail,
-			To:      c.ReceiverEmails,
+			From:    c.Sender,
+			To:      c.Receivers,
 			Service: gs,
 		}
 	}
