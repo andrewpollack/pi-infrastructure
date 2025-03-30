@@ -9,6 +9,7 @@ import (
 	"meals/meal_email"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -88,15 +89,34 @@ func CreateBackendCalendarResponse(collection meal_collection.MealCollection, ye
 func (c Config) GetCalendar(ctx *gin.Context) {
 	now := time.Now()
 	currYear, currMonth, _ := now.Date()
-	firstOfMonth := time.Date(currYear, currMonth, 1, 0, 0, 0, 0, now.Location())
 
-	var collection meal_collection.MealCollection
+	// Get optional query parameters
+	yearStr := ctx.Query("year")
+	monthStr := ctx.Query("month")
+
+	var year int
+	var month time.Month
 	var err error
-	if c.IgnoreCutoff {
-		collection, err = meal_collection.ReadMealCollectionFromDB(c.PostgresURL, now.Unix())
+	if yearStr != "" && monthStr != "" {
+		// Parse the query parameters
+		y, err := strconv.Atoi(yearStr)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid year parameter"})
+			return
+		}
+		m, err := strconv.Atoi(monthStr)
+		if err != nil || m < 1 || m > 12 {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid month parameter"})
+			return
+		}
+		year = y
+		month = time.Month(m)
 	} else {
-		collection, err = meal_collection.ReadMealCollectionFromDB(c.PostgresURL, firstOfMonth.Unix())
+		year = currYear
+		month = currMonth
 	}
+
+	collection, err := meal_collection.ReadMealCollectionFromDB(c.PostgresURL, now.Unix())
 	if err != nil {
 		log.Println("Error in GetCalendar while fetching meal collection:", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -105,24 +125,10 @@ func (c Config) GetCalendar(ctx *gin.Context) {
 		return
 	}
 
-	var nextMonth time.Month
-	var nextYear int
-
-	// Determine the next month/year
-	if currMonth == time.December {
-		nextMonth = time.January
-		nextYear = currYear + 1
-	} else {
-		nextMonth = currMonth + 1
-		nextYear = currYear
-	}
-
-	currMonthResponse := CreateBackendCalendarResponse(collection, currYear, currMonth)
-	nextMonthResponse := CreateBackendCalendarResponse(collection, nextYear, nextMonth)
+	monthResponse := CreateBackendCalendarResponse(collection, year, month)
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"currMonthResponse": currMonthResponse,
-		"nextMonthResponse": nextMonthResponse,
+		"currMonthResponse": monthResponse,
 	})
 }
 
