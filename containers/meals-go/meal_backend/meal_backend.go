@@ -371,16 +371,28 @@ func HealthCheck(c *gin.Context) {
 	})
 }
 
-func (c Config) Login(ctx *gin.Context) {
-	password := ctx.PostForm("password")
+type PostLoginRequest struct {
+	Password string `json:"password"`
+}
 
-	if password == c.DeploymentPassword {
+func (c Config) Login(ctx *gin.Context) {
+	var loginRequest PostLoginRequest
+	if err := ctx.BindJSON(&loginRequest); err != nil {
+		log.Println("Error in Login while binding JSON:", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": err,
+		})
+		return
+	}
+
+	if loginRequest.Password == c.DeploymentPassword {
 		tokenString, err := createToken(c.JWTSigningKey)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create token"})
 			return
 		}
 		ctx.SetCookie("token", tokenString, 2.628e+6, "/", "", false, true)
+		ctx.JSON(http.StatusOK, gin.H{"token": tokenString})
 	} else {
 		time.Sleep(2 * time.Second)
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
