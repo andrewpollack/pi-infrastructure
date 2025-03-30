@@ -6,6 +6,10 @@ import type { CalendarResponse, MealsResponse } from '$lib/types';
 export const load: PageServerLoad = async ({ cookies, fetch }) => {
 	const token = cookies.get('token');
 
+	const now = new Date();
+	const currentYear = now.getFullYear();
+	const currentMonth = now.getMonth() + 1; // JavaScript months are 0-indexed
+
 	const emails = env.EMAILS
 		? env.EMAILS.split(',').map((email) => email.trim())
 		: ['user@example.com'];
@@ -15,11 +19,14 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
 			Cookie: `token=${token ?? ''}`
 		}
 	});
-	const calendarRes = await fetch(`${env.API_BASE_URL}/api/calendar`, {
-		headers: {
-			Cookie: `token=${token ?? ''}`
+	const calendarRes = await fetch(
+		`${env.API_BASE_URL}/api/calendar?year=${currentYear}&month=${currentMonth}`,
+		{
+			headers: {
+				Cookie: `token=${token ?? ''}`
+			}
 		}
-	});
+	);
 	const extraItemsRes = await fetch(`${env.API_BASE_URL}/api/items`, {
 		headers: {
 			Cookie: `token=${token ?? ''}`
@@ -53,6 +60,8 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
 		allMeals: mealsData.allMeals,
 		currMonthResponse: calendarData.currMonthResponse,
 		allEmails: emails,
-		allExtraItems: extraItemsData.allItems
+		allExtraItems: extraItemsData.allItems,
+		selectedYear: currentYear,
+		selectedMonth: currentMonth
 	};
 };

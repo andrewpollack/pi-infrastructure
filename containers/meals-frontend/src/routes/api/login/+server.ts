@@ -15,16 +15,12 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
 		const data = await res.json();
 		if (!res.ok) {
-			const message = data.error
-				? data.error
-				: 'An error occurred while logging in.';
+			const message = data.error ? data.error : 'An error occurred while logging in.';
 			return new Response(JSON.stringify({ message }), {
 				status: 401,
 				headers: { 'Content-Type': 'application/json' }
 			});
 		}
-        console.log("HERE1")
-
 
 		const setCookieHeader = res.headers.get('set-cookie');
 		if (!setCookieHeader) {
@@ -44,7 +40,6 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			});
 		}
 
-        console.log("SETTING COOKIE")
 		cookies.set(cookieName, cookieValue, {
 			secure: false,
 			httpOnly: true,
