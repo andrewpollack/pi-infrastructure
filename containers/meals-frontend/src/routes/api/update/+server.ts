@@ -1,15 +1,8 @@
 import type { RequestHandler } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 
-export const POST: RequestHandler = async ({ request }) => {
-	const cookieHeader = request.headers.get('cookie');
-	let token = '';
-	if (cookieHeader) {
-		const tokenCookie = cookieHeader.split('; ').find((row) => row.startsWith('token='));
-		if (tokenCookie) {
-			token = tokenCookie.split('=')[1];
-		}
-	}
+export const POST: RequestHandler = async ({ request, cookies }) => {
+	const token = cookies.get('token');
 
 	try {
 		const mealUpdates = await request.json();
