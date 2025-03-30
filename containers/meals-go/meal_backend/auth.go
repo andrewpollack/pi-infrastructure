@@ -65,15 +65,13 @@ func (c Config) authenticateMiddleware(ctx *gin.Context) {
 		return
 	}
 
-	token, err := verifyToken(tokenString, c.JWTSigningKey)
+	_, err = verifyToken(tokenString, c.JWTSigningKey)
 	if err != nil {
 		fmt.Printf("Token verification failed: %v\\n", err)
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Token verification failed"})
 		ctx.Abort()
 		return
 	}
-
-	fmt.Printf("Token verified successfully. Claims: %+v\\n", token.Claims)
 
 	ctx.Next()
 }
