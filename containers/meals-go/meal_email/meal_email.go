@@ -545,6 +545,8 @@ func (c Config) CreateAndSendEmail() error {
 			To:      c.Receivers,
 			Service: gs,
 		}
+	default:
+		return fmt.Errorf("unsupported email service: %d", c.EmailService)
 	}
 
 	err = sender.SendEmail(subject, bodyHTML, pdfBytes, pdfName)

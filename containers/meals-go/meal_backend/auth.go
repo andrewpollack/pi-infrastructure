@@ -2,6 +2,7 @@ package meal_backend
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -25,7 +26,10 @@ func createToken(signingKey []byte) (string, error) {
 
 	token := jwt.NewWithClaims(signingMethod, claims)
 	ss, err := token.SignedString(signingKey)
-	fmt.Println(ss, err)
+	if err != nil {
+		log.Printf("Error signing token: %v", err)
+		return "", fmt.Errorf("failed to sign token: %w", err)
+	}
 
 	return ss, err
 }
