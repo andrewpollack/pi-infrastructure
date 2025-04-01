@@ -1,15 +1,17 @@
 <script lang="ts">
-	import EnableMeals from '$lib/EnableMeals.svelte';
+	import MealsEmail from '$lib/MealsEmail.svelte';
 	import { Icon } from '$lib/const';
 
 	let { data } = $props();
-	const { meals } = data;
+	const { allMeals, allEmails, allExtraItems } = data;
 </script>
 
 <h1 style="display: flex; align-items: center; justify-content: flex-start; gap: 1rem;">
 	{@html Icon}
-	<span>Enable Meals</span>
+	<span>Email</span>
 	{@html Icon}
 </h1>
 
-<EnableMeals {meals} />
+<div>
+	<MealsEmail meals={allMeals} emails={allEmails} extraItems={allExtraItems} />
+</div>

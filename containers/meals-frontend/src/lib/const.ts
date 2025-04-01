@@ -6,3 +6,5 @@ export const Color = {
 	tertiary: '#FFDCCC',
 	quaternary: '#FBF3B9'
 };
+
+export const Icon = '<img src="/favicon.ico" alt="Favicon" style="height: 1em;" />';
