@@ -13,16 +13,12 @@
 	let selectedMeals = $state([] as string[]);
 	let selectedEmails = $state([] as string[]);
 	let selectedExtraItems = $state([] as string[]);
-	let isEmailSelected = $derived(selectedEmails.length > 0);
-	let isMealsSelected = $derived(selectedMeals.length > 0);
 	let disableLinks: boolean = $state(false);
 
+	let isEmailSelected = $derived(selectedEmails.length > 0);
+	let isMealsSelected = $derived(selectedMeals.length > 0);
+
 	const maxMeals = 7;
-	const staticMeals: Meal[] = [
-		{ Day: 0, Meal: 'Out', URL: null, Enabled: null },
-		{ Day: 0, Meal: 'Leftovers', URL: null, Enabled: null }
-	];
-	const allMealItems: Meal[] = [...staticMeals, ...meals];
 
 	function toggleMeal(meal: string, checked: boolean) {
 		if (checked) {
@@ -37,23 +33,30 @@
 		}
 	}
 
+	function getChunkedArray<T>(array: T[], chunkSize: number): T[][] {
+		const result: T[][] = [];
+		for (let i = 0; i < array.length; i += chunkSize) {
+			result.push(array.slice(i, i + chunkSize));
+		}
+		return result;
+	}
+
+	const allMealItems: Meal[] = [
+		...[
+			{ Day: 0, Meal: 'Out', URL: null, Enabled: null },
+			{ Day: 0, Meal: 'Leftovers', URL: null, Enabled: null }
+		],
+		...meals
+	];
 	const numColumns = 2;
-
-	const chunkedMeals: Meal[][] = [];
-	const mealsPerColumn = Math.ceil(allMealItems.length / numColumns);
-	for (let i = 0; i < numColumns; i++) {
-		const start = i * mealsPerColumn;
-		const end = start + mealsPerColumn;
-		chunkedMeals.push(allMealItems.slice(start, end));
-	}
-
-	const chunkedExtraItems: ExtraItem[][] = [];
-	const extraItemsPerColumn = Math.ceil(extraItems.length / numColumns);
-	for (let i = 0; i < numColumns; i++) {
-		const start = i * extraItemsPerColumn;
-		const end = start + extraItemsPerColumn;
-		chunkedExtraItems.push(extraItems.slice(start, end));
-	}
+	const chunkedMeals: Meal[][] = getChunkedArray(
+		allMealItems,
+		Math.ceil(allMealItems.length / numColumns)
+	);
+	const chunkedExtraItems: ExtraItem[][] = getChunkedArray(
+		extraItems,
+		Math.ceil(extraItems.length / numColumns)
+	);
 
 	async function handleSubmit(event: Event) {
 		event.preventDefault();
