@@ -1,17 +1,20 @@
 <script lang="ts">
 	import type { MonthResponse } from '$lib/types';
-	import { daysOfWeek } from '$lib/const';
+	import { DaysOfWeek, Color } from '$lib/const';
 
 	let { monthData }: { monthData: MonthResponse } = $props();
 </script>
 
 <h2>{monthData.Month} {monthData.Year}</h2>
 
-<div class="table-container">
+<div
+	class="table-container"
+	style="--tertiary-color: {Color.tertiary}; --quaternary-color: {Color.quaternary};"
+>
 	<table>
 		<thead>
 			<tr>
-				{#each daysOfWeek as day}
+				{#each DaysOfWeek as day}
 					<th>{day}</th>
 				{/each}
 			</tr>
@@ -56,7 +59,7 @@
 	}
 
 	thead {
-		background-color: #ffdccc;
+		background-color: var(--tertiary-color);
 	}
 
 	th,
@@ -85,7 +88,7 @@
 	.number-header {
 		display: block;
 		width: 100%;
-		background-color: #fbf3b9;
+		background-color: var(--quaternary-color);
 		font-size: clamp(0.8rem, 2vw, 1.1rem);
 		border-bottom: 1px solid #ccc;
 	}

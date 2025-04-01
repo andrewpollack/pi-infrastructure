@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Meal, ExtraItem } from '$lib/types';
 	import { StatusType } from '$lib/types';
-	import { daysOfWeek } from '$lib/const';
+	import { DaysOfWeek, Color } from '$lib/const';
 	import EmailMealItem from './EmailMealItem.svelte';
 	import StatusIndicator from './StatusIndicator.svelte';
 
@@ -115,8 +115,8 @@
 
 		<table border="1" style="border-collapse: collapse;">
 			<thead>
-				<tr style="background-color: #FFDCCC;">
-					{#each daysOfWeek as day}
+				<tr style="background-color: {Color.tertiary};">
+					{#each DaysOfWeek as day}
 						<th>{day}</th>
 					{/each}
 				</tr>
@@ -198,7 +198,7 @@
 							<EmailMealItem
 								{meal}
 								isSelected={selectedMeals.includes(meal.Meal)}
-								dayOfWeek={daysOfWeek[selectedMeals.indexOf(meal.Meal)]}
+								dayOfWeek={DaysOfWeek[selectedMeals.indexOf(meal.Meal)]}
 								{maxMeals}
 								selectedMealsCount={selectedMeals.length}
 								onToggle={toggleMeal}

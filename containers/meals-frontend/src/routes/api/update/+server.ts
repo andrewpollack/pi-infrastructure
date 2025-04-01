@@ -1,17 +1,16 @@
 import type { RequestHandler } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
+import { getTokenHeaders } from '$lib/token-utils';
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
-	const token = cookies.get('token');
-
 	try {
 		const mealUpdates = await request.json();
 
 		const res = await fetch(`${env.API_BASE_URL}/api/update`, {
 			method: 'POST',
 			headers: {
-				'Content-Type': 'application/json',
-				Cookie: `token=${token ?? ''}`
+				...getTokenHeaders(cookies),
+				'Content-Type': 'application/json'
 			},
 			body: JSON.stringify(mealUpdates)
 		});
