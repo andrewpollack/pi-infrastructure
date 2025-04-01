@@ -62,19 +62,16 @@
 		event.preventDefault();
 		message = 'Sending email...';
 		statusType = StatusType.LOADING;
-		var paddedMeals = selectedMeals;
+		let paddedMeals = selectedMeals;
 
-		if (paddedMeals.length < 7) {
-			// Pad selectedMeals with "Out" strings to ensure there are 7 meals
-			paddedMeals = [...paddedMeals, ...Array(7 - paddedMeals.length).fill('Out')];
+		if (paddedMeals.length < maxMeals) {
+			paddedMeals = [...paddedMeals, ...Array(maxMeals - paddedMeals.length).fill('Out')];
 		}
 
 		try {
 			const res = await fetch('/api/email', {
 				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
+				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					meals: paddedMeals,
 					emails: selectedEmails,
@@ -87,17 +84,13 @@
 				throw new Error(errorData.error || 'An error occurred while sending data.');
 			}
 
-			const data = await res.json();
+			await res.json();
 			message = 'Email sent successfully!';
 			statusType = StatusType.SUCCESS;
 		} catch (error) {
-			message = 'error sending email: ' + (error instanceof Error ? error.message : String(error));
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			message = `Error sending email: ${errorMessage}`;
 			statusType = StatusType.ERROR;
-			if (error instanceof Error) {
-				message += error.message;
-			} else {
-				message += String(error);
-			}
 			alert(message);
 		}
 	}
@@ -107,15 +100,15 @@
 
 <StatusIndicator {message} type={statusType} />
 
-<div class="table-container">
+<div class="table-container" style="--tertiary-color: {Color.tertiary}">
 	<form onsubmit={handleSubmit}>
 		<button disabled={!isEmailSelected || !isMealsSelected} type="submit">Send Email</button>
 
-		<br /> <br />
+		<br /><br />
 
-		<table border="1" style="border-collapse: collapse;">
+		<table>
 			<thead>
-				<tr style="background-color: {Color.tertiary};">
+				<tr class="header-row">
 					{#each DaysOfWeek as day}
 						<th>{day}</th>
 					{/each}
@@ -123,14 +116,8 @@
 			</thead>
 			<tbody>
 				<tr>
-					{#each [...Array(maxMeals).keys()] as i}
-						<td
-							style="
-								overflow: hidden;
-								text-overflow: ellipsis;
-								white-space: nowrap;
-							"
-						>
+					{#each Array(maxMeals) as _, i}
+						<td class="meal-cell">
 							{#if selectedMeals[i]}
 								{selectedMeals[i]}
 							{:else}
@@ -146,13 +133,8 @@
 			<h3>Emails</h3>
 			{#each emails as email}
 				<div>
-					<label style="display: flex; align-items: center;">
-						<input
-							type="checkbox"
-							value={email}
-							bind:group={selectedEmails}
-							style="margin-right: 15px;"
-						/>
+					<label class="checkbox-label">
+						<input type="checkbox" value={email} bind:group={selectedEmails} />
 						{email}
 					</label>
 				</div>
@@ -161,18 +143,13 @@
 
 		<div>
 			<h3>Extra Items</h3>
-			<div style="display: flex; gap: 1rem; flex-wrap: nowrap;">
+			<div class="extra-items">
 				{#each chunkedExtraItems as chunk}
-					<div style="flex: 0 0 50%;">
+					<div class="extra-column">
 						{#each chunk as item}
 							<div>
-								<label style="display: flex; align-items: center;">
-									<input
-										type="checkbox"
-										value={item.Name}
-										bind:group={selectedExtraItems}
-										style="margin-right: 15px;"
-									/>
+								<label class="checkbox-label">
+									<input type="checkbox" value={item.Name} bind:group={selectedExtraItems} />
 									{item.Name}
 								</label>
 							</div>
@@ -183,7 +160,7 @@
 		</div>
 
 		<div>
-			<div style="display: flex; align-items: center; gap: 1rem;">
+			<div class="meals-header">
 				<h3>Meals</h3>
 				<label>
 					<input type="checkbox" bind:checked={disableLinks} />
@@ -191,9 +168,9 @@
 				</label>
 			</div>
 
-			<div style="display: flex; gap: 1rem; flex-wrap: nowrap;">
+			<div class="meals-list">
 				{#each chunkedMeals as chunk}
-					<div style="flex: 0 0 50%;">
+					<div class="meal-column">
 						{#each chunk as meal}
 							<EmailMealItem
 								{meal}
@@ -223,20 +200,52 @@
 		table-layout: fixed;
 	}
 
+	table,
 	th,
 	td {
-		word-wrap: break-word;
-		white-space: normal;
+		border: 1px solid black;
+	}
+
+	.header-row {
+		background-color: var(--tertiary-color);
+	}
+
+	th,
+	td {
+		padding: 0.5rem;
 		text-align: center;
 		vertical-align: top;
-		padding: 0.5rem;
-
-		/* 
-		 * clamp(min, preferred, max)
-		 *  - min font size: 0.70rem
-		 *  - let the browser choose in between based on available space via 2vw
-		 *  - max font size: 1rem
-		 */
 		font-size: clamp(0.7rem, 2vw, 1rem);
+		word-wrap: break-word;
+	}
+
+	.meal-cell {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.checkbox-label {
+		display: flex;
+		align-items: center;
+		gap: 15px;
+	}
+
+	.extra-items,
+	.meals-list {
+		display: flex;
+		gap: 1rem;
+		flex-wrap: nowrap;
+	}
+
+	.extra-column,
+	.meal-column {
+		flex: 0 0 50%;
+	}
+
+	.meals-header {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
 	}
 </style>
