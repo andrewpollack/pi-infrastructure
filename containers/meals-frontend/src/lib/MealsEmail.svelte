@@ -22,11 +22,6 @@
 
 	function toggleMeal(meal: string, checked: boolean) {
 		if (checked) {
-			// Enforce a maximum of maxMeals selections
-			if (selectedMeals.length >= maxMeals) {
-				alert(`error: You can only select up to ${maxMeals} meals.`);
-				return;
-			}
 			selectedMeals = [...selectedMeals, meal];
 		} else {
 			selectedMeals = selectedMeals.filter((m) => m !== meal);
@@ -57,6 +52,21 @@
 		extraItems,
 		Math.ceil(extraItems.length / numColumns)
 	);
+
+	function getDayLabel(mealName: string) {
+		const index = selectedMeals.indexOf(mealName);
+		return index > -1 ? DaysOfWeek[index] : '';
+	}
+
+	function handleMealChange(meal: Meal, event: Event) {
+		const input = event.target as HTMLInputElement;
+		if (input.checked && selectedMeals.length >= maxMeals) {
+			input.checked = false;
+			alert(`Error: You can only select up to ${maxMeals} meals.`);
+			return;
+		}
+		toggleMeal(meal.Meal, input.checked);
+	}
 
 	async function handleSubmit(event: Event) {
 		event.preventDefault();
@@ -91,7 +101,6 @@
 			const errorMessage = error instanceof Error ? error.message : String(error);
 			message = `Error sending email: ${errorMessage}`;
 			statusType = StatusType.ERROR;
-			alert(message);
 		}
 	}
 </script>
@@ -102,7 +111,7 @@
 
 <div class="table-container" style="--tertiary-color: {Color.tertiary}">
 	<form onsubmit={handleSubmit}>
-		<button disabled={!isEmailSelected || !isMealsSelected} type="submit">Send Email</button>
+		<button disabled={!isEmailSelected || !isMealsSelected} type="submit"> Send Email </button>
 
 		<br /><br />
 
@@ -129,8 +138,9 @@
 			</tbody>
 		</table>
 
-		<div>
-			<h3>Emails</h3>
+		<!-- Group Emails using fieldset/legend for better semantics -->
+		<fieldset>
+			<legend><strong> Emails </strong></legend>
 			{#each emails as email}
 				<div>
 					<label class="checkbox-label">
@@ -139,10 +149,11 @@
 					</label>
 				</div>
 			{/each}
-		</div>
+		</fieldset>
 
-		<div>
-			<h3>Extra Items</h3>
+		<!-- Group Extra Items -->
+		<fieldset>
+			<legend><strong> Extra Items </strong></legend>
 			<div class="extra-items">
 				{#each chunkedExtraItems as chunk}
 					<div class="extra-column">
@@ -157,35 +168,51 @@
 					</div>
 				{/each}
 			</div>
-		</div>
+		</fieldset>
 
-		<div>
-			<div class="meals-header">
-				<h3>Meals</h3>
-				<label>
+		<!-- Group Meals -->
+		<fieldset>
+			<legend>
+				<div>
+					<strong> Meals </strong>
 					<input type="checkbox" bind:checked={disableLinks} />
 					Disable Hyperlinks
-				</label>
-			</div>
-
+				</div>
+			</legend>
 			<div class="meals-list">
 				{#each chunkedMeals as chunk}
 					<div class="meal-column">
 						{#each chunk as meal}
-							<EmailMealItem
-								{meal}
-								isSelected={selectedMeals.includes(meal.Meal)}
-								dayOfWeek={DaysOfWeek[selectedMeals.indexOf(meal.Meal)]}
-								{maxMeals}
-								selectedMealsCount={selectedMeals.length}
-								onToggle={toggleMeal}
-								{disableLinks}
-							/>
+							<div>
+								<label class="checkbox-label">
+									<input
+										type="checkbox"
+										name="meals"
+										checked={selectedMeals.includes(meal.Meal)}
+										onchange={(e) => handleMealChange(meal, e)}
+									/>
+									{#if meal.URL && !disableLinks}
+										<a href={meal.URL} target="_blank" rel="noopener noreferrer">
+											{#if selectedMeals.includes(meal.Meal)}
+												<span>(<strong>{getDayLabel(meal.Meal)}</strong>)</span>
+											{/if}
+											{meal.Meal}
+										</a>
+									{:else}
+										<span>
+											{#if selectedMeals.includes(meal.Meal)}
+												<span>(<strong>{getDayLabel(meal.Meal)}</strong>)</span>
+											{/if}
+											{meal.Meal}
+										</span>
+									{/if}
+								</label>
+							</div>
 						{/each}
 					</div>
 				{/each}
 			</div>
-		</div>
+		</fieldset>
 	</form>
 </div>
 
@@ -241,11 +268,5 @@
 	.extra-column,
 	.meal-column {
 		flex: 0 0 50%;
-	}
-
-	.meals-header {
-		display: flex;
-		align-items: center;
-		gap: 1rem;
 	}
 </style>
