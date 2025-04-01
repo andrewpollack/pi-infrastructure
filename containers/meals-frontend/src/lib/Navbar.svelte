@@ -1,7 +1,8 @@
 <script lang="ts">
+	import { Colors } from '$lib/const';
 </script>
 
-<div>
+<div style="--primary-color: {Colors.primary}; --secondary-color: {Colors.secondary}">
 	<nav>
 		<a href="/">Home</a>
 		<a href="/update">Update Meals</a>
@@ -11,7 +12,7 @@
 <style>
 	nav {
 		width: 100%;
-		background-color: #b7b1f2;
+		background-color: var(--primary-color);
 		overflow: hidden;
 	}
 
@@ -26,6 +27,6 @@
 	}
 
 	nav a:hover {
-		background-color: #fdb7ea;
+		background-color: var(--secondary-color);
 	}
 </style>
