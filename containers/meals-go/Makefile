@@ -7,7 +7,8 @@ push:
 	@../ops/update-pods.sh $(POD_NAME) $(REGISTRY)
 
 local:
-	docker compose up
+	@docker compose build
+	@docker compose up
 
 test-all:
 	go test ./...

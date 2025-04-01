@@ -5,7 +5,7 @@
 <div style="--primary-color: {Color.primary}; --secondary-color: {Color.secondary}">
 	<nav>
 		<a href="/">Home</a>
-		<a href="/update">Update Meals</a>
+		<a href="/enable">Enable Meals</a>
 	</nav>
 </div>
 

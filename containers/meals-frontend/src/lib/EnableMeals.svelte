@@ -21,7 +21,7 @@
 			.map((m) => ({ name: m.Meal, disabled: !m.Enabled }));
 
 		try {
-			const res = await fetch('/api/update', {
+			const res = await fetch('/api/enable', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'

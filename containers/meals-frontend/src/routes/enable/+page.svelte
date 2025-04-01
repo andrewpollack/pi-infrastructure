@@ -1,5 +1,5 @@
 <script lang="ts">
-	import MealsList from '$lib/MealsList.svelte';
+	import EnableMeals from '$lib/EnableMeals.svelte';
 
 	const icon = '<img src="/favicon.ico" alt="Favicon" style="height: 1em;" />';
 
@@ -9,8 +9,8 @@
 
 <h1 style="display: flex; align-items: center; justify-content: flex-start; gap: 1rem;">
 	{@html icon}
-	<span>Update Meals</span>
+	<span>Enable Meals</span>
 	{@html icon}
 </h1>
 
-<MealsList {meals} />
+<EnableMeals {meals} />
