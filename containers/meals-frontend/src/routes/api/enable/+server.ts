@@ -6,7 +6,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 	try {
 		const mealUpdates = await request.json();
 
-		const res = await fetch(`${env.API_BASE_URL}/api/update`, {
+		const res = await fetch(`${env.API_BASE_URL}/api/meals/enable`, {
 			method: 'POST',
 			headers: {
 				...getTokenHeaders(cookies),

@@ -310,10 +310,10 @@ func (c Config) SendEmail(ctx *gin.Context) {
 	})
 }
 
-func (c Config) DisableMeals(ctx *gin.Context) {
+func (c Config) EnableMeals(ctx *gin.Context) {
 	var mealUpdates []meal_collection.MealUpdate
 	if err := ctx.BindJSON(&mealUpdates); err != nil {
-		log.Println("Error in DisableMeals while binding JSON:", err)
+		log.Println("Error in EnableMeals while binding JSON:", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"error": err,
 		})
@@ -322,7 +322,7 @@ func (c Config) DisableMeals(ctx *gin.Context) {
 
 	mealCollection, err := meal_collection.ReadMealCollectionFromDB(c.PostgresURL, time.Now().Unix())
 	if err != nil {
-		log.Println("Error in DisableMeals while fetching meal collection:", err)
+		log.Println("Error in EnableMeals while fetching meal collection:", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": err,
 		})
@@ -336,7 +336,7 @@ func (c Config) DisableMeals(ctx *gin.Context) {
 		meal, ok := mealMap[update.Name]
 		if !ok {
 			errMsg := fmt.Sprintf("Meal not found: %s", update.Name)
-			log.Println("Error in DisableMeals:", errMsg)
+			log.Println("Error in EnableMeals:", errMsg)
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error": errMsg,
 			})
@@ -358,7 +358,7 @@ func (c Config) DisableMeals(ctx *gin.Context) {
 
 	err = meal_collection.UpdateMealsInDB(c.PostgresURL, updatesToApply)
 	if err != nil {
-		log.Println("Error in DisableMeals while updating meals in DB:", err)
+		log.Println("Error in EnableMeals while updating meals in DB:", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": err,
 		})
@@ -419,10 +419,10 @@ func (c Config) RunBackend() {
 	api := router.Group("/api")
 	api.POST("/login", c.Login)
 	api.GET("/calendar", c.authenticateMiddleware, c.GetCalendar)
-	api.GET("/meals", c.authenticateMiddleware, c.GetMeals)
 	api.GET("/items", c.authenticateMiddleware, c.GetItems)
 	api.POST("/email", c.authenticateMiddleware, c.SendEmail)
-	api.POST("/update", c.authenticateMiddleware, c.DisableMeals)
+	api.GET("/meals", c.authenticateMiddleware, c.GetMeals)
+	api.POST("/meals/enable", c.authenticateMiddleware, c.EnableMeals)
 
 	err := router.Run()
 	if err != nil {
