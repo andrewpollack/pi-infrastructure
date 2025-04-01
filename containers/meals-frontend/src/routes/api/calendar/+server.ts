@@ -1,10 +1,8 @@
-// +server.ts
 import type { RequestHandler } from './$types';
 import { env } from '$env/dynamic/private';
+import { getTokenHeaders } from '$lib/token-utils';
 
 export const GET: RequestHandler = async ({ url, cookies }) => {
-	const token = cookies.get('token');
-
 	try {
 		// Retrieve query parameters and parse them as numbers.
 		const yearParam = url.searchParams.get('year');
@@ -34,8 +32,8 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 			{
 				method: 'GET',
 				headers: {
-					'Content-Type': 'application/json',
-					Cookie: `token=${token ?? ''}`
+					...getTokenHeaders(cookies),
+					'Content-Type': 'application/json'
 				}
 			}
 		);

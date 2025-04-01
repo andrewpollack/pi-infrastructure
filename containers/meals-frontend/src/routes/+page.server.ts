@@ -2,10 +2,9 @@ import { error, redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { env } from '$env/dynamic/private';
 import type { CalendarResponse, MealsResponse } from '$lib/types';
+import { getTokenHeaders } from '$lib/token-utils';
 
 export const load: PageServerLoad = async ({ cookies, fetch }) => {
-	const token = cookies.get('token');
-
 	const now = new Date();
 	const currentYear = now.getFullYear();
 	const currentMonth = now.getMonth() + 1; // JavaScript months are 0-indexed
@@ -15,22 +14,16 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
 		: ['user@example.com'];
 
 	const mealsRes = await fetch(`${env.API_BASE_URL}/api/meals`, {
-		headers: {
-			Cookie: `token=${token ?? ''}`
-		}
+		headers: getTokenHeaders(cookies)
 	});
 	const calendarRes = await fetch(
 		`${env.API_BASE_URL}/api/calendar?year=${currentYear}&month=${currentMonth}`,
 		{
-			headers: {
-				Cookie: `token=${token ?? ''}`
-			}
+			headers: getTokenHeaders(cookies)
 		}
 	);
 	const extraItemsRes = await fetch(`${env.API_BASE_URL}/api/items`, {
-		headers: {
-			Cookie: `token=${token ?? ''}`
-		}
+		headers: getTokenHeaders(cookies)
 	});
 
 	if (!mealsRes.ok) {
