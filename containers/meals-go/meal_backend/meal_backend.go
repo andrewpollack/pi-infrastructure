@@ -148,8 +148,7 @@ func (c Config) GetMeals(ctx *gin.Context) {
 			strings.ToLower(mealCollection[j].Name)
 	})
 
-	var allMeals []DayResponse
-
+	allMeals := make([]DayResponse, 0, len(mealCollection))
 	for _, item := range mealCollection {
 		allMeals = append(allMeals, DayResponse{
 			Day:     0,
@@ -184,7 +183,7 @@ func (c Config) GetItems(ctx *gin.Context) {
 			strings.ToLower(extraItems[j].Name)
 	})
 
-	var extraItemsResponse []ExtraItemResponse
+	extraItemsResponse := make([]ExtraItemResponse, 0, len(extraItems))
 	for _, item := range extraItems {
 		extraItemsResponse = append(extraItemsResponse, ExtraItemResponse{
 			Name: item.Name,
