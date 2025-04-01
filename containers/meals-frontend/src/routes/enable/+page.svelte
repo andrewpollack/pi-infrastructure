@@ -2,7 +2,6 @@
 	import EnableMeals from '$lib/EnableMeals.svelte';
 	import { Icon } from '$lib/const';
 
-
 	let { data } = $props();
 	const { meals } = data;
 </script>
