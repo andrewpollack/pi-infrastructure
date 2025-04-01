@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"sort"
 	"strings"
 	"time"
@@ -203,7 +202,7 @@ func ReadExtraItemsFromDB(postgresURL string) ([]ExtraItem, error) {
 			&i.DateModified,
 		)
 		if err != nil {
-			log.Fatalf("Scan failed: %v", err)
+			return nil, fmt.Errorf("Scan failed: %v", err)
 		}
 
 		items = append(items, i)
