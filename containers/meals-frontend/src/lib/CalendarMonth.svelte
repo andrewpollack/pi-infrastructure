@@ -9,7 +9,10 @@
 
 <div
 	class="table-container"
-	style="--tertiary-color: {Color.tertiary}; --quaternary-color: {Color.quaternary};"
+	style="--primary-color: {Color.primary};
+		   --secondary-color: {Color.secondary};
+		   --tertiary-color: {Color.tertiary};
+		   --quaternary-color: {Color.quaternary};"
 >
 	<table>
 		<thead>
@@ -64,7 +67,7 @@
 
 	th,
 	td {
-		border: 1px solid #000;
+		border: 1px solid var(--secondary-color);
 		padding: 0;
 		text-align: center;
 		vertical-align: top;

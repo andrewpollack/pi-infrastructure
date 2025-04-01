@@ -109,7 +109,10 @@
 
 <StatusIndicator {message} type={statusType} />
 
-<div class="table-container" style="--tertiary-color: {Color.tertiary}">
+<div
+	class="table-container"
+	style="--primary-color: {Color.primary}; --secondary-color: {Color.secondary}; --tertiary-color: {Color.tertiary}"
+>
 	<form onsubmit={handleSubmit}>
 		<button disabled={!isEmailSelected || !isMealsSelected} type="submit"> Send Email </button>
 
@@ -230,7 +233,7 @@
 	table,
 	th,
 	td {
-		border: 1px solid black;
+		border: 1px solid var(--secondary-color);
 	}
 
 	.header-row {
@@ -268,5 +271,9 @@
 	.extra-column,
 	.meal-column {
 		flex: 0 0 50%;
+	}
+
+	fieldset {
+		border: 1px solid var(--secondary-color);
 	}
 </style>
