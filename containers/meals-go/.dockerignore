@@ -6,3 +6,4 @@ variables.mk
 *.md
 *_test.go
 Makefile
+compose.yaml
