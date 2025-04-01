@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Meal, ExtraItem } from '$lib/types';
 	import { StatusType } from '$lib/types';
-	import { DaysOfWeek, Colors } from '$lib/const';
+	import { DaysOfWeek, Color } from '$lib/const';
 	import EmailMealItem from './EmailMealItem.svelte';
 	import StatusIndicator from './StatusIndicator.svelte';
 
@@ -115,7 +115,7 @@
 
 		<table border="1" style="border-collapse: collapse;">
 			<thead>
-				<tr style="background-color: {Colors.tertiary};">
+				<tr style="background-color: {Color.tertiary};">
 					{#each DaysOfWeek as day}
 						<th>{day}</th>
 					{/each}

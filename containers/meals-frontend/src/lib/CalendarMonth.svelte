@@ -1,13 +1,16 @@
 <script lang="ts">
 	import type { MonthResponse } from '$lib/types';
-	import { DaysOfWeek, Colors } from '$lib/const';
+	import { DaysOfWeek, Color } from '$lib/const';
 
 	let { monthData }: { monthData: MonthResponse } = $props();
 </script>
 
 <h2>{monthData.Month} {monthData.Year}</h2>
 
-<div class="table-container" style="--tertiary-color: {Colors.tertiary}; --quaternary-color: {Colors.quaternary};">
+<div
+	class="table-container"
+	style="--tertiary-color: {Color.tertiary}; --quaternary-color: {Color.quaternary};"
+>
 	<table>
 		<thead>
 			<tr>
@@ -43,6 +46,7 @@
 		</tbody>
 	</table>
 </div>
+
 <style>
 	.table-container {
 		max-width: 100%;

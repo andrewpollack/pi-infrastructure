@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { Colors } from '$lib/const';
+	import { Color } from '$lib/const';
 </script>
 
-<div style="--primary-color: {Colors.primary}; --secondary-color: {Colors.secondary}">
+<div style="--primary-color: {Color.primary}; --secondary-color: {Color.secondary}">
 	<nav>
 		<a href="/">Home</a>
 		<a href="/update">Update Meals</a>
