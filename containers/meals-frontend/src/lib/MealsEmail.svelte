@@ -2,7 +2,6 @@
 	import type { Meal, ExtraItem } from '$lib/types';
 	import { StatusType } from '$lib/types';
 	import { DaysOfWeek, Color } from '$lib/const';
-	import EmailMealItem from './EmailMealItem.svelte';
 	import StatusIndicator from './StatusIndicator.svelte';
 
 	let { meals, emails, extraItems }: { meals: Meal[]; emails: string[]; extraItems: ExtraItem[] } =
