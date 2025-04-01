@@ -2,7 +2,6 @@
 	import type { Meal, ExtraItem } from '$lib/types';
 	import { StatusType } from '$lib/types';
 	import { DaysOfWeek, Color } from '$lib/const';
-	import EmailMealItem from './EmailMealItem.svelte';
 	import StatusIndicator from './StatusIndicator.svelte';
 
 	let { meals, emails, extraItems }: { meals: Meal[]; emails: string[]; extraItems: ExtraItem[] } =
@@ -155,23 +154,25 @@
 		</fieldset>
 
 		<!-- Group Extra Items -->
-		<fieldset>
-			<legend><strong> Extra Items </strong></legend>
-			<div class="extra-items">
-				{#each chunkedExtraItems as chunk}
-					<div class="extra-column">
-						{#each chunk as item}
-							<div>
-								<label class="checkbox-label">
-									<input type="checkbox" value={item.Name} bind:group={selectedExtraItems} />
-									{item.Name}
-								</label>
-							</div>
-						{/each}
-					</div>
-				{/each}
-			</div>
-		</fieldset>
+		{#if extraItems.length > 0}
+			<fieldset>
+				<legend><strong> Extra Items </strong></legend>
+				<div class="extra-items">
+					{#each chunkedExtraItems as chunk}
+						<div class="extra-column">
+							{#each chunk as item}
+								<div>
+									<label class="checkbox-label">
+										<input type="checkbox" value={item.Name} bind:group={selectedExtraItems} />
+										{item.Name}
+									</label>
+								</div>
+							{/each}
+						</div>
+					{/each}
+				</div>
+			</fieldset>
+		{/if}
 
 		<!-- Group Meals -->
 		<fieldset>
