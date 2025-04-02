@@ -179,8 +179,10 @@
 			<legend>
 				<div>
 					<strong> Meals </strong>
-					<input type="checkbox" bind:checked={disableLinks} />
-					Disable Hyperlinks
+					<label>
+						<input type="checkbox" bind:checked={disableLinks} />
+						Disable Links
+					</label>
 				</div>
 			</legend>
 			<div class="meals-list">
