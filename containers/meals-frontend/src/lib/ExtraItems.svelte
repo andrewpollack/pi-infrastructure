@@ -196,12 +196,18 @@
 					</td>
 				</tr>
 			{/each}
+			<tr>
+				<td></td>
+				<td>
+					<button type="button" onclick={addItem}>
+						+
+					</button>
+				</td>
+				<td></td>
+			</tr>
 		</tbody>
 	</table>
 </form>
-
-<br />
-<button type="button" onclick={addItem}>+</button>
 
 <style>
 	.fixed-table {
