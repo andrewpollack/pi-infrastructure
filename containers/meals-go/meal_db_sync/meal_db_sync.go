@@ -28,7 +28,11 @@ func (c Config) SyncMeals() error {
 	if err != nil {
 		return fmt.Errorf("error fetching meal data from S3: %w", err)
 	}
-	defer mealData.Close()
+	defer func() {
+		if err := mealData.Close(); err != nil {
+			fmt.Printf("error closing reader: %v\n", err)
+		}
+	}()
 
 	jsonFile, err := io.ReadAll(mealData)
 	if err != nil {
@@ -48,7 +52,11 @@ func (c Config) SyncMeals() error {
 	if err != nil {
 		return fmt.Errorf("error connecting to database: %w", err)
 	}
-	defer conn.Close(ctx)
+	defer func() {
+		if err := conn.Close(context.Background()); err != nil {
+			fmt.Printf("error closing connection: %v\n", err)
+		}
+	}()
 
 	upsertQuery := `
         INSERT INTO recipes (name, category, url, ingredients)

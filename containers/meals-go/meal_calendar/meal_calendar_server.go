@@ -68,7 +68,7 @@ func (c Config) mealCalendarHandler(w http.ResponseWriter, r *http.Request) {
 	endList += "</ul>"
 
 	// Render final HTML
-	fmt.Fprintf(w, `<!DOCTYPE html>
+	_, err = fmt.Fprintf(w, `<!DOCTYPE html>
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
@@ -90,6 +90,11 @@ func (c Config) mealCalendarHandler(w http.ResponseWriter, r *http.Request) {
 		nextMonthMealCalendar.RenderHTMLCalendar(),
 		endList,
 	)
+
+	if err != nil {
+		log.Println("Error writing response:", err)
+		return
+	}
 }
 
 func (c Config) RunServer() {

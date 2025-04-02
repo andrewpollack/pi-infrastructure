@@ -69,7 +69,11 @@ func (s SESEmailSender) SendEmail(subject, body string, attachmentBytes []byte, 
 	if err != nil {
 		return fmt.Errorf("failed to write html body: %v", err)
 	}
-	qp.Close()
+	defer func() {
+		if err := qp.Close(); err != nil {
+			fmt.Printf("error closing writer: %v\n", err)
+		}
+	}()
 	emailRaw.WriteString("\r\n")
 	// End alternative part.
 	emailRaw.WriteString(fmt.Sprintf("--%s--\r\n", boundaryAlternative))

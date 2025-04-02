@@ -235,7 +235,7 @@ func (c Config) GetExtraItems() ([]meal_collection.ExtraItem, error) {
 	for _, extraItem := range c.ExtraItems {
 		// If the extraItem isn't found in the map, return an error.
 		if _, found := extraItemsMap[extraItem]; !found {
-			return nil, fmt.Errorf("Extra Item not found: %s", extraItem)
+			return nil, fmt.Errorf("extra item not found: %s", extraItem)
 		}
 
 		extraItems = append(extraItems, extraItemsMap[extraItem])
