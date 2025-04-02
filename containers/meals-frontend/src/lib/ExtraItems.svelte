@@ -33,35 +33,27 @@
 	function isChanged(item: ExtraItem) {
 		const original = extraItems.find((o) => o.ID === item.ID);
 		if (!original) return true;
-		return (
-			original.Name !== item.Name ||
-			original.Aisle !== item.Aisle
-		);
+		return original.Name !== item.Name || original.Aisle !== item.Aisle;
 	}
 
 	function addItem() {
 		// NOTE: This is a temporary ID generation method. The DB will handle creating
 		// unique IDs when the item is added to the database.
 		// This is just to prevent overlap with existing IDs in the localItems array.
-		localItems = [...localItems, { ID: Math.floor(Math.random() * 10000) + 100, Name: '', Aisle: '' }];
+		localItems = [
+			...localItems,
+			{ ID: Math.floor(Math.random() * 10000) + 100, Name: '', Aisle: '' }
+		];
 		editingRows = [...editingRows, true];
 	}
 
 	function removeItem(index: number) {
-		localItems = [
-			...localItems.slice(0, index),
-			...localItems.slice(index + 1)
-		];
-		editingRows = [
-			...editingRows.slice(0, index),
-			...editingRows.slice(index + 1)
-		];
+		localItems = [...localItems.slice(0, index), ...localItems.slice(index + 1)];
+		editingRows = [...editingRows.slice(0, index), ...editingRows.slice(index + 1)];
 	}
 
 	function toggleEditing(index: number) {
-		editingRows = editingRows.map((val, i) => 
-			i === index ? !val : val
-		);
+		editingRows = editingRows.map((val, i) => (i === index ? !val : val));
 	}
 
 	function buildChanges(): ExtraItemUpdate[] {
@@ -84,10 +76,7 @@
 			if (!updatedItem) {
 				changes.push({ Action: 'Delete', Old: { ...oldItem }, New: null });
 			} else {
-				if (
-					oldItem.Name !== updatedItem.Name ||
-					oldItem.Aisle !== updatedItem.Aisle
-				) {
+				if (oldItem.Name !== updatedItem.Name || oldItem.Aisle !== updatedItem.Aisle) {
 					changes.push({
 						Action: 'Update',
 						Old: { ...oldItem },
@@ -170,7 +159,12 @@
 						<button type="button" onclick={() => toggleEditing(index)}>
 							{editingRows[index] ? 'Done' : 'Edit'}
 						</button>
-						<button class="warning" style="opacity: 1.0;" type="button" onclick={() => removeItem(index)}>
+						<button
+							class="warning"
+							style="opacity: 1.0;"
+							type="button"
+							onclick={() => removeItem(index)}
+						>
 							X
 						</button>
 					</td>
@@ -196,12 +190,16 @@
 					</td>
 				</tr>
 			{/each}
+			<tr>
+				<td></td>
+				<td>
+					<button type="button" onclick={addItem}> + </button>
+				</td>
+				<td></td>
+			</tr>
 		</tbody>
 	</table>
 </form>
-
-<br />
-<button type="button" onclick={addItem}>+</button>
 
 <style>
 	.fixed-table {
