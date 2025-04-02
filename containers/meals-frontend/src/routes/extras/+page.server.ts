@@ -5,18 +5,18 @@ import { env } from '$env/dynamic/private';
 import { getTokenHeaders } from '$lib/token-utils';
 
 export const load: PageServerLoad = async ({ cookies, fetch }) => {
-    const response = await fetch(`${env.API_BASE_URL}/api/items`, {
-        headers: getTokenHeaders(cookies)
-    });
+	const response = await fetch(`${env.API_BASE_URL}/api/items`, {
+		headers: getTokenHeaders(cookies)
+	});
 
-    if (!response.ok) {
-        if (response.status === 401) {
-            throw redirect(302, '/login');
-        }
-        throw error(response.status, 'Failed to fetch meals');
-    }
+	if (!response.ok) {
+		if (response.status === 401) {
+			throw redirect(302, '/login');
+		}
+		throw error(response.status, 'Failed to fetch meals');
+	}
 
-    const data: ExtraItemsResponse = await response.json();
+	const data: ExtraItemsResponse = await response.json();
 
-    return { extraItems: data.allItems, };
+	return { extraItems: data.allItems };
 };
