@@ -13,13 +13,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '23.7.0'
           cache: 'npm'
-        working-directory: containers/meals-frontend/
+          cache-dependency-path: 'containers/meals-frontend/package-lock.json'
+
       - name: Install dependencies
         run: npm ci
+
       - name: Run lint
         run: npm run lint
