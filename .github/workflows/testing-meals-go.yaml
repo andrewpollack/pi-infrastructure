@@ -51,3 +51,4 @@ jobs:
         uses: golangci/golangci-lint-action@v7
         with:
           version: v2.0
+          working-directory: containers/meals-go/
