@@ -1,15 +1,14 @@
 <script lang="ts">
 	import MealsEmail from '$lib/MealsEmail.svelte';
-	import { Icon } from '$lib/const';
 
 	let { data } = $props();
 	const { allMeals, allEmails, allExtraItems } = data;
 </script>
 
 <h1 style="display: flex; align-items: center; justify-content: flex-start; gap: 1rem;">
-	{@html Icon}
+	<img src="/favicon.ico" alt="Favicon" style="height: 1em;" />
 	<span>Email</span>
-	{@html Icon}
+	<img src="/favicon.ico" alt="Favicon" style="height: 1em;" />
 </h1>
 
 <div>
