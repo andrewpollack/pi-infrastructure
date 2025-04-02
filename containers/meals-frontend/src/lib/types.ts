@@ -17,7 +17,15 @@ export interface MonthResponse {
 
 export interface ExtraItem {
 	Name: string;
+	Aisle: string;
+	ID: number;
 }
+
+export type ExtraItemUpdate = {
+	Action: 'Add' | 'Update' | 'Delete';
+	Old: ExtraItem | null;
+	New: ExtraItem | null;
+};
 
 export interface ExtraItemsResponse {
 	allItems: ExtraItem[];
