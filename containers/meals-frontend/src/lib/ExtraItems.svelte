@@ -3,6 +3,7 @@
 	import { StatusType } from '$lib/types';
 	import StatusIndicator from './StatusIndicator.svelte';
 	import { Aisles } from '$lib/const';
+	import { onMount } from 'svelte';
 
 	let { extraItems }: { extraItems: ExtraItem[] } = $props();
 
@@ -10,7 +11,13 @@
 	let statusType = $state(StatusType.SUCCESS);
 
 	let localItems = $state(extraItems.map((m) => ({ ...m })));
-	let editingRows = $state<boolean[]>(localItems.map(() => false));
+	// This is a workaround to ensure that editingRows is initialized after localItems
+	// is set. The onMount lifecycle function is called after the component is first
+	// rendered, so we can safely use the value of localItems here.
+	let editingRows = $state<boolean[]>([]);
+	onMount(() => {
+		editingRows = localItems.map(() => false);
+	});
 
 	let isDifferent = $derived(
 		localItems.length !== extraItems.length ||
@@ -154,9 +161,13 @@
 		</thead>
 		<tbody>
 			{#each localItems as item, index}
-				<tr class:unchanged={!isChanged(item)}>
+				<tr>
 					<td class="center-btn">
-						<button type="button" onclick={() => toggleEditing(index)}>
+						<button
+							class:unchanged={!isChanged(item)}
+							type="button"
+							onclick={() => toggleEditing(index)}
+						>
 							{editingRows[index] ? 'Done' : 'Edit'}
 						</button>
 						<button
@@ -169,7 +180,7 @@
 						</button>
 					</td>
 
-					<td>
+					<td class:unchanged={!isChanged(item)}>
 						{#if editingRows[index]}
 							<input class="cell-input" type="text" bind:value={item.Name} />
 						{:else}
@@ -177,7 +188,7 @@
 						{/if}
 					</td>
 
-					<td>
+					<td class:unchanged={!isChanged(item)} class="ellipsis">
 						{#if editingRows[index]}
 							<select class="cell-select" bind:value={item.Aisle}>
 								{#each Aisles as aisle}
@@ -229,6 +240,11 @@
 
 	.reactive-font {
 		font-size: clamp(0.9rem, 2vw, 1.2rem);
-		word-wrap: ellipsis;
+	}
+
+	.ellipsis {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 </style>
