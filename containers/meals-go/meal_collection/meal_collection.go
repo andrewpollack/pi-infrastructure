@@ -135,7 +135,7 @@ func (m MealCollection) MapNameToMeal() map[string]Meal {
 
 func (i Ingredient) String() string {
 	if i.Quantity == 0 {
-		return fmt.Sprintf("%s", i.Name)
+		return fmt.Sprint(i.Name)
 	}
 	formatSignificant := func(f float64, sigDigits int) string {
 		if f == 0 {
@@ -313,7 +313,11 @@ func ExtraItemToIngredient(ei ExtraItem) Ingredient {
 }
 
 func ReadMealCollectionFromReader(reader io.ReadCloser) (MealCollection, error) {
-	defer reader.Close()
+	defer func() {
+		if err := reader.Close(); err != nil {
+			fmt.Printf("error closing reader: %v\n", err)
+		}
+	}()
 
 	decoder := json.NewDecoder(reader)
 	decoder.DisallowUnknownFields()

@@ -46,9 +46,15 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.22.x'
+      
+      - name: Cache golangci-lint
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/golangci-lint
+          key: ${{ runner.os }}-golangci-${{ hashFiles('**/*.mod') }}
+
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v7
         with:
-          version: v1.64.8
-          working-directory: containers/meals-go/
+          version: v2.0.2

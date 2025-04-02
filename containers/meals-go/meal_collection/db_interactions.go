@@ -39,7 +39,11 @@ func ReadMealCollectionFromDB(postgresURL string, recipeCreatedCutoff int64) (Me
 	if err != nil {
 		return nil, fmt.Errorf("unable to connect to database: %v", err)
 	}
-	defer conn.Close(context.Background())
+	defer func() {
+		if err := conn.Close(context.Background()); err != nil {
+			fmt.Printf("error closing connection: %v\n", err)
+		}
+	}()
 
 	rows, err := conn.Query(context.Background(), `
 		SELECT id, category, name, url, ingredients, date_created, date_modified, enabled
@@ -129,7 +133,11 @@ func UpdateMealsInDB(postgresURL string, updates []MealUpdate) error {
 	if err != nil {
 		return fmt.Errorf("unable to connect to database: %v", err)
 	}
-	defer conn.Close(context.Background())
+	defer func() {
+		if err := conn.Close(context.Background()); err != nil {
+			fmt.Printf("error closing connection: %v\n", err)
+		}
+	}()
 
 	// Build slices for names and the desired enabled state.
 	// Our DB stores an "enabled" boolean, so we set enabled = !Disabled.
@@ -173,7 +181,11 @@ func ReadExtraItemsFromDB(postgresURL string) ([]ExtraItem, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to connect to database: %v", err)
 	}
-	defer conn.Close(context.Background())
+	defer func() {
+		if err := conn.Close(context.Background()); err != nil {
+			fmt.Printf("error closing connection: %v\n", err)
+		}
+	}()
 
 	rows, err := conn.Query(context.Background(), `
         SELECT
@@ -202,7 +214,7 @@ func ReadExtraItemsFromDB(postgresURL string) ([]ExtraItem, error) {
 			&i.DateModified,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("Scan failed: %v", err)
+			return nil, fmt.Errorf("scan failed: %v", err)
 		}
 
 		items = append(items, i)
@@ -256,7 +268,11 @@ func UpdateExtraItemsInDB(postgresURL string, updates []FEExtraItem) error {
 	if err != nil {
 		return fmt.Errorf("unable to connect to database: %v", err)
 	}
-	defer conn.Close(context.Background())
+	defer func() {
+		if err := conn.Close(context.Background()); err != nil {
+			fmt.Printf("error closing connection: %v\n", err)
+		}
+	}()
 
 	for _, update := range updates {
 		switch update.Action {
