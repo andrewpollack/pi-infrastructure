@@ -127,7 +127,7 @@
 			</thead>
 			<tbody>
 				<tr>
-					{#each Array(maxMeals) as _, i}
+					{#each [...Array(maxMeals).keys()] as i}
 						<td class="meal-cell">
 							{#if selectedMeals[i]}
 								{selectedMeals[i]}

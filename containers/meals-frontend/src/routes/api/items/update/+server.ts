@@ -20,10 +20,10 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		if (!res.ok) {
 			if (contentType.includes('application/json')) {
 				const errorData = await res.json();
-				throw new Error(errorData.error || 'An error occurred while updating meals.');
+				throw new Error(errorData.error || 'An error occurred while updating items.');
 			} else {
 				const errorText = await res.text();
-				throw new Error(errorText || 'An error occurred while updating meals.');
+				throw new Error(errorText || 'An error occurred while updating items.');
 			}
 		}
 

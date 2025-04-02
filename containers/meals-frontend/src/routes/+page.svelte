@@ -1,7 +1,6 @@
 <script lang="ts">
 	import CalendarMonth from '$lib/CalendarMonth.svelte';
 	import MealsEmail from '$lib/MealsEmail.svelte';
-	import { Icon } from '$lib/const';
 
 	let { data } = $props();
 	const { allMeals, currMonthResponse, allEmails, allExtraItems, selectedYear, selectedMonth } =
@@ -41,9 +40,9 @@
 </script>
 
 <h1 style="display: flex; align-items: center; justify-content: flex-start; gap: 1rem;">
-	{@html Icon}
+	<img src="/favicon.ico" alt="Favicon" style="height: 1em;" />
 	<span> Home </span>
-	{@html Icon}
+	<img src="/favicon.ico" alt="Favicon" style="height: 1em;" />
 </h1>
 
 <div style="align-items: center; justify-content: space-between; margin-bottom: 1rem;">
