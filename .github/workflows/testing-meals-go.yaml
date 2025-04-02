@@ -1,4 +1,4 @@
-name: Test recipe-maker
+name: Validate recipe-go
 
 on:
   pull_request:
