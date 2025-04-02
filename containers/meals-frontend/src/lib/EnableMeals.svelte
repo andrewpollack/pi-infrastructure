@@ -28,7 +28,10 @@
 				},
 				body: JSON.stringify(updates)
 			});
-			const data = await res.json();
+			if (!res.ok) {
+				const errorData = await res.json();
+				throw new Error(errorData.error || 'An error occurred while sending data.');
+			}
 			message = 'Meal status updated!';
 			statusType = StatusType.SUCCESS;
 		} catch (error) {
@@ -49,7 +52,7 @@
 			Update Meal Status
 		</button>
 		<br />
-		{#each localMeals as meal, index (meal.Meal)}
+		{#each localMeals as meal (meal.Meal)}
 			<div>
 				<input
 					type="checkbox"
