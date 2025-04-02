@@ -7,8 +7,6 @@ export const Color = {
 	quaternary: '#FBF3B9'
 };
 
-export const Icon = '<img src="/favicon.ico" alt="Favicon" style="height: 1em;" />';
-
 // TODO: At some point, this should be pulled from the backend
 export const Aisles = [
 	'Cheese & Bakery',

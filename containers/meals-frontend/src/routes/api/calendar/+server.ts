@@ -69,8 +69,8 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 				'Content-Type': 'application/json'
 			}
 		});
-	} catch (error: any) {
-		return new Response(JSON.stringify({ error: error.message || 'Internal Server Error' }), {
+	} catch (error) {
+		return new Response(JSON.stringify({ error: `Request failed: ${error}` }), {
 			status: 500,
 			headers: {
 				'Content-Type': 'application/json'
