@@ -163,7 +163,11 @@
 			{#each localItems as item, index}
 				<tr>
 					<td class="center-btn">
-						<button class:unchanged={!isChanged(item)} type="button" onclick={() => toggleEditing(index)}>
+						<button
+							class:unchanged={!isChanged(item)}
+							type="button"
+							onclick={() => toggleEditing(index)}
+						>
 							{editingRows[index] ? 'Done' : 'Edit'}
 						</button>
 						<button
