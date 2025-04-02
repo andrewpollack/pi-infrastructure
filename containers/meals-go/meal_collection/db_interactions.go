@@ -218,8 +218,77 @@ func ReadExtraItemsFromDB(postgresURL string) ([]ExtraItem, error) {
 		itemsOut = append(itemsOut, ExtraItem{
 			Name:  item.Name,
 			Aisle: Aisle(item.Aisle),
+			ID:    item.ID,
 		})
 	}
 
 	return itemsOut, nil
+}
+
+type Action string
+
+const (
+	Add    Action = "Add"
+	Update Action = "Update"
+	Delete Action = "Delete"
+)
+
+type FEItem struct {
+	Name  string `json:"Name"`
+	Aisle Aisle  `json:"Aisle"`
+}
+type FEExtraItem struct {
+	Action Action `json:"Action"`
+	Old    FEItem `json:"Old"`
+	New    FEItem `json:"New"`
+}
+
+func UpdateExtraItemsInDB(postgresURL string, updates []FEExtraItem) error {
+	if len(updates) == 0 {
+		return nil
+	}
+
+	if postgresURL == "" {
+		return fmt.Errorf("POSTGRES_URL is not set")
+	}
+
+	conn, err := pgx.Connect(context.Background(), postgresURL)
+	if err != nil {
+		return fmt.Errorf("unable to connect to database: %v", err)
+	}
+	defer conn.Close(context.Background())
+
+	for _, update := range updates {
+		switch update.Action {
+		case Add:
+			_, err = conn.Exec(context.Background(), `
+				INSERT INTO item (aisle, name)
+				VALUES ($1, $2)
+			`, update.New.Aisle, update.New.Name)
+			if err != nil {
+				return fmt.Errorf("query failed: %v", err)
+			}
+		case Update:
+			_, err = conn.Exec(context.Background(), `
+				UPDATE item
+				SET aisle = $1, name = $2
+				WHERE aisle = $3 AND name = $4
+			`, update.New.Aisle, update.New.Name, update.Old.Aisle, update.Old.Name)
+			if err != nil {
+				return fmt.Errorf("query failed: %v", err)
+			}
+		case Delete:
+			_, err = conn.Exec(context.Background(), `
+				DELETE FROM item
+				WHERE aisle = $1 AND name = $2
+			`, update.Old.Aisle, update.Old.Name)
+			if err != nil {
+				return fmt.Errorf("query failed: %v", err)
+			}
+		default:
+			return fmt.Errorf("unknown action: %s", update.Action)
+		}
+	}
+
+	return nil
 }

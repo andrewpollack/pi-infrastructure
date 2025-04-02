@@ -165,7 +165,9 @@ func (c Config) GetMeals(ctx *gin.Context) {
 
 func (c Config) GetItems(ctx *gin.Context) {
 	type ExtraItemResponse struct {
-		Name string `json:"Name"`
+		Name  string `json:"Name"`
+		Aisle string `json:"Aisle"`
+		ID    int    `json:"ID"`
 	}
 
 	extraItems, err := meal_collection.ReadExtraItemsFromDB(c.PostgresURL)
@@ -186,7 +188,9 @@ func (c Config) GetItems(ctx *gin.Context) {
 	extraItemsResponse := make([]ExtraItemResponse, 0, len(extraItems))
 	for _, item := range extraItems {
 		extraItemsResponse = append(extraItemsResponse, ExtraItemResponse{
-			Name: item.Name,
+			Name:  item.Name,
+			Aisle: string(item.Aisle),
+			ID:    item.ID,
 		})
 	}
 
@@ -369,6 +373,30 @@ func (c Config) EnableMeals(ctx *gin.Context) {
 	})
 }
 
+func (c Config) UpdateItems(ctx *gin.Context) {
+	var extraItemsUpdate []meal_collection.FEExtraItem
+	if err := ctx.BindJSON(&extraItemsUpdate); err != nil {
+		log.Println("Error in EnableMeals while binding JSON:", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": err,
+		})
+		return
+	}
+
+	err := meal_collection.UpdateExtraItemsInDB(c.PostgresURL, extraItemsUpdate)
+	if err != nil {
+		log.Println("Error in UpdateItems while updating items in DB:", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": err,
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"status": "success",
+	})
+}
+
 func HealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":    "healthy",
@@ -419,6 +447,7 @@ func (c Config) RunBackend() {
 	api.POST("/login", c.Login)
 	api.GET("/calendar", c.authenticateMiddleware, c.GetCalendar)
 	api.GET("/items", c.authenticateMiddleware, c.GetItems)
+	api.POST("/items/update", c.authenticateMiddleware, c.UpdateItems)
 	api.POST("/email", c.authenticateMiddleware, c.SendEmail)
 	api.GET("/meals", c.authenticateMiddleware, c.GetMeals)
 	api.POST("/meals/enable", c.authenticateMiddleware, c.EnableMeals)
