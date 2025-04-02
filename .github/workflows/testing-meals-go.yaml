@@ -2,7 +2,7 @@ name: Test recipe-maker
 
 on:
   pull_request:
-
+    
 jobs:
   test-go:
     runs-on: ubuntu-latest
@@ -13,11 +13,41 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Go
+
+      - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.22.x'
+
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
+
       - name: Install dependencies
-        run: go get .
+        run: go mod download
+
       - name: Test
-        run: go test ./...
+        run: go test ./... -v
+
+  golangci:
+    name: lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: containers/meals-go/
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.x'
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v7
+        with:
+          version: v2.0
