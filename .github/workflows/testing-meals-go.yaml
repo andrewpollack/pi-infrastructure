@@ -53,9 +53,14 @@ jobs:
           path: ~/.cache/golangci-lint
           key: ${{ runner.os }}-golangci-${{ hashFiles('**/*.mod') }}
 
-
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v7
         with:
           version: v2.0.2
           working-directory: containers/meals-go/
+      
+      - name: Run golangci-lint on deploy
+        uses: golangci/golangci-lint-action@v7
+        with:
+          version: v2.0.2
+          working-directory: containers/ops/deploy-images/
