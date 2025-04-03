@@ -1,4 +1,6 @@
-# Stage 1: Build the application
+###
+# Stage 1: Builder
+###
 FROM node:23-alpine AS builder
 WORKDIR /app
 
@@ -8,14 +10,20 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-# Stage 2: Run the application on ARM64
+###
+# Stage 2: Runner (production)
+###
 FROM node:23-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 
-COPY --from=builder /app .
+# Copy only the package files again
+COPY package*.json ./
+
+RUN npm install --only=production
+
+COPY --from=builder /app/build ./build
 
 EXPOSE 3000
-
 CMD ["node", "build/index.js"]
