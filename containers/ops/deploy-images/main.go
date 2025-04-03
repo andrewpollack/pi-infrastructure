@@ -20,7 +20,11 @@ func LoadConfig(path string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			fmt.Printf("error closing connection: %v\n", err)
+		}
+	}()
 
 	var config Config
 	if err := json.NewDecoder(f).Decode(&config); err != nil {
