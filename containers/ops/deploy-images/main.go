@@ -9,6 +9,19 @@ import (
 	"sync"
 )
 
+type CommandRunner interface {
+	Run(name string, args ...string) error
+}
+
+type DefaultRunner struct{}
+
+func (r *DefaultRunner) Run(name string, args ...string) error {
+	cmd := exec.Command(name, args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
 type Config struct {
 	Targets []Target `json:"targets"`
 	Images  []Image  `json:"images"`
@@ -61,17 +74,13 @@ func (i Image) TarPath() string {
 	return fmt.Sprintf("/tmp/%s", i.TarString())
 }
 
-// runCommand wraps exec.Command for reuse, logging output to stdout/stderr.
-func runCommand(name string, args ...string) error {
-	cmd := exec.Command(name, args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
+type Deployer struct {
+	Runner CommandRunner
 }
 
 // PullImage pulls an image (arm64 platform) from the registry.
-func PullImage(img Image) error {
-	err := runCommand("docker", "pull", "--platform", "linux/arm64", img.RegistryString())
+func (d *Deployer) PullImage(img Image) error {
+	err := d.Runner.Run("docker", "pull", "--platform", "linux/arm64", img.RegistryString())
 	if err != nil {
 		return fmt.Errorf("failed to pull image %s: %w", img.RegistryString(), err)
 	}
@@ -80,8 +89,8 @@ func PullImage(img Image) error {
 }
 
 // PackageImage saves the pulled image as a tar file locally.
-func PackageImage(img Image) error {
-	err := runCommand("docker", "save", img.RegistryString(), "-o", img.TarPath())
+func (d *Deployer) PackageImage(img Image) error {
+	err := d.Runner.Run("docker", "save", img.RegistryString(), "-o", img.TarPath())
 	if err != nil {
 		return fmt.Errorf("failed to package image %s: %w", img.RegistryString(), err)
 	}
@@ -90,10 +99,10 @@ func PackageImage(img Image) error {
 }
 
 // CopyImage scp's the tar file to the specified target.
-func CopyImage(img Image, tgt Target) error {
+func (d *Deployer) CopyImage(img Image, tgt Target) error {
 	fmt.Printf("Copying %s to %s...\n", img.TarPath(), tgt.Host)
 	dst := fmt.Sprintf("%s:%s", tgt.Host, tgt.TargetPath)
-	err := runCommand("scp", img.TarPath(), dst)
+	err := d.Runner.Run("scp", img.TarPath(), dst)
 	if err != nil {
 		return fmt.Errorf("failed to copy %s to %s: %w", img.TarPath(), dst, err)
 	}
@@ -102,10 +111,10 @@ func CopyImage(img Image, tgt Target) error {
 }
 
 // LoadImage loads a previously-copied tar file on the remote target (via ssh).
-func LoadImage(img Image, tgt Target) error {
+func (d *Deployer) LoadImage(img Image, tgt Target) error {
 	fmt.Printf("Loading %s on %s...\n", img.TarString(), tgt.Host)
 	remoteFile := fmt.Sprintf("%s/%s", tgt.TargetPath, img.TarString())
-	err := runCommand("ssh", tgt.Host, "docker", "load", "-i", remoteFile)
+	err := d.Runner.Run("ssh", tgt.Host, "docker", "load", "-i", remoteFile)
 	if err != nil {
 		return fmt.Errorf("failed to load %s on %s: %w", img.TarString(), tgt.Host, err)
 	}
@@ -113,8 +122,29 @@ func LoadImage(img Image, tgt Target) error {
 	return nil
 }
 
-// CopyAndLoadImagesForTarget copies+loads all images for a single target, but now concurrently.
-func CopyAndLoadImagesForTarget(t Target, images []Image) error {
+// Compose copies the local compose file to the target and runs it via Docker Compose.
+func (d *Deployer) Compose(tgt Target) error {
+	dst := fmt.Sprintf("%s:%s", tgt.Host, tgt.TargetPath)
+	err := d.Runner.Run("scp", tgt.LocalCompose, dst)
+	if err != nil {
+		return fmt.Errorf("failed to copy compose file to %s: %w", tgt.Host, err)
+	}
+	fmt.Printf("Copied compose file to %s\n", tgt.Host)
+
+	err = d.Runner.Run("ssh", tgt.Host,
+		"cd", tgt.TargetPath, "&&",
+		"docker", "compose", "down", "&&",
+		"docker", "compose", "up", "-d",
+	)
+	if err != nil {
+		return fmt.Errorf("failed to run compose on %s: %w", tgt.Host, err)
+	}
+	fmt.Printf("Ran docker compose on %s\n", tgt.Host)
+	return nil
+}
+
+// CopyAndLoadImagesForTarget copies+loads all images for a single target concurrently.
+func (d *Deployer) CopyAndLoadImagesForTarget(tgt Target, images []Image) error {
 	var wg sync.WaitGroup
 	errsCh := make(chan error, len(images))
 
@@ -122,13 +152,11 @@ func CopyAndLoadImagesForTarget(t Target, images []Image) error {
 		wg.Add(1)
 		go func(img Image) {
 			defer wg.Done()
-			// Copy
-			if err := CopyImage(img, t); err != nil {
+			if err := d.CopyImage(img, tgt); err != nil {
 				errsCh <- err
 				return
 			}
-			// Load
-			if err := LoadImage(img, t); err != nil {
+			if err := d.LoadImage(img, tgt); err != nil {
 				errsCh <- err
 			}
 		}(img)
@@ -142,66 +170,40 @@ func CopyAndLoadImagesForTarget(t Target, images []Image) error {
 		allErrs = append(allErrs, err)
 	}
 	if len(allErrs) > 0 {
-		return fmt.Errorf("copy/load images on target %s encountered errors: %v", t.Host, allErrs)
+		return fmt.Errorf("copy/load images on target %s encountered errors: %v", tgt.Host, allErrs)
 	}
 	return nil
 }
 
-// Compose copies the local compose file to the target and runs it via Docker Compose.
-func Compose(tgt Target) error {
-	// Copy the compose file to the target.
-	dst := fmt.Sprintf("%s:%s", tgt.Host, tgt.TargetPath)
-	err := runCommand("scp", tgt.LocalCompose, dst)
-	if err != nil {
-		return fmt.Errorf("failed to copy compose file to %s: %w", tgt.Host, err)
+// DeployTarget performs the entire deployment for a single target.
+func (d *Deployer) DeployTarget(tgt Target, images []Image) error {
+	fmt.Printf("🔄 Deploying images to %s...\n", tgt.Host)
+	if err := d.CopyAndLoadImagesForTarget(tgt, images); err != nil {
+		return fmt.Errorf("deployment failed on %s (copy/load images): %w", tgt.Host, err)
 	}
-	fmt.Printf("Copied compose file to %s\n", tgt.Host)
+	fmt.Printf("✅ Successfully copied and loaded images on %s\n", tgt.Host)
 
-	// Run docker compose on the target.
-	err = runCommand("ssh", tgt.Host,
-		"cd", tgt.TargetPath, "&&",
-		"docker", "compose", "down", "&&",
-		"docker", "compose", "up", "-d",
-	)
-	if err != nil {
-		return fmt.Errorf("failed to run compose on %s: %w", tgt.Host, err)
+	fmt.Printf("🔄 Running compose on %s...\n", tgt.Host)
+	if err := d.Compose(tgt); err != nil {
+		return fmt.Errorf("deployment failed on %s (compose): %w", tgt.Host, err)
 	}
-	fmt.Printf("Ran docker compose on %s\n", tgt.Host)
-	return nil
-}
-
-// DeployTarget performs the entire deployment for a single target:
-// 1) Copy and load all images (in parallel) to that target.
-// 2) Copy and run the compose file on that target.
-func DeployTarget(t Target, images []Image) error {
-	// 1. Copy/load images (now concurrently for each image).
-	fmt.Printf("🔄 Deploying images to %s...\n", t.Host)
-	if err := CopyAndLoadImagesForTarget(t, images); err != nil {
-		return fmt.Errorf("deployment failed on %s (copy/load images): %w", t.Host, err)
-	}
-	fmt.Printf("✅ Successfully copied and loaded images on %s\n", t.Host)
-	// 2. Docker compose
-	fmt.Printf("🔄 Running compose on %s...\n", t.Host)
-	if err := Compose(t); err != nil {
-		return fmt.Errorf("deployment failed on %s (compose): %w", t.Host, err)
-	}
-	fmt.Printf("✅ Successfully ran compose on %s\n", t.Host)
+	fmt.Printf("✅ Successfully ran compose on %s\n", tgt.Host)
 	return nil
 }
 
 // DeployTargets runs the DeployTarget step in parallel for all targets.
-func DeployTargets(targets []Target, images []Image) []error {
+func (d *Deployer) DeployTargets(targets []Target, images []Image) []error {
 	var wg sync.WaitGroup
 	errsCh := make(chan error, len(targets))
 
-	for _, t := range targets {
+	for _, tgt := range targets {
 		wg.Add(1)
-		go func(target Target) {
+		go func(tgt Target) {
 			defer wg.Done()
-			if err := DeployTarget(target, images); err != nil {
+			if err := d.DeployTarget(tgt, images); err != nil {
 				errsCh <- err
 			}
-		}(t)
+		}(tgt)
 	}
 
 	wg.Wait()
@@ -217,7 +219,7 @@ func DeployTargets(targets []Target, images []Image) []error {
 	return nil
 }
 
-// runConcurrent is useful for “pulling” and “packaging” images in parallel.
+// runConcurrent is a helper that runs jobs concurrently.
 func runConcurrent[T any](items []T, job func(T) error) []error {
 	var wg sync.WaitGroup
 	errsCh := make(chan error, len(items))
@@ -247,13 +249,17 @@ func runConcurrent[T any](items []T, job func(T) error) []error {
 }
 
 // PullImages concurrently pulls a list of Images.
-func PullImages(images []Image) []error {
-	return runConcurrent(images, PullImage)
+func (d *Deployer) PullImages(images []Image) []error {
+	return runConcurrent(images, func(img Image) error {
+		return d.PullImage(img)
+	})
 }
 
 // PackageImages concurrently packages a list of Images.
-func PackageImages(images []Image) []error {
-	return runConcurrent(images, PackageImage)
+func (d *Deployer) PackageImages(images []Image) []error {
+	return runConcurrent(images, func(img Image) error {
+		return d.PackageImage(img)
+	})
 }
 
 func main() {
@@ -266,9 +272,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Create a deployer with the default command runner.
+	deployer := Deployer{Runner: &DefaultRunner{}}
+
 	// 1. Pull images
 	fmt.Println("🔄 Pulling images...")
-	if errs := PullImages(config.Images); errs != nil {
+	if errs := deployer.PullImages(config.Images); errs != nil {
 		fmt.Println("Errors occurred while pulling images:")
 		for _, e := range errs {
 			fmt.Println(" -", e)
@@ -279,7 +288,7 @@ func main() {
 
 	// 2. Package images
 	fmt.Println("🔄 Packaging images...")
-	if errs := PackageImages(config.Images); errs != nil {
+	if errs := deployer.PackageImages(config.Images); errs != nil {
 		fmt.Println("Errors occurred while packaging images:")
 		for _, e := range errs {
 			fmt.Println(" -", e)
@@ -288,10 +297,9 @@ func main() {
 	}
 	fmt.Println("✅ All images packaged.")
 
-	// 3. Deploy to each target (copy/load images + compose).
-	// Each target runs those steps in series, but all targets run in parallel.
+	// 3. Deploy to each target.
 	fmt.Println("🔄 Deploying to all targets (copy/load + compose in parallel)...")
-	if errs := DeployTargets(config.Targets, config.Images); errs != nil {
+	if errs := deployer.DeployTargets(config.Targets, config.Images); errs != nil {
 		fmt.Println("Errors occurred during deployment:")
 		for _, e := range errs {
 			fmt.Println(" -", e)
