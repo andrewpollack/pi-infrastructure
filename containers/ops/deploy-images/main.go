@@ -16,6 +16,7 @@ import (
 // CommandRunner abstracts running external commands.
 type CommandRunner interface {
 	Run(name string, args ...string) error
+	RunSilent(name string, args ...string) error
 }
 
 // DefaultRunner uses os/exec to run commands.
@@ -25,6 +26,11 @@ func (r *DefaultRunner) Run(name string, args ...string) error {
 	cmd := exec.Command(name, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+func (r *DefaultRunner) RunSilent(name string, args ...string) error {
+	cmd := exec.Command(name, args...)
 	return cmd.Run()
 }
 
@@ -189,10 +195,10 @@ func (d *Deployer) CheckComposeUpToDate(tgt Target) (bool, error) {
 
 // PullImage pulls an image.
 func (d *Deployer) PullImage(img Image) error {
-	if err := d.Runner.Run("docker", "pull", "--platform", "linux/arm64", img.RegistryString()); err != nil {
+	if err := d.Runner.RunSilent("docker", "pull", "--platform", "linux/arm64", img.RegistryString()); err != nil {
 		return fmt.Errorf("failed to pull image %s: %w", img.RegistryString(), err)
 	}
-	fmt.Printf("Pulled %s\n", img.RegistryString())
+	fmt.Printf("⤵️  Pulled %s\n", img.RegistryString())
 	return nil
 }
 
@@ -201,7 +207,7 @@ func (d *Deployer) PackageImage(img Image) error {
 	if err := d.Runner.Run("docker", "save", img.RegistryString(), "-o", img.TarPath()); err != nil {
 		return fmt.Errorf("failed to package image %s: %w", img.RegistryString(), err)
 	}
-	fmt.Printf("Packaged %s\n", img.RegistryString())
+	fmt.Printf("📦 Packaged %s\n", img.RegistryString())
 	return nil
 }
 
@@ -273,7 +279,7 @@ func (d *Deployer) CopyAndLoadImagesForTarget(tgt Target, images []Image) error 
 // DeployTarget performs the entire deployment for a single target.
 // It skips the compose step only if both images and compose config are up to date.
 func (d *Deployer) DeployTarget(tgt Target, images []Image) error {
-	fmt.Printf("🔄 Deploying to %s...\n", tgt.Host)
+	fmt.Printf("🔄 Gathering state of %s...\n", tgt.Host)
 	imagesUpToDate, err := d.CheckImagesUpToDate(tgt, images)
 	if err != nil {
 		return err
@@ -283,16 +289,18 @@ func (d *Deployer) DeployTarget(tgt Target, images []Image) error {
 		return err
 	}
 	if imagesUpToDate && composeUpToDate {
-		fmt.Printf("⏭️ No changes on %s (images and compose config are up to date), skipping deployment.\n", tgt.Host)
+		fmt.Printf("⏭️  No changes on %s (images and compose config are up to date), skipping deployment.\n", tgt.Host)
 		return nil
 	}
 	if !imagesUpToDate {
+		fmt.Printf("🔄 Copying/loading images on %s...\n", tgt.Host)
 		if err := d.CopyAndLoadImagesForTarget(tgt, images); err != nil {
 			return fmt.Errorf("deployment failed on %s (copy/load images): %w", tgt.Host, err)
 		}
 		fmt.Printf("✅ Successfully updated images on %s\n", tgt.Host)
 	}
 	if !composeUpToDate {
+		fmt.Printf("🔄 Copying compose file to %s...\n", tgt.Host)
 		dst := fmt.Sprintf("%s:%s", tgt.Host, tgt.TargetPath)
 		if err := d.Runner.Run("scp", tgt.LocalCompose, dst); err != nil {
 			return fmt.Errorf("failed to copy compose file to %s: %w", tgt.Host, err)

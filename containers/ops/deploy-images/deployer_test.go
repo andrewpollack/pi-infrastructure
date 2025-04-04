@@ -18,6 +18,11 @@ func (fr *FakeRunner) Run(name string, args ...string) error {
 	return nil
 }
 
+func (fr *FakeRunner) RunSilent(name string, args ...string) error {
+	fr.Commands = append(fr.Commands, fmt.Sprintf("%s %s", name, strings.Join(args, " ")))
+	return nil
+}
+
 // Fake implementations for dependency injection.
 func fakeGetLocalImageID(img Image) (string, error) {
 	// For the test image, return a matching ID.
