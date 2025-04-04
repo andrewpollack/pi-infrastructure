@@ -96,14 +96,15 @@ func main() {
 	switch c.RunMode {
 	case "backend":
 		mealBackendConfig := meal_backend.Config{
-			PostgresURL:        c.PostgresURL,
-			EmailSender:        c.EmailSender,
-			EmailReceivers:     c.EmailReceivers,
-			IgnoreCutoff:       c.IgnoreCutoff,
-			AllowOrigins:       c.AllowOrigins,
-			DomainName:         c.DomainName,
-			JWTSigningKey:      c.JWTSigningKey,
-			DeploymentPassword: c.DeploymentPassword,
+			PostgresURL:          c.PostgresURL,
+			PostgresMigrationDir: "file://migrations",
+			EmailSender:          c.EmailSender,
+			EmailReceivers:       c.EmailReceivers,
+			IgnoreCutoff:         c.IgnoreCutoff,
+			AllowOrigins:         c.AllowOrigins,
+			DomainName:           c.DomainName,
+			JWTSigningKey:        c.JWTSigningKey,
+			DeploymentPassword:   c.DeploymentPassword,
 		}
 
 		mealBackendConfig.RunBackend()
