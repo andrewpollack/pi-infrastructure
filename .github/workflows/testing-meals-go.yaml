@@ -30,8 +30,12 @@ jobs:
       - name: Install dependencies
         run: go mod download
 
-      - name: Test
+      - name: Test containers/meals-go/
         run: go test ./... -v
+      
+      - name: Test containers/ops/deploy-images/
+        run: go test ./... -v
+        working-directory: containers/ops/deploy-images/
 
   golangci:
     name: lint-go
