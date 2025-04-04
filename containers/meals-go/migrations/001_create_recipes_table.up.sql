@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS recipes (
+    id SERIAL PRIMARY KEY,
+    date_created TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    date_modified TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    name VARCHAR(255) NOT NULL UNIQUE,
+    category VARCHAR(255) NOT NULL,
+    url VARCHAR(255),
+    ingredients JSONB NOT NULL,
+    enabled BOOLEAN NOT NULL DEFAULT true
+);

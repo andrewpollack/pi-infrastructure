@@ -17,17 +17,20 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Config holds the configuration for the backend.
 type Config struct {
-	PostgresURL        string
-	EmailSender        string
-	EmailReceivers     string
-	IgnoreCutoff       bool
-	AllowOrigins       []string
-	DomainName         string
-	JWTSigningKey      []byte
-	DeploymentPassword string
+	PostgresURL          string
+	PostgresMigrationDir string
+	EmailSender          string
+	EmailReceivers       string
+	IgnoreCutoff         bool
+	AllowOrigins         []string
+	DomainName           string
+	JWTSigningKey        []byte
+	DeploymentPassword   string
 }
 
+// DayResponse represents a meal for a given day.
 type DayResponse struct {
 	Day     int
 	Meal    string
@@ -35,16 +38,19 @@ type DayResponse struct {
 	Enabled bool
 }
 
+// ExtraItemResponse represents an extra item response.
 type ExtraItemResponse struct {
 	Items []meal_collection.ExtraItem
 }
 
+// BackendCalendarResponse represents the calendar response.
 type BackendCalendarResponse struct {
 	Year          int
 	Month         string
 	MealsEachWeek [][]DayResponse
 }
 
+// CreateBackendCalendarResponse creates a calendar response.
 func CreateBackendCalendarResponse(collection meal_collection.MealCollection, year int, month time.Month) BackendCalendarResponse {
 	resp := BackendCalendarResponse{
 		Year:          year,
@@ -86,6 +92,7 @@ func CreateBackendCalendarResponse(collection meal_collection.MealCollection, ye
 	return resp
 }
 
+// GetCalendar handles the GET /calendar endpoint.
 func (c Config) GetCalendar(ctx *gin.Context) {
 	now := time.Now()
 	currYear, currMonth, _ := now.Date()
@@ -132,6 +139,7 @@ func (c Config) GetCalendar(ctx *gin.Context) {
 	})
 }
 
+// GetMeals handles the GET /meals endpoint.
 func (c Config) GetMeals(ctx *gin.Context) {
 	mealCollection, err := meal_collection.ReadMealCollectionFromDB(c.PostgresURL, time.Now().Unix())
 	if err != nil {
@@ -163,6 +171,7 @@ func (c Config) GetMeals(ctx *gin.Context) {
 	})
 }
 
+// GetItems handles the GET /items endpoint.
 func (c Config) GetItems(ctx *gin.Context) {
 	type ExtraItemResponse struct {
 		Name  string `json:"Name"`
@@ -172,7 +181,7 @@ func (c Config) GetItems(ctx *gin.Context) {
 
 	extraItems, err := meal_collection.ReadExtraItemsFromDB(c.PostgresURL)
 	if err != nil {
-		log.Println("Error in GetMeals while fetching meal collection:", err)
+		log.Println("Error in GetItems while fetching extra items:", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": err,
 		})
@@ -199,12 +208,14 @@ func (c Config) GetItems(ctx *gin.Context) {
 	})
 }
 
+// SendEmailRequest represents the email request payload.
 type SendEmailRequest struct {
 	Meals      []string `json:"meals"`
 	Emails     []string `json:"emails"`
 	ExtraItems []string `json:"extraItems"`
 }
 
+// SendEmail handles the POST /email endpoint.
 func (c Config) SendEmail(ctx *gin.Context) {
 	var emailRequest SendEmailRequest
 	if err := ctx.BindJSON(&emailRequest); err != nil {
@@ -249,7 +260,7 @@ func (c Config) SendEmail(ctx *gin.Context) {
 
 	extraItemsDB, err := meal_collection.ReadExtraItemsFromDB(c.PostgresURL)
 	if err != nil {
-		log.Println("Error in GetMeals while fetching meal collection:", err)
+		log.Println("Error in SendEmail while fetching extra items:", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": err,
 		})
@@ -313,6 +324,7 @@ func (c Config) SendEmail(ctx *gin.Context) {
 	})
 }
 
+// EnableMeals handles the POST /meals/enable endpoint.
 func (c Config) EnableMeals(ctx *gin.Context) {
 	var mealUpdates []meal_collection.MealUpdate
 	if err := ctx.BindJSON(&mealUpdates); err != nil {
@@ -373,10 +385,11 @@ func (c Config) EnableMeals(ctx *gin.Context) {
 	})
 }
 
+// UpdateItems handles the POST /items/update endpoint.
 func (c Config) UpdateItems(ctx *gin.Context) {
 	var extraItemsUpdate []meal_collection.FEExtraItem
 	if err := ctx.BindJSON(&extraItemsUpdate); err != nil {
-		log.Println("Error in EnableMeals while binding JSON:", err)
+		log.Println("Error in UpdateItems while binding JSON:", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"error": err,
 		})
@@ -397,6 +410,7 @@ func (c Config) UpdateItems(ctx *gin.Context) {
 	})
 }
 
+// HealthCheck handles the GET /health endpoint.
 func HealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":    "healthy",
@@ -404,10 +418,12 @@ func HealthCheck(c *gin.Context) {
 	})
 }
 
+// PostLoginRequest represents the login request payload.
 type PostLoginRequest struct {
 	Password string `json:"password"`
 }
 
+// Login handles the POST /login endpoint.
 func (c Config) Login(ctx *gin.Context) {
 	var loginRequest PostLoginRequest
 	if err := ctx.BindJSON(&loginRequest); err != nil {
@@ -432,7 +448,13 @@ func (c Config) Login(ctx *gin.Context) {
 	}
 }
 
+// RunBackend initializes migrations and starts the Gin router.
 func (c Config) RunBackend() {
+	// TODO: At some point, it would be nice to run migrations not in this
+	// server, but in a separate one. This would allow us to run multiple
+	// copies of the backend without worrying about migration conflicts.
+	c.runMigrations()
+
 	router := gin.Default()
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     c.AllowOrigins,

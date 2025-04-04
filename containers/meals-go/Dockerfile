@@ -31,6 +31,8 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends wkhtmltopdf ca-certificates curl && \
     rm -rf /var/lib/apt/lists/*
 
+# Copy the built binary and the migrations directory from the builder stage
 COPY --from=builder /app/app .
+COPY --from=builder /app/migrations ./migrations
 
 CMD ["./app"]
