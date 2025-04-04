@@ -2,7 +2,7 @@
 	import type { ExtraItem, ExtraItemUpdate } from '$lib/types';
 	import { StatusType } from '$lib/types';
 	import StatusIndicator from './StatusIndicator.svelte';
-	import { Aisles } from '$lib/const';
+	import { Aisles, Color } from '$lib/const';
 	import { onMount } from 'svelte';
 
 	let { extraItems }: { extraItems: ExtraItem[] } = $props();
@@ -44,7 +44,7 @@
 	}
 
 	function addItem() {
-		// NOTE: This is a temporary ID generation method. The DB will handle creating
+		// This is a temporary ID generation method. The DB will handle creating
 		// unique IDs when the item is added to the database.
 		// This is just to prevent overlap with existing IDs in the localItems array.
 		localItems = [
@@ -145,78 +145,92 @@
 		Update Items
 	</button>
 	<br /><br />
+	<div
+		class="table-responsive"
+		style="--secondary-color: {Color.secondary}; --tertiary-color: {Color.tertiary}"
+	>
+		<table class="fixed-table">
+			<colgroup>
+				<col style="width: 2%; white-space: nowrap;" />
+				<col style="width: 20%; white-space: nowrap;" />
+				<col style="width: 20%; white-space: nowrap;" />
+			</colgroup>
+			<thead>
+				<tr>
+					<th>Edit/Delete</th>
+					<th>Name</th>
+					<th>Aisle</th>
+				</tr>
+			</thead>
+			<tbody>
+				{#each localItems as item, index}
+					<tr>
+						<td class="center-btn">
+							<button
+								class:unchanged={!isChanged(item)}
+								type="button"
+								onclick={() => toggleEditing(index)}
+							>
+								{editingRows[index] ? 'Done' : 'Edit'}
+							</button>
+							<button
+								class="warning"
+								style="opacity: 1.0;"
+								type="button"
+								onclick={() => removeItem(index)}
+							>
+								X
+							</button>
+						</td>
 
-	<table class="fixed-table">
-		<colgroup>
-			<col style="width: 12%;" />
-			<col style="width: 14.5%;" />
-			<col style="width: 14.5%;" />
-		</colgroup>
-		<thead>
-			<tr>
-				<th></th>
-				<th>Name</th>
-				<th>Aisle</th>
-			</tr>
-		</thead>
-		<tbody>
-			{#each localItems as item, index}
+						<td class:unchanged={!isChanged(item)}>
+							{#if editingRows[index]}
+								<input class="cell-input" type="text" bind:value={item.Name} />
+							{:else}
+								{item.Name}
+							{/if}
+						</td>
+
+						<td class:unchanged={!isChanged(item)} class="ellipsis">
+							{#if editingRows[index]}
+								<select class="cell-select" bind:value={item.Aisle}>
+									{#each Aisles as aisle}
+										<option value={aisle}>{aisle}</option>
+									{/each}
+								</select>
+							{:else}
+								{item.Aisle}
+							{/if}
+						</td>
+					</tr>
+				{/each}
 				<tr>
 					<td class="center-btn">
-						<button
-							class:unchanged={!isChanged(item)}
-							type="button"
-							onclick={() => toggleEditing(index)}
-						>
-							{editingRows[index] ? 'Done' : 'Edit'}
-						</button>
-						<button
-							class="warning"
-							style="opacity: 1.0;"
-							type="button"
-							onclick={() => removeItem(index)}
-						>
-							X
-						</button>
+						<button type="button" onclick={addItem}> + </button>
 					</td>
-
-					<td class:unchanged={!isChanged(item)}>
-						{#if editingRows[index]}
-							<input class="cell-input" type="text" bind:value={item.Name} />
-						{:else}
-							{item.Name}
-						{/if}
-					</td>
-
-					<td class:unchanged={!isChanged(item)} class="ellipsis">
-						{#if editingRows[index]}
-							<select class="cell-select" bind:value={item.Aisle}>
-								{#each Aisles as aisle}
-									<option value={aisle}>{aisle}</option>
-								{/each}
-							</select>
-						{:else}
-							{item.Aisle}
-						{/if}
-					</td>
+					<td></td>
+					<td></td>
 				</tr>
-			{/each}
-			<tr>
-				<td></td>
-				<td>
-					<button type="button" onclick={addItem}> + </button>
-				</td>
-				<td></td>
-			</tr>
-		</tbody>
-	</table>
+			</tbody>
+		</table>
+	</div>
 </form>
 
 <style>
+	.table-responsive {
+		width: 100%;
+		overflow-x: auto;
+	}
+
 	.fixed-table {
 		width: 100%;
-		table-layout: fixed;
 		border-collapse: collapse;
+	}
+
+	.fixed-table th,
+	.fixed-table td {
+		padding: 0.5rem;
+		border: 1px solid var(--secondary-color);
 	}
 
 	.unchanged {
@@ -236,15 +250,28 @@
 
 	.center-btn {
 		text-align: center;
+		white-space: nowrap; /* Keep buttons side-by-side */
 	}
 
 	.reactive-font {
-		font-size: clamp(0.9rem, 2vw, 1.2rem);
+		font-size: clamp(0.9rem, 2vw, 1.4rem);
 	}
 
 	.ellipsis {
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+
+	@media (max-width: 600px) {
+		.fixed-table th,
+		.fixed-table td {
+			padding: 0.3rem;
+			font-size: 0.9rem;
+		}
+	}
+
+	th {
+		background-color: var(--tertiary-color);
 	}
 </style>
