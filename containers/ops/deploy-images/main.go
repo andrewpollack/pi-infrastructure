@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 )
 
@@ -122,6 +123,27 @@ func (d *Deployer) LoadImage(img Image, tgt Target) error {
 	return nil
 }
 
+// GetLocalImageID returns the image ID of a local Docker image.
+func (d *Deployer) GetLocalImageID(img Image) (string, error) {
+	output, err := exec.Command("docker", "inspect", "-f", "{{.Id}}", img.RegistryString()).Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to inspect local image %s: %w", img.RegistryString(), err)
+	}
+	return strings.TrimSpace(string(output)), nil
+}
+
+// GetRemoteImageID returns the image ID of a Docker image on the remote host.
+func (d *Deployer) GetRemoteImageID(img Image, tgt Target) (string, error) {
+	// Execute the inspect command on the remote host via ssh.
+	cmd := exec.Command("ssh", tgt.Host, "docker", "inspect", "-f", "{{.Id}}", img.RegistryString())
+	output, err := cmd.Output()
+	if err != nil {
+		// If the command fails, assume the image does not exist remotely.
+		return "", nil
+	}
+	return strings.TrimSpace(string(output)), nil
+}
+
 // Compose copies the local compose file to the target and runs it via Docker Compose.
 func (d *Deployer) Compose(tgt Target) error {
 	dst := fmt.Sprintf("%s:%s", tgt.Host, tgt.TargetPath)
@@ -143,7 +165,9 @@ func (d *Deployer) Compose(tgt Target) error {
 	return nil
 }
 
-// CopyAndLoadImagesForTarget copies+loads all images for a single target concurrently.
+// CopyAndLoadImagesForTarget copies and loads all images for a single target concurrently.
+// It first compares the local and remote image IDs. If they match (and the remote image exists),
+// the copy and load steps are skipped.
 func (d *Deployer) CopyAndLoadImagesForTarget(tgt Target, images []Image) error {
 	var wg sync.WaitGroup
 	errsCh := make(chan error, len(images))
@@ -152,6 +176,23 @@ func (d *Deployer) CopyAndLoadImagesForTarget(tgt Target, images []Image) error 
 		wg.Add(1)
 		go func(img Image) {
 			defer wg.Done()
+
+			localID, err := d.GetLocalImageID(img)
+			if err != nil {
+				errsCh <- fmt.Errorf("failed to get local image id for %s: %w", img.RegistryString(), err)
+				return
+			}
+			remoteID, err := d.GetRemoteImageID(img, tgt)
+			if err != nil {
+				errsCh <- fmt.Errorf("failed to get remote image id for %s on %s: %w", img.RegistryString(), tgt.Host, err)
+				return
+			}
+			// If remote image exists and IDs match, skip copy and load.
+			if localID == remoteID && localID != "" {
+				fmt.Printf("⏭️ Image %s already present on %s (ID: %s), skipping copy/load\n", img.RegistryString(), tgt.Host, localID)
+				return
+			}
+
 			if err := d.CopyImage(img, tgt); err != nil {
 				errsCh <- err
 				return
