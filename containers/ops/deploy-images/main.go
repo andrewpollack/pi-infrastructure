@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"flag"
@@ -11,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 )
 
 // CommandRunner abstracts running external commands.
@@ -20,18 +22,41 @@ type CommandRunner interface {
 }
 
 // DefaultRunner uses os/exec to run commands.
-type DefaultRunner struct{}
+type DefaultRunner struct {
+	// Timeout for each external command.
+	Timeout time.Duration
+}
 
 func (r *DefaultRunner) Run(name string, args ...string) error {
-	cmd := exec.Command(name, args...)
+	timeout := r.Timeout
+	if timeout == 0 {
+		timeout = 30 * time.Second
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, name, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	return cmd.Run()
+	err := cmd.Run()
+	if ctx.Err() == context.DeadlineExceeded {
+		return fmt.Errorf("command %s timed out", name)
+	}
+	return err
 }
 
 func (r *DefaultRunner) RunSilent(name string, args ...string) error {
-	cmd := exec.Command(name, args...)
-	return cmd.Run()
+	timeout := r.Timeout
+	if timeout == 0 {
+		timeout = 30 * time.Second
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, name, args...)
+	err := cmd.Run()
+	if ctx.Err() == context.DeadlineExceeded {
+		return fmt.Errorf("command %s timed out", name)
+	}
+	return err
 }
 
 // Config holds targets and images.
@@ -91,6 +116,8 @@ func (i Image) TarPath() string {
 // Deployer performs deployment steps.
 type Deployer struct {
 	Runner CommandRunner
+	// Timeout for all commands run directly from Deployer.
+	Timeout time.Duration
 
 	// Function fields to allow dependency injection for testing.
 	GetLocalImageIDFunc   func(img Image) (string, error)
@@ -103,7 +130,17 @@ func (d *Deployer) GetLocalImageID(img Image) (string, error) {
 	if d.GetLocalImageIDFunc != nil {
 		return d.GetLocalImageIDFunc(img)
 	}
-	output, err := exec.Command("docker", "inspect", "-f", "{{.Id}}", img.RegistryString()).Output()
+	timeout := d.Timeout
+	if timeout == 0 {
+		timeout = 30 * time.Second
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "docker", "inspect", "-f", "{{.Id}}", img.RegistryString())
+	output, err := cmd.Output()
+	if ctx.Err() == context.DeadlineExceeded {
+		return "", fmt.Errorf("⏰ command timed out while inspecting local image %s", img.RegistryString())
+	}
 	if err != nil {
 		return "", fmt.Errorf("failed to inspect local image %s: %w", img.RegistryString(), err)
 	}
@@ -115,8 +152,17 @@ func (d *Deployer) GetRemoteImageID(img Image, tgt Target) (string, error) {
 	if d.GetRemoteImageIDFunc != nil {
 		return d.GetRemoteImageIDFunc(img, tgt)
 	}
-	cmd := exec.Command("ssh", tgt.Host, "docker", "inspect", "-f", "{{.Id}}", img.RegistryString())
+	timeout := d.Timeout
+	if timeout == 0 {
+		timeout = 30 * time.Second
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "ssh", tgt.Host, "docker", "inspect", "-f", "{{.Id}}", img.RegistryString())
 	output, err := cmd.Output()
+	if ctx.Err() == context.DeadlineExceeded {
+		return "", fmt.Errorf("⏰ command timed out while inspecting remote image %s on %s", img.RegistryString(), tgt.Host)
+	}
 	if err != nil {
 		// If the command fails, assume the image is missing remotely.
 		return "", nil
@@ -129,8 +175,17 @@ func (d *Deployer) GetRemoteFileHash(tgt Target, remoteFile string) (string, err
 	if d.GetRemoteFileHashFunc != nil {
 		return d.GetRemoteFileHashFunc(tgt, remoteFile)
 	}
-	cmd := exec.Command("ssh", tgt.Host, "sha256sum", remoteFile)
+	timeout := d.Timeout
+	if timeout == 0 {
+		timeout = 30 * time.Second
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "ssh", tgt.Host, "sha256sum", remoteFile)
 	output, err := cmd.Output()
+	if ctx.Err() == context.DeadlineExceeded {
+		return "", fmt.Errorf("⏰ command timed out while computing remote file hash for %s", remoteFile)
+	}
 	if err != nil {
 		return "", fmt.Errorf("failed to compute remote hash for %s: %w", remoteFile, err)
 	}
@@ -252,7 +307,7 @@ func (d *Deployer) CopyAndLoadImagesForTarget(tgt Target, images []Image) error 
 				return
 			}
 			if localID == remoteID && localID != "" {
-				fmt.Printf("⏭️ Image %s already present on %s (ID: %s), skipping copy/load\n", img.RegistryString(), tgt.Host, localID)
+				fmt.Printf("⏭️  Image %s already present on %s (ID: %s), skipping copy/load\n", img.RegistryString(), tgt.Host, localID)
 				return
 			}
 			if err := d.CopyImage(img, tgt); err != nil {
@@ -381,16 +436,22 @@ func (d *Deployer) PackageImages(images []Image) []error {
 
 func main() {
 	configPath := flag.String("config", "data/config.json", "Path to configuration file")
+	timeoutFlag := flag.Duration("timeout", 30*time.Second, "Timeout for external commands")
 	flag.Parse()
+
 	config, err := LoadConfig(*configPath)
 	if err != nil {
-		fmt.Printf("Error loading config: %v\n", err)
+		fmt.Printf("❌ Error loading config: %v\n", err)
 		os.Exit(1)
 	}
-	deployer := Deployer{Runner: &DefaultRunner{}}
+
+	// Set the timeout for both the Runner and the Deployer.
+	runner := &DefaultRunner{Timeout: *timeoutFlag}
+	deployer := Deployer{Runner: runner, Timeout: *timeoutFlag}
+
 	fmt.Println("🔄 Pulling images...")
 	if errs := deployer.PullImages(config.Images); errs != nil {
-		fmt.Println("Errors occurred while pulling images:")
+		fmt.Println("❌ Errors occurred while pulling images:")
 		for _, e := range errs {
 			fmt.Println(" -", e)
 		}
@@ -399,7 +460,7 @@ func main() {
 	fmt.Println("✅ All images successfully pulled.")
 	fmt.Println("🔄 Packaging images...")
 	if errs := deployer.PackageImages(config.Images); errs != nil {
-		fmt.Println("Errors occurred while packaging images:")
+		fmt.Println("❌ Errors occurred while packaging images:")
 		for _, e := range errs {
 			fmt.Println(" -", e)
 		}
@@ -408,7 +469,7 @@ func main() {
 	fmt.Println("✅ All images packaged.")
 	fmt.Println("🔄 Deploying to all targets (copy/load + compose in parallel)...")
 	if errs := deployer.DeployTargets(config.Targets, config.Images); errs != nil {
-		fmt.Println("Errors occurred during deployment:")
+		fmt.Println("❌ Errors occurred during deployment:")
 		for _, e := range errs {
 			fmt.Println(" -", e)
 		}
