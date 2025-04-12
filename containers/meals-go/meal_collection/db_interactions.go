@@ -169,6 +169,7 @@ func ReadExtraItemsFromDB(postgresURL string) ([]ExtraItem, error) {
 		ID           int       `json:"id"`
 		Aisle        string    `json:"aisle"`
 		Name         string    `json:"name"`
+		Enabled      bool      `json:"enabled"`
 		DateCreated  time.Time `json:"date_created"`
 		DateModified time.Time `json:"date_modified"`
 	}
@@ -193,7 +194,8 @@ func ReadExtraItemsFromDB(postgresURL string) ([]ExtraItem, error) {
             aisle,
             name,
             date_created,
-            date_modified
+            date_modified,
+			enabled
         FROM item
 	`)
 	if err != nil {
@@ -212,6 +214,7 @@ func ReadExtraItemsFromDB(postgresURL string) ([]ExtraItem, error) {
 			&i.Name,
 			&i.DateCreated,
 			&i.DateModified,
+			&i.Enabled,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("scan failed: %v", err)
@@ -228,9 +231,10 @@ func ReadExtraItemsFromDB(postgresURL string) ([]ExtraItem, error) {
 	var itemsOut []ExtraItem
 	for _, item := range items {
 		itemsOut = append(itemsOut, ExtraItem{
-			Name:  item.Name,
-			Aisle: Aisle(item.Aisle),
-			ID:    item.ID,
+			Name:    item.Name,
+			Aisle:   Aisle(item.Aisle),
+			ID:      item.ID,
+			Enabled: item.Enabled,
 		})
 	}
 
@@ -246,8 +250,9 @@ const (
 )
 
 type FEItem struct {
-	Name  string `json:"Name"`
-	Aisle Aisle  `json:"Aisle"`
+	Name    string `json:"Name"`
+	Aisle   Aisle  `json:"Aisle"`
+	Enabled bool   `json:"Enabled"`
 }
 type FEExtraItem struct {
 	Action Action `json:"Action"`
@@ -278,18 +283,18 @@ func UpdateExtraItemsInDB(postgresURL string, updates []FEExtraItem) error {
 		switch update.Action {
 		case Add:
 			_, err = conn.Exec(context.Background(), `
-				INSERT INTO item (aisle, name)
-				VALUES ($1, $2)
-			`, update.New.Aisle, update.New.Name)
+				INSERT INTO item (aisle, name, enabled)
+				VALUES ($1, $2, $3)
+			`, update.New.Aisle, update.New.Name, update.New.Enabled)
 			if err != nil {
 				return fmt.Errorf("query failed: %v", err)
 			}
 		case Update:
 			_, err = conn.Exec(context.Background(), `
 				UPDATE item
-				SET aisle = $1, name = $2
-				WHERE aisle = $3 AND name = $4
-			`, update.New.Aisle, update.New.Name, update.Old.Aisle, update.Old.Name)
+				SET aisle = $1, name = $2, enabled = $3
+				WHERE aisle = $4 AND name = $5
+			`, update.New.Aisle, update.New.Name, update.New.Enabled, update.Old.Aisle, update.Old.Name)
 			if err != nil {
 				return fmt.Errorf("query failed: %v", err)
 			}

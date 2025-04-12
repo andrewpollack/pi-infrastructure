@@ -1,7 +1,7 @@
 import { error, redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { env } from '$env/dynamic/private';
-import type { CalendarResponse, MealsResponse } from '$lib/types';
+import type { CalendarResponse, MealsResponse, ExtraItemsResponse } from '$lib/types';
 import { getTokenHeaders } from '$lib/token-utils';
 
 export const load: PageServerLoad = async ({ cookies, fetch }) => {
@@ -47,13 +47,14 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
 
 	const mealsData: MealsResponse = await mealsRes.json();
 	const calendarData: CalendarResponse = await calendarRes.json();
-	const extraItemsData = await extraItemsRes.json();
+	const extraItemsData: ExtraItemsResponse = await extraItemsRes.json();
+	const extraItems = extraItemsData.allItems.filter((item) => item.Enabled);
 
 	return {
 		allMeals: mealsData.allMeals,
 		currMonthResponse: calendarData.currMonthResponse,
 		allEmails: emails,
-		allExtraItems: extraItemsData.allItems,
+		allExtraItems: extraItems,
 		selectedYear: currentYear,
 		selectedMonth: currentMonth
 	};

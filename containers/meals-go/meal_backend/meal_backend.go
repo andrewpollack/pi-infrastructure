@@ -174,9 +174,10 @@ func (c Config) GetMeals(ctx *gin.Context) {
 // GetItems handles the GET /items endpoint.
 func (c Config) GetItems(ctx *gin.Context) {
 	type ExtraItemResponse struct {
-		Name  string `json:"Name"`
-		Aisle string `json:"Aisle"`
-		ID    int    `json:"ID"`
+		Name    string `json:"Name"`
+		Aisle   string `json:"Aisle"`
+		ID      int    `json:"ID"`
+		Enabled bool   `json:"Enabled"`
 	}
 
 	extraItems, err := meal_collection.ReadExtraItemsFromDB(c.PostgresURL)
@@ -197,9 +198,10 @@ func (c Config) GetItems(ctx *gin.Context) {
 	extraItemsResponse := make([]ExtraItemResponse, 0, len(extraItems))
 	for _, item := range extraItems {
 		extraItemsResponse = append(extraItemsResponse, ExtraItemResponse{
-			Name:  item.Name,
-			Aisle: string(item.Aisle),
-			ID:    item.ID,
+			Name:    item.Name,
+			Aisle:   string(item.Aisle),
+			ID:      item.ID,
+			Enabled: item.Enabled,
 		})
 	}
 

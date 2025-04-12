@@ -115,9 +115,10 @@ type MealCollection []Meal
 
 // TODO: Name this something more logical... maybe just "Item"?
 type ExtraItem struct {
-	Name  string `json:"name"`
-	Aisle Aisle  `json:"aisle"`
-	ID    int    `json:"id"`
+	Name    string `json:"name"`
+	Aisle   Aisle  `json:"aisle"`
+	Enabled bool   `json:"enabled"`
+	ID      int    `json:"id"`
 }
 
 func (m MealCollection) MapNameToMeal() map[string]Meal {
