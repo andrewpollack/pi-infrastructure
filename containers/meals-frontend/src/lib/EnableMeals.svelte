@@ -15,9 +15,7 @@
 		return meal.Enabled !== meals[index].Enabled;
 	}
 
-	let isDifferent = $derived(
-		localMeals.some((meal, index) => isMealChanged(meal, index))
-	);
+	let isDifferent = $derived(localMeals.some((meal, index) => isMealChanged(meal, index)));
 
 	async function updateMeals() {
 		message = 'Updating meal status...';
@@ -55,11 +53,7 @@
 
 {#if localMeals && localMeals.length > 0}
 	<form class="reactive-font">
-		<button
-			type="button"
-			onclick={updateMeals}
-			disabled={!isDifferent}
-		>
+		<button type="button" onclick={updateMeals} disabled={!isDifferent}>
 			Update Meal Status
 		</button>
 
@@ -146,7 +140,6 @@
 	.unchanged {
 		opacity: 0.6;
 	}
-
 
 	@media (max-width: 600px) {
 		.fixed-table th,
