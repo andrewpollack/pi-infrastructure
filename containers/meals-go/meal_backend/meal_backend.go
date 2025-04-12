@@ -448,6 +448,13 @@ func (c Config) Login(ctx *gin.Context) {
 	}
 }
 
+// Auth verifies the authentication token.
+func (c Config) Auth(ctx *gin.Context) {
+	ctx.JSON(http.StatusOK, gin.H{
+		"status": "success",
+	})
+}
+
 // RunBackend initializes migrations and starts the Gin router.
 func (c Config) RunBackend() {
 	// TODO: At some point, it would be nice to run migrations not in this
@@ -464,9 +471,12 @@ func (c Config) RunBackend() {
 	}))
 
 	router.GET("/health", HealthCheck)
+	router.GET("/auth", c.authenticateMiddleware, c.Auth)
 
 	api := router.Group("/api")
 	api.POST("/login", c.Login)
+
+	// Require authentication for all other routes
 	api.GET("/calendar", c.authenticateMiddleware, c.GetCalendar)
 	api.GET("/items", c.authenticateMiddleware, c.GetItems)
 	api.POST("/items/update", c.authenticateMiddleware, c.UpdateItems)

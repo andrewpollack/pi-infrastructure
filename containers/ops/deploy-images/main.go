@@ -30,7 +30,7 @@ type DefaultRunner struct {
 func (r *DefaultRunner) Run(name string, args ...string) error {
 	timeout := r.Timeout
 	if timeout == 0 {
-		timeout = 30 * time.Second
+		timeout = 240 * time.Second
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -39,7 +39,7 @@ func (r *DefaultRunner) Run(name string, args ...string) error {
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 	if ctx.Err() == context.DeadlineExceeded {
-		return fmt.Errorf("command %s timed out", name)
+		return fmt.Errorf("command %s timed out after %d", name, timeout)
 	}
 	return err
 }
@@ -47,7 +47,7 @@ func (r *DefaultRunner) Run(name string, args ...string) error {
 func (r *DefaultRunner) RunSilent(name string, args ...string) error {
 	timeout := r.Timeout
 	if timeout == 0 {
-		timeout = 30 * time.Second
+		timeout = 240 * time.Second
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -436,7 +436,7 @@ func (d *Deployer) PackageImages(images []Image) []error {
 
 func main() {
 	configPath := flag.String("config", "data/config.json", "Path to configuration file")
-	timeoutFlag := flag.Duration("timeout", 30*time.Second, "Timeout for external commands")
+	timeoutFlag := flag.Duration("timeout", 240*time.Second, "Timeout for external commands")
 	flag.Parse()
 
 	config, err := LoadConfig(*configPath)
