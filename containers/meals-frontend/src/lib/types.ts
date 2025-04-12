@@ -19,6 +19,7 @@ export interface ExtraItem {
 	Name: string;
 	Aisle: string;
 	ID: number;
+	Enabled: boolean;
 }
 
 export type ExtraItemUpdate = {
