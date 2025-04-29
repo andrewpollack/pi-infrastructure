@@ -220,7 +220,7 @@
 	.table-responsive {
 		width: 100%;
 		overflow-x: auto;
-		font-size: clamp(0.9rem, 2vw, 1.4rem);
+		font-size: clamp(0.9rem, 1vw, 1.4rem);
 	}
 
 	.fixed-table {

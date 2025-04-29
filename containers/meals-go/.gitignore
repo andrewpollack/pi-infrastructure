@@ -24,3 +24,6 @@ go.work.sum
 # env file
 *.env
 conf.toml
+
+# Ignore configuration file with sensitive information
+conf.yaml

@@ -88,6 +88,7 @@ func LoadConfig(path string) (*Config, error) {
 type Target struct {
 	Host         string `json:"host"`
 	LocalCompose string `json:"local_compose"`
+	LocalConfig  string `json:"local_config"`
 	TargetPath   string `json:"target_path"`
 }
 
@@ -233,6 +234,22 @@ func (d *Deployer) CheckImagesUpToDate(tgt Target, images []Image) (bool, error)
 }
 
 // CheckComposeUpToDate returns true if the remote compose file hash matches the local one.
+func (d *Deployer) CheckConfigUpToDate(tgt Target) (bool, error) {
+	localHash, err := computeLocalFileHash(tgt.LocalConfig)
+	if err != nil {
+		return false, fmt.Errorf("failed to compute hash for local compose file %s: %w", tgt.LocalConfig, err)
+	}
+	configFileName := filepath.Base(tgt.LocalConfig)
+	remoteConfigPath := fmt.Sprintf("%s/%s", tgt.TargetPath, configFileName)
+	remoteHash, err := d.GetRemoteFileHash(tgt, remoteConfigPath)
+	if err != nil {
+		// If we can't get the remote hash, assume it's outdated.
+		return false, nil
+	}
+	return localHash == remoteHash, nil
+}
+
+// CheckComposeUpToDate returns true if the remote compose file hash matches the local one.
 func (d *Deployer) CheckComposeUpToDate(tgt Target) (bool, error) {
 	localHash, err := computeLocalFileHash(tgt.LocalCompose)
 	if err != nil {
@@ -343,10 +360,16 @@ func (d *Deployer) DeployTarget(tgt Target, images []Image) error {
 	if err != nil {
 		return err
 	}
-	if imagesUpToDate && composeUpToDate {
-		fmt.Printf("⏭️  No changes on %s (images and compose config are up to date), skipping deployment.\n", tgt.Host)
+	configUpToDate, err := d.CheckConfigUpToDate(tgt)
+	if err != nil {
+		return err
+	}
+
+	if imagesUpToDate && composeUpToDate && configUpToDate {
+		fmt.Printf("⏭️  No changes on %s (images, compose, and config are up to date), skipping deployment.\n", tgt.Host)
 		return nil
 	}
+
 	if !imagesUpToDate {
 		fmt.Printf("🔄 Copying/loading images on %s...\n", tgt.Host)
 		if err := d.CopyAndLoadImagesForTarget(tgt, images); err != nil {
@@ -354,6 +377,7 @@ func (d *Deployer) DeployTarget(tgt Target, images []Image) error {
 		}
 		fmt.Printf("✅ Successfully updated images on %s\n", tgt.Host)
 	}
+
 	if !composeUpToDate {
 		fmt.Printf("🔄 Copying compose file to %s...\n", tgt.Host)
 		dst := fmt.Sprintf("%s:%s", tgt.Host, tgt.TargetPath)
@@ -362,11 +386,23 @@ func (d *Deployer) DeployTarget(tgt Target, images []Image) error {
 		}
 		fmt.Printf("Copied compose file to %s\n", tgt.Host)
 	}
-	fmt.Printf("🔄 Running compose on %s...\n", tgt.Host)
+
+	if !configUpToDate {
+		fmt.Printf("🔄 Copying config file to %s...\n", tgt.Host)
+		dst := fmt.Sprintf("%s:%s", tgt.Host, tgt.TargetPath)
+		if err := d.Runner.Run("scp", tgt.LocalConfig, dst); err != nil {
+			return fmt.Errorf("failed to copy config file to %s: %w", tgt.Host, err)
+		}
+		fmt.Printf("Copied config file to %s\n", tgt.Host)
+	}
+
+	composeFileName := filepath.Base(tgt.LocalCompose)
+
+	fmt.Printf("🔄 Running compose on %s with file %s...\n", tgt.Host, composeFileName)
 	if err := d.Runner.Run("ssh", tgt.Host,
 		"cd", tgt.TargetPath, "&&",
-		"docker", "compose", "down", "&&",
-		"docker", "compose", "up", "-d"); err != nil {
+		"docker", "compose", "-f", composeFileName, "down", "&&",
+		"docker", "compose", "-f", composeFileName, "up", "-d"); err != nil {
 		return fmt.Errorf("failed to run compose on %s: %w", tgt.Host, err)
 	}
 	fmt.Printf("✅ Successfully ran compose on %s\n", tgt.Host)

@@ -25,10 +25,9 @@ type Config struct {
 	PostgresURL    string
 	EmailService   EmailService
 	Sender         string
-	Receivers      string
+	Receivers      []string
 	HardcodedMeals []string
 	ExtraItems     []string
-	IgnoreCutoff   bool
 }
 
 func (d Date) ToTime() time.Time {
