@@ -22,8 +22,7 @@ type Config struct {
 	PostgresURL          string
 	PostgresMigrationDir string
 	EmailSender          string
-	EmailReceivers       string
-	IgnoreCutoff         bool
+	EmailReceivers       []string
 	AllowOrigins         []string
 	DomainName           string
 	JWTSigningKey        []byte
@@ -230,6 +229,30 @@ func (c Config) SendEmail(ctx *gin.Context) {
 
 	meals := emailRequest.Meals
 	emails := emailRequest.Emails
+	// Verify emails are not empty, and are a subset of the allowed emails in c.EmailReceivers
+	if len(emails) == 0 {
+		errMsg := "At least one email must be provided"
+		log.Println("Error in SendEmail:", errMsg)
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": errMsg,
+		})
+		return
+	}
+	allowedEmails := make(map[string]bool)
+	for _, email := range c.EmailReceivers {
+		allowedEmails[email] = true
+	}
+	for _, email := range emails {
+		if _, found := allowedEmails[email]; !found {
+			errMsg := fmt.Sprintf("Email not allowed: %s", email)
+			log.Println("Error in SendEmail:", errMsg)
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error": errMsg,
+			})
+			return
+		}
+	}
+
 	extraItems := emailRequest.ExtraItems
 
 	if len(emails) == 0 {
@@ -309,7 +332,7 @@ func (c Config) SendEmail(ctx *gin.Context) {
 		EmailService:   meal_email.SES,
 		HardcodedMeals: currMealNames,
 		Sender:         c.EmailSender,
-		Receivers:      strings.Join(emails, ","),
+		Receivers:      emails,
 		ExtraItems:     extraItemNames,
 	}
 	err = mealEmailConfig.CreateAndSendEmail()

@@ -123,10 +123,10 @@ func AuthenticateGmail() (GmailService, error) {
 	return GmailService{Service: srv}, nil
 }
 
-func (gs *GmailService) SendEmail(from, to, subject, body string) error {
+func (gs *GmailService) SendEmail(from string, to []string, subject, body string) error {
 	header := make(map[string]string)
 	header["From"] = from
-	header["To"] = to
+	header["To"] = strings.Join(to, ",")
 	header["Subject"] = subject
 	header["MIME-Version"] = "1.0"
 	header["Content-Type"] = "text/html; charset=\"utf-8\""

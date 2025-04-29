@@ -21,7 +21,7 @@ type EmailSender interface {
 
 type SESEmailSender struct {
 	From string
-	To   string
+	To   []string
 }
 
 func (s SESEmailSender) SendEmail(subject, body string, attachmentBytes []byte, attachmentFilename string) error {
@@ -32,14 +32,7 @@ func (s SESEmailSender) SendEmail(subject, body string, attachmentBytes []byte, 
 	client := ses.NewFromConfig(cfg)
 
 	// Process multiple recipients.
-	recipientList := []string{}
-	for _, addr := range strings.Split(s.To, ",") {
-		trimmed := strings.TrimSpace(addr)
-		if trimmed != "" {
-			recipientList = append(recipientList, trimmed)
-		}
-	}
-	toHeader := strings.Join(recipientList, ", ")
+	toHeader := strings.Join(s.To, ", ")
 
 	var emailRaw bytes.Buffer
 	boundaryMixed := "NextPartMixedBoundary"
@@ -122,7 +115,7 @@ func (s SESEmailSender) SendEmail(subject, body string, attachmentBytes []byte, 
 
 type GmailSender struct {
 	From    string
-	To      string
+	To      []string
 	Service GmailService
 }
 

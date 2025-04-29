@@ -3,49 +3,32 @@ package main
 import (
 	"flag"
 	"log"
+	"meals/config"
 	"meals/meal_backend"
 	"meals/meal_calendar"
 	"meals/meal_db_sync"
 	"meals/meal_email"
 	"os"
-	"strings"
 )
 
 type Config struct {
 	// Application configuration
 	RunMode            string
-	PostgresURL        string
-	BucketName         string
-	BucketKey          string
-	IgnoreCutoff       bool
 	DeploymentPassword string
 
 	// CORS configuration
-	AllowOrigins  []string
-	DomainName    string
 	JWTSigningKey []byte
 
 	// DBSync configuration
 	SyncCleanTable bool
 	SyncLongLive   bool
-
-	// Email configuration
-	EmailSender    string
-	EmailReceivers string
 }
 
 var (
+	conf               = flag.String("conf", envString("CONF", "/app/conf.yaml"), "Path to the config file")
 	runMode            = flag.String("run_mode", envString("RUN_MODE", ""), "Application run mode: backend, email, db_sync, legacy")
-	postgresURL        = flag.String("postgres_url", envString("POSTGRES_URL", ""), "Postgres URL for database connection")
-	bucketName         = flag.String("bucket_name", envString("BUCKET_NAME", ""), "S3 bucket name for accessing meals data")
-	bucketKey          = flag.String("bucket_key", envString("BUCKET_KEY", ""), "S3 bucket key for accessing meals data")
-	ignoreCutoff       = flag.Bool("ignore_cutoff", envBool("IGNORE_CUTOFF", false), "Whether to ignore first-of-month meal cutoff")
 	syncCleanTable     = flag.Bool("clean_table", envBool("CLEAN_TABLE", false), "Remove any unseen keys from database on sync")
 	syncLongLive       = flag.Bool("long_live", envBool("LONG_LIVE", false), "Whether sync job should run indefinitely")
-	emailSender        = flag.String("sender_email", envString("SENDER_EMAIL", ""), "Email address to send from")
-	emailReceivers     = flag.String("receiver_emails", envString("RECEIVER_EMAILS", ""), "Comma-separated email addresses to send to")
-	allowOrigins       = flag.String("allowed_origins", envString("ALLOWED_ORIGINS", "http://localhost:5173"), "Comma-separated list of allowed origins for CORS")
-	domainName         = flag.String("domain_name", envString("DOMAIN_NAME", ""), "Domain name for the application")
 	JWTSigningKey      = flag.String("jwt_signing_key", envString("JWT_SIGNING_KEY", "my-secret-key"), "JWT signing key for authentication")
 	deploymentPassword = flag.String("deployment_password", envString("DEPLOYMENT_PASSWORD", "temp"), "Password for deployment")
 )
@@ -67,42 +50,28 @@ func envBool(key string, fallback bool) bool {
 func parseFlags() Config {
 	flag.Parse()
 
-	// Parse comma separated allowed origins
-	var allowOriginsSlice []string
-	if *allowOrigins != "" {
-		allowOriginsSlice = strings.Split(*allowOrigins, ",")
-	}
-
 	return Config{
 		RunMode:            *runMode,
-		PostgresURL:        *postgresURL,
-		BucketName:         *bucketName,
-		BucketKey:          *bucketKey,
-		IgnoreCutoff:       *ignoreCutoff,
 		SyncCleanTable:     *syncCleanTable,
 		SyncLongLive:       *syncLongLive,
-		EmailSender:        *emailSender,
-		EmailReceivers:     *emailReceivers,
-		DomainName:         *domainName,
 		DeploymentPassword: *deploymentPassword,
 		JWTSigningKey:      []byte(*JWTSigningKey),
-		AllowOrigins:       allowOriginsSlice,
 	}
 }
 
 func main() {
 	c := parseFlags()
 
+	config.Load(*conf)
+
 	switch c.RunMode {
 	case "backend":
 		mealBackendConfig := meal_backend.Config{
-			PostgresURL:          c.PostgresURL,
+			PostgresURL:          config.Cfg.Database.Postgres.URL,
 			PostgresMigrationDir: "file://migrations",
-			EmailSender:          c.EmailSender,
-			EmailReceivers:       c.EmailReceivers,
-			IgnoreCutoff:         c.IgnoreCutoff,
-			AllowOrigins:         c.AllowOrigins,
-			DomainName:           c.DomainName,
+			EmailSender:          config.Cfg.Email.Sender,
+			EmailReceivers:       config.Cfg.Email.Receivers,
+			AllowOrigins:         config.Cfg.Server.AllowedOrigins,
 			JWTSigningKey:        c.JWTSigningKey,
 			DeploymentPassword:   c.DeploymentPassword,
 		}
@@ -110,11 +79,10 @@ func main() {
 		mealBackendConfig.RunBackend()
 	case "email":
 		mealEmailConfig := meal_email.Config{
-			PostgresURL:  c.PostgresURL,
+			PostgresURL:  config.Cfg.Database.Postgres.URL,
 			EmailService: meal_email.SES,
-			Sender:       c.EmailSender,
-			Receivers:    c.EmailReceivers,
-			IgnoreCutoff: c.IgnoreCutoff,
+			Sender:       config.Cfg.Email.Sender,
+			Receivers:    config.Cfg.Email.Receivers,
 		}
 
 		err := mealEmailConfig.CreateAndSendEmail()
@@ -123,9 +91,9 @@ func main() {
 		}
 	case "db_sync":
 		mealDbSyncConfig := meal_db_sync.Config{
-			PostgresURL: c.PostgresURL,
-			BucketName:  c.BucketName,
-			BucketKey:   c.BucketKey,
+			PostgresURL: config.Cfg.Database.Postgres.URL,
+			BucketName:  config.Cfg.AWS.Bucket.Name,
+			BucketKey:   config.Cfg.AWS.Bucket.Key,
 			CleanTable:  c.SyncCleanTable,
 			LongLive:    c.SyncLongLive,
 		}
@@ -137,8 +105,8 @@ func main() {
 	case "legacy":
 		// Legacy frontend+backend combined in one service
 		mealsLegacyCalendarConfig := meal_calendar.Config{
-			BucketName: c.BucketName,
-			BucketKey:  c.BucketKey,
+			BucketName: config.Cfg.AWS.Bucket.Name,
+			BucketKey:  config.Cfg.AWS.Bucket.Key,
 			Port:       8001,
 		}
 
