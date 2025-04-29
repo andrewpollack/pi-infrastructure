@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/sha256"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"testing"
@@ -65,7 +66,11 @@ func createTempFile(content string, prefix string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer tmpFile.Close()
+	defer func() {
+		if err := tmpFile.Close(); err != nil {
+			log.Printf("failed to close temp file: %v", err)
+		}
+	}()
 
 	if _, err := tmpFile.Write([]byte(content)); err != nil {
 		return "", err
@@ -80,12 +85,18 @@ func TestComputeLocalFileHash(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create temp file: %v", err)
 	}
-	defer os.Remove(tmpFile.Name())
+	defer func() {
+		if err := os.Remove(tmpFile.Name()); err != nil {
+			log.Printf("failed to remove temp file: %v", err)
+		}
+	}()
 
 	if _, err := tmpFile.Write([]byte(content)); err != nil {
 		t.Fatalf("failed to write to temp file: %v", err)
 	}
-	tmpFile.Close()
+	if err := tmpFile.Close(); err != nil {
+		t.Fatalf("failed to close temp file: %v", err)
+	}
 
 	hash, err := computeLocalFileHash(tmpFile.Name())
 	if err != nil {
@@ -129,7 +140,11 @@ func TestCheckComposeUpToDate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create temp compose file: %v", err)
 	}
-	defer os.Remove(composePath)
+	defer func() {
+		if err := os.Remove(composePath); err != nil {
+			log.Printf("failed to remove temp compose file: %v", err)
+		}
+	}()
 
 	target := Target{
 		Host:         "remote",
@@ -154,14 +169,22 @@ func TestDeployTarget_SkipDeployment(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create temp compose file: %v", err)
 	}
-	defer os.Remove(composePath)
+	defer func() {
+		if err := os.Remove(composePath); err != nil {
+			log.Printf("failed to remove temp compose file: %v", err)
+		}
+	}()
 
 	configContent := "test config"
 	configPath, err := createTempFile(configContent, "config*.json")
 	if err != nil {
 		t.Fatalf("failed to create temp config file: %v", err)
 	}
-	defer os.Remove(configPath)
+	defer func() {
+		if err := os.Remove(configPath); err != nil {
+			log.Printf("failed to remove temp config file: %v", err)
+		}
+	}()
 
 	target := Target{
 		Host:         "remote-match",
@@ -197,14 +220,22 @@ func TestDeployTarget_UpdateImages(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create temp compose file: %v", err)
 	}
-	defer os.Remove(composePath)
+	defer func() {
+		if err := os.Remove(composePath); err != nil {
+			log.Printf("failed to remove temp compose file: %v", err)
+		}
+	}()
 
 	configContent := "test config"
 	configPath, err := createTempFile(configContent, "config*.json")
 	if err != nil {
 		t.Fatalf("failed to create temp config file: %v", err)
 	}
-	defer os.Remove(configPath)
+	defer func() {
+		if err := os.Remove(configPath); err != nil {
+			log.Printf("failed to remove temp config file: %v", err)
+		}
+	}()
 
 	target := Target{
 		Host:         "remote-different",
@@ -240,14 +271,22 @@ func TestDeployTarget_UpdateCompose(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create temp compose file: %v", err)
 	}
-	defer os.Remove(composePath)
+	defer func() {
+		if err := os.Remove(composePath); err != nil {
+			log.Printf("failed to remove temp compose file: %v", err)
+		}
+	}()
 
 	configContent := "test config"
 	configPath, err := createTempFile(configContent, "config*.json")
 	if err != nil {
 		t.Fatalf("failed to create temp config file: %v", err)
 	}
-	defer os.Remove(configPath)
+	defer func() {
+		if err := os.Remove(configPath); err != nil {
+			log.Printf("failed to remove temp config file: %v", err)
+		}
+	}()
 
 	target := Target{
 		Host:         "remote-match",
@@ -283,14 +322,22 @@ func TestDeployTarget_UpdateBoth(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create temp compose file: %v", err)
 	}
-	defer os.Remove(composePath)
+	defer func() {
+		if err := os.Remove(composePath); err != nil {
+			log.Printf("failed to remove temp compose file: %v", err)
+		}
+	}()
 
 	configContent := "test config"
 	configPath, err := createTempFile(configContent, "config*.json")
 	if err != nil {
 		t.Fatalf("failed to create temp config file: %v", err)
 	}
-	defer os.Remove(configPath)
+	defer func() {
+		if err := os.Remove(configPath); err != nil {
+			log.Printf("failed to remove temp config file: %v", err)
+		}
+	}()
 
 	target := Target{
 		Host:         "remote-different",
