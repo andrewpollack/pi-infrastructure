@@ -483,14 +483,8 @@ func (c Config) Auth(ctx *gin.Context) {
 
 // GetAisles handles the GET /aisles endpoint to return configured Aisles.
 func (c Config) GetAisles(ctx *gin.Context) {
-	// Use the Aisles from the configuration
-	var aislesResponse []string
-	for _, aisle := range config.Cfg.App.Aisles {
-		aislesResponse = append(aislesResponse, aisle)
-	}
-
 	ctx.JSON(http.StatusOK, gin.H{
-		"aisles": aislesResponse,
+		"aisles": config.Cfg.App.Aisles,
 	})
 }
 
