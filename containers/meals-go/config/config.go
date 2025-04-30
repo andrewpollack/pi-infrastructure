@@ -16,7 +16,8 @@ var k = koanf.New(".")
 
 type Config struct {
 	App struct {
-		Aisles []string `koanf:"aisles"`
+		Aisles    []string `koanf:"aisles"`
+		PdfLayout []int    `koanf:"pdf_layout"`
 	} `koanf:"app"`
 
 	Server struct {

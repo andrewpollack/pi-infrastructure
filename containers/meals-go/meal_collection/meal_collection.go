@@ -35,19 +35,6 @@ const (
 	AisleMeatAndYogurt       Aisle = "Meat & Yogurt"
 )
 
-// AllAisles contains the list of all valid aisle values
-var AllAisles = []Aisle{
-	AisleCheeseAndBakery,
-	AisleAlcoholButterCheese,
-	AisleFreezer,
-	AisleNoFoodItems,
-	AisleBeveragesAndSnacks,
-	AisleBreakfastAndBaking,
-	AislePastaGlobalCanned,
-	AisleProduce,
-	AisleMeatAndYogurt,
-}
-
 // IsValidAisle checks if the given aisle is a valid enum value
 func (a Aisle) IsValid() error {
 	return nil

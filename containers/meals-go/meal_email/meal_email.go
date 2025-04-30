@@ -3,6 +3,7 @@ package meal_email
 import (
 	"fmt"
 	"meals/calendar"
+	"meals/config"
 	"meals/meal_collection"
 	"strings"
 	"time"
@@ -116,14 +117,14 @@ func generateTable(meals []meal_collection.Meal) string {
 func GenerateGroceryList(ingredients []meal_collection.Ingredient) string {
 	var sb strings.Builder
 
-	for _, aisle := range meal_collection.AllAisles {
+	for _, aisle := range config.Cfg.App.Aisles {
 		// Write a header for the aisle
 		fmt.Fprintf(&sb, "<h4>%s</h4>\n", aisle)
 
 		// Collect all items for this aisle
 		var itemsForAisle []meal_collection.Ingredient
 		for _, ing := range ingredients {
-			if ing.Aisle == aisle {
+			if ing.Aisle == meal_collection.Aisle(aisle) {
 				itemsForAisle = append(itemsForAisle, ing)
 			}
 		}

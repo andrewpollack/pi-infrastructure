@@ -2,6 +2,7 @@ package meal_email
 
 import (
 	"fmt"
+	"meals/config"
 	"meals/meal_collection"
 	"strings"
 
@@ -21,15 +22,6 @@ func (d DefaultPDFGenerator) GenerateIngredientsPDF(ingredients []meal_collectio
 		return nil, fmt.Errorf("error converting HTML to PDF: %w", err)
 	}
 	return pdfBytes, nil
-}
-
-func contains(slice []meal_collection.Aisle, item meal_collection.Aisle) bool {
-	for _, v := range slice {
-		if v == item {
-			return true
-		}
-	}
-	return false
 }
 
 func convertHTMLToPDF(html string) ([]byte, error) {
@@ -152,33 +144,45 @@ func buildHTMLContent(ingredients []meal_collection.Ingredient) string {
 		sb.WriteString("</table>\n")
 	}
 
-	rowStarters := []meal_collection.Aisle{meal_collection.AisleCheeseAndBakery, meal_collection.AisleFreezer, meal_collection.AisleBreakfastAndBaking, meal_collection.AisleProduce}
-	rowClosers := []meal_collection.Aisle{meal_collection.AisleAlcoholButterCheese, meal_collection.AisleBeveragesAndSnacks, meal_collection.AislePastaGlobalCanned, meal_collection.AisleMeatAndYogurt}
-	rowThree := []meal_collection.Aisle{meal_collection.AisleFreezer, meal_collection.AisleNoFoodItems, meal_collection.AisleBeveragesAndSnacks}
+	pdfLayout := config.Cfg.App.PdfLayout
+	currCol := 1
+	// Pop the first value from pdfLayout
+	currLayout := pdfLayout[0]
+	pdfLayout = pdfLayout[1:]
+	totalRows := 0
+
 	// Generate table cells.
-	for i, aisle := range meal_collection.AllAisles {
+	for _, aisle := range config.Cfg.App.Aisles {
+		// If we've exceeded the current layout, close the table and start a new one.
+		if currCol > currLayout {
+			sb.WriteString("  </tr>\n")
+			closeTable()
+			totalRows += 1
+			currCol = 1
+			currLayout = pdfLayout[0]
+			pdfLayout = pdfLayout[1:]
+
+			if totalRows%2 == 0 {
+				sb.WriteString(`<div class="page-break"></div>` + "\n")
+			}
+		}
+
 		// Start a new row if needed.
-		if contains(rowStarters, aisle) {
+		if currCol == 1 {
 			openTable()
 			sb.WriteString("  <tr>\n")
 		}
 
 		var aisleHTML string
-		if contains(rowThree, aisle) {
-			aisleHTML = buildAisleCellHTML(aisle, ingredients, "cell-three")
-		} else {
-			aisleHTML = buildAisleCellHTML(aisle, ingredients, "cell-two")
+		switch currLayout {
+		case 3:
+			aisleHTML = buildAisleCellHTML(meal_collection.Aisle(aisle), ingredients, "cell-three")
+		case 2:
+			aisleHTML = buildAisleCellHTML(meal_collection.Aisle(aisle), ingredients, "cell-two")
 		}
 		sb.WriteString(aisleHTML)
 
-		if contains(rowClosers, aisle) {
-			sb.WriteString("  </tr>\n")
-			closeTable()
-		}
-
-		if i == 4 {
-			sb.WriteString(`<div class="page-break"></div>` + "\n")
-		}
+		currCol += 1
 	}
 
 	// Write the closing tags.
@@ -189,8 +193,6 @@ func buildHTMLContent(ingredients []meal_collection.Ingredient) string {
 }
 
 func buildAisleCellHTML(aisle meal_collection.Aisle, ingredients []meal_collection.Ingredient, cellClass string) string {
-	longerColumns := []meal_collection.Aisle{meal_collection.AisleFreezer, meal_collection.AisleNoFoodItems, meal_collection.AisleBeveragesAndSnacks}
-
 	var sb strings.Builder
 	// Use the provided cellClass in the td element.
 	sb.WriteString(fmt.Sprintf("    <td class=\"%s\">\n      <h3>%s</h3>\n", cellClass, aisle))
@@ -205,7 +207,7 @@ func buildAisleCellHTML(aisle meal_collection.Aisle, ingredients []meal_collecti
 
 	sb.WriteString("      <div class=\"checkbox-group\">\n")
 	totalCheckboxes := 28
-	if contains(longerColumns, aisle) {
+	if cellClass == "cell-three" {
 		totalCheckboxes = 33
 	}
 	for i := 0; i < totalCheckboxes; i++ {
