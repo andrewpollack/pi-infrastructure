@@ -48,3 +48,7 @@ export enum StatusType {
 	SUCCESS = 'SUCCESS',
 	UNKNOWN = 'UNKNOWN'
 }
+
+export interface EmailsResponse {
+	emails: string[];
+}

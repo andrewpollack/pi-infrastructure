@@ -494,6 +494,13 @@ func (c Config) GetAisles(ctx *gin.Context) {
 	})
 }
 
+// GetEmails handles the GET /emails endpoint to return configured email receivers.
+func (c Config) GetEmails(ctx *gin.Context) {
+	ctx.JSON(http.StatusOK, gin.H{
+		"emails": c.EmailReceivers,
+	})
+}
+
 // RunBackend initializes migrations and starts the Gin router.
 func (c Config) RunBackend() {
 	// TODO: At some point, it would be nice to run migrations not in this
@@ -523,6 +530,7 @@ func (c Config) RunBackend() {
 	api.GET("/meals", c.authenticateMiddleware, c.GetMeals)
 	api.POST("/meals/enable", c.authenticateMiddleware, c.EnableMeals)
 	api.GET("/aisles", c.authenticateMiddleware, c.GetAisles)
+	api.GET("/emails", c.authenticateMiddleware, c.GetEmails)
 
 	err := router.Run()
 	if err != nil {
