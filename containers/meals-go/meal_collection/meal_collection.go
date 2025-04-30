@@ -50,12 +50,7 @@ var AllAisles = []Aisle{
 
 // IsValidAisle checks if the given aisle is a valid enum value
 func (a Aisle) IsValid() error {
-	for _, validAisle := range AllAisles {
-		if a == validAisle {
-			return nil
-		}
-	}
-	return errors.New("invalid aisle: " + string(a))
+	return nil
 }
 
 type Unit string

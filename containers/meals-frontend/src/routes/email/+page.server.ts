@@ -1,14 +1,13 @@
 import { error, redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { env } from '$env/dynamic/private';
-import type { MealsResponse } from '$lib/types';
+import type { MealsResponse, EmailsResponse } from '$lib/types';
 import { getTokenHeaders } from '$lib/token-utils';
 
 export const load: PageServerLoad = async ({ cookies, fetch }) => {
-	const emails = env.EMAILS
-		? env.EMAILS.split(',').map((email) => email.trim())
-		: ['user@example.com'];
-
+	const emailsRes = await fetch(`${env.API_BASE_URL}/api/emails`, {
+		headers: getTokenHeaders(cookies)
+	});
 	const mealsRes = await fetch(`${env.API_BASE_URL}/api/meals`, {
 		headers: getTokenHeaders(cookies)
 	});
@@ -29,12 +28,20 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
 		throw error(extraItemsRes.status, 'Failed to fetch extra items');
 	}
 
+	if (!emailsRes.ok) {
+		if (emailsRes.status === 401) {
+			throw redirect(302, '/login');
+		}
+		throw error(emailsRes.status, 'Failed to fetch emails');
+	}
+
+	const emailsData: EmailsResponse = await emailsRes.json();
 	const mealsData: MealsResponse = await mealsRes.json();
 	const extraItemsData = await extraItemsRes.json();
 
 	return {
 		allMeals: mealsData.allMeals,
-		allEmails: emails,
+		allEmails: emailsData.emails,
 		allExtraItems: extraItemsData.allItems
 	};
 };

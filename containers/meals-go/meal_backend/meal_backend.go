@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"meals/calendar"
+	"meals/config"
 	"meals/meal_calendar"
 	"meals/meal_collection"
 	"meals/meal_email"
@@ -480,6 +481,20 @@ func (c Config) Auth(ctx *gin.Context) {
 	})
 }
 
+// GetAisles handles the GET /aisles endpoint to return configured Aisles.
+func (c Config) GetAisles(ctx *gin.Context) {
+	ctx.JSON(http.StatusOK, gin.H{
+		"aisles": config.Cfg.App.Aisles,
+	})
+}
+
+// GetEmails handles the GET /emails endpoint to return configured email receivers.
+func (c Config) GetEmails(ctx *gin.Context) {
+	ctx.JSON(http.StatusOK, gin.H{
+		"emails": c.EmailReceivers,
+	})
+}
+
 // RunBackend initializes migrations and starts the Gin router.
 func (c Config) RunBackend() {
 	// TODO: At some point, it would be nice to run migrations not in this
@@ -508,6 +523,8 @@ func (c Config) RunBackend() {
 	api.POST("/email", c.authenticateMiddleware, c.SendEmail)
 	api.GET("/meals", c.authenticateMiddleware, c.GetMeals)
 	api.POST("/meals/enable", c.authenticateMiddleware, c.EnableMeals)
+	api.GET("/aisles", c.authenticateMiddleware, c.GetAisles)
+	api.GET("/emails", c.authenticateMiddleware, c.GetEmails)
 
 	err := router.Run()
 	if err != nil {

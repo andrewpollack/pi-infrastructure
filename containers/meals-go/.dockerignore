@@ -7,3 +7,4 @@ variables.mk
 *_test.go
 Makefile
 compose.yaml
+conf.yaml

@@ -2,9 +2,9 @@
 	import type { ExtraItem, ExtraItemUpdate } from '$lib/types';
 	import { StatusType } from '$lib/types';
 	import StatusIndicator from './StatusIndicator.svelte';
-	import { Aisles, Color } from '$lib/const';
+	import { Color } from '$lib/const';
 
-	let { extraItems }: { extraItems: ExtraItem[] } = $props();
+	let { extraItems, aisles }: { extraItems: ExtraItem[]; aisles: string[] } = $props();
 
 	let message = $state('');
 	let statusType = $state(StatusType.SUCCESS);
@@ -195,7 +195,7 @@
 					<td class:unchanged={!isChanged(item)} class="ellipsis">
 						{#if isEditingAll}
 							<select class="cell-select" bind:value={item.Aisle}>
-								{#each Aisles as aisle}
+								{#each aisles as aisle}
 									<option value={aisle}>{aisle}</option>
 								{/each}
 							</select>

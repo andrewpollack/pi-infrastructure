@@ -32,6 +32,12 @@ export interface ExtraItemsResponse {
 	allItems: ExtraItem[];
 }
 
+// Type for the page data including extra items and aisles
+export interface AislesResponse {
+	extraItems: ExtraItem[];
+	aisles: string[];
+}
+
 export interface CalendarResponse {
 	currMonthResponse: MonthResponse;
 }
@@ -41,4 +47,8 @@ export enum StatusType {
 	ERROR = 'ERROR',
 	SUCCESS = 'SUCCESS',
 	UNKNOWN = 'UNKNOWN'
+}
+
+export interface EmailsResponse {
+	emails: string[];
 }
