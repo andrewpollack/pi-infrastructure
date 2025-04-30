@@ -1,7 +1,12 @@
 import { error, redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { env } from '$env/dynamic/private';
-import type { CalendarResponse, MealsResponse, ExtraItemsResponse, EmailsResponse } from '$lib/types';
+import type {
+	CalendarResponse,
+	MealsResponse,
+	ExtraItemsResponse,
+	EmailsResponse
+} from '$lib/types';
 import { getTokenHeaders } from '$lib/token-utils';
 
 export const load: PageServerLoad = async ({ cookies, fetch }) => {

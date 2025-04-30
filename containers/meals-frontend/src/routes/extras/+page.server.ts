@@ -33,7 +33,7 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
 	const itemsData: ExtraItemsResponse = await itemsResponse.json();
 	const aislesData: AislesResponse = await aislesResponse.json();
 
-	return { 
+	return {
 		extraItems: itemsData.allItems,
 		aisles: aislesData.aisles
 	};

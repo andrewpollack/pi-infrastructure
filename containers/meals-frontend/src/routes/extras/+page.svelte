@@ -11,4 +11,4 @@
 	<img src="/favicon.ico" alt="Favicon" style="height: 1em;" />
 </h1>
 
-<ExtraItems {extraItems} aisles={aisles} />
+<ExtraItems {extraItems} {aisles} />
