@@ -24,15 +24,6 @@ func (d DefaultPDFGenerator) GenerateIngredientsPDF(ingredients []meal_collectio
 	return pdfBytes, nil
 }
 
-func contains(slice []meal_collection.Aisle, item meal_collection.Aisle) bool {
-	for _, v := range slice {
-		if v == item {
-			return true
-		}
-	}
-	return false
-}
-
 func convertHTMLToPDF(html string) ([]byte, error) {
 	pdfg, err := wkhtmltopdf.NewPDFGenerator()
 	if err != nil {
