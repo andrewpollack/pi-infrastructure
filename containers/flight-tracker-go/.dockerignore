@@ -1,0 +1,35 @@
+# Git
+.git
+.gitignore
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Build artifacts
+flight-tracker
+build/
+debug_response.html
+
+# IDE and editor files
+.vscode/
+.idea/
+*.sublime*
+
+# Misc
+.DS_Store
+*.swp
+*.swo
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment variables
+.env*
+!.env.example
