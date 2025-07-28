@@ -3,12 +3,13 @@ package main
 import (
 	"flag"
 	"log"
-	"meals/config"
-	"meals/meal_backend"
-	"meals/meal_calendar"
-	"meals/meal_db_sync"
-	"meals/meal_email"
 	"os"
+
+	"github.com/andrewpollack/pi-infrastructure/containers/meals-go/config"
+	"github.com/andrewpollack/pi-infrastructure/containers/meals-go/meal_backend"
+	"github.com/andrewpollack/pi-infrastructure/containers/meals-go/meal_calendar"
+	"github.com/andrewpollack/pi-infrastructure/containers/meals-go/meal_db_sync"
+	"github.com/andrewpollack/pi-infrastructure/containers/meals-go/meal_email"
 )
 
 type Config struct {

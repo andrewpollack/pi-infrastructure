@@ -1,3 +1,17 @@
+# Bazel outputs and caches
+/bazel-*
+/.bazel/
+/bazel-bin/
+/bazel-out/
+/bazel-testlogs/
+/bazel-genfiles/
+/bazel-execroot/
+/bazel-repo/
+/bazel-cache/
+
+# registry of form "registry = "XXXX"
+oci_registry.bzl
+
 # Ephemeral scratch space for myself
 scratch.md
 **/variables.mk

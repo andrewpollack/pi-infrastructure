@@ -2,11 +2,12 @@ package meal_collection
 
 import (
 	"log"
-	"meals/calendar"
 	"reflect"
 	"sort"
 	"testing"
 	"time"
+
+	"github.com/andrewpollack/pi-infrastructure/containers/meals-go/calendar"
 )
 
 const MEALS_JSON = "../data/recipes.json"

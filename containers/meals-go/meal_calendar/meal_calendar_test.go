@@ -2,10 +2,11 @@ package meal_calendar
 
 import (
 	"log"
-	"meals/calendar"
-	"meals/meal_collection"
 	"testing"
 	"time"
+
+	"github.com/andrewpollack/pi-infrastructure/containers/meals-go/calendar"
+	"github.com/andrewpollack/pi-infrastructure/containers/meals-go/meal_collection"
 )
 
 func TestCalendarHTMLGeneration(t *testing.T) {

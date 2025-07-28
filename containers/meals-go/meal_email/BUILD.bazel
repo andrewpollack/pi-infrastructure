@@ -1,0 +1,27 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "meal_email",
+    srcs = [
+        "email_sender.go",
+        "meal_email.go",
+        "pdf.go",
+    ],
+    importpath = "github.com/andrewpollack/pi-infrastructure/containers/meals-go/meal_email",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//containers/meals-go/calendar",
+        "//containers/meals-go/config",
+        "//containers/meals-go/meal_collection",
+        "@com_github_aws_aws_sdk_go_v2_config//:config",
+        "@com_github_aws_aws_sdk_go_v2_service_ses//:ses",
+        "@com_github_aws_aws_sdk_go_v2_service_ses//types",
+        "@com_github_sebastiaanklippert_go_wkhtmltopdf//:go-wkhtmltopdf",
+    ],
+)
+
+go_test(
+    name = "meal_email_test",
+    srcs = ["meal_email_test.go"],
+    embed = [":meal_email"],
+)

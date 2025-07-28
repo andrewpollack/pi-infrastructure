@@ -3,10 +3,11 @@ package meal_calendar
 import (
 	"fmt"
 	"log"
-	"meals/calendar"
-	"meals/meal_collection"
 	"net/http"
 	"time"
+
+	"github.com/andrewpollack/pi-infrastructure/containers/meals-go/calendar"
+	"github.com/andrewpollack/pi-infrastructure/containers/meals-go/meal_collection"
 )
 
 type Config struct {

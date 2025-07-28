@@ -2,8 +2,9 @@ package meal_calendar
 
 import (
 	"fmt"
-	"meals/calendar"
-	"meals/meal_collection"
+
+	"github.com/andrewpollack/pi-infrastructure/containers/meals-go/calendar"
+	"github.com/andrewpollack/pi-infrastructure/containers/meals-go/meal_collection"
 )
 
 // MealCalendar combines calendar and meal collection functionalities

@@ -7,12 +7,13 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"meals/calendar"
 	"os"
 	"reflect"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/andrewpollack/pi-infrastructure/containers/meals-go/calendar"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"

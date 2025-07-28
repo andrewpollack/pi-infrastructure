@@ -112,17 +112,3 @@ func (s SESEmailSender) SendEmail(subject, body string, attachmentBytes []byte, 
 
 	return nil
 }
-
-type GmailSender struct {
-	From    string
-	To      []string
-	Service GmailService
-}
-
-func (gs GmailSender) SendEmail(subject, body string, attachmentBytes []byte, attachmentFilename string) error {
-	err := gs.Service.SendEmail(gs.From, gs.To, subject, body)
-	if err != nil {
-		return fmt.Errorf("failed to send email: %v", err)
-	}
-	return nil
-}

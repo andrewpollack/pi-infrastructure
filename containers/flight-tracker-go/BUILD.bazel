@@ -1,0 +1,128 @@
+load("@rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
+load("@rules_oci//oci:defs.bzl", "oci_image", "oci_image_index", "oci_load", "oci_push")
+load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
+load("//:oci_registry.bzl", "registry")
+
+IMAGE_NAME = "flight-tracker-go"
+
+go_library(
+    name = "flight-tracker-go_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/andrewpollack/pi-infrastructure/containers/flight-tracker-go",
+    visibility = ["//visibility:private"],
+    deps = [
+        "@com_github_prometheus_client_golang//prometheus",
+        "@com_github_prometheus_client_golang//prometheus/promauto",
+        "@com_github_prometheus_client_golang//prometheus/promhttp",
+    ],
+)
+
+go_binary(
+    name = "bin_amd64",
+    embed = [":flight-tracker-go_lib"],
+    goarch = "amd64",
+    goos = "linux",
+    pure = "on",
+    static = "on",
+    visibility = ["//visibility:public"],
+)
+
+go_binary(
+    name = "bin_arm64",
+    embed = [":flight-tracker-go_lib"],
+    goarch = "arm64",
+    goos = "linux",
+    pure = "on",
+    static = "on",
+    visibility = ["//visibility:public"],
+)
+
+pkg_tar(
+    name = "tar_amd64",
+    srcs = [":bin_amd64"],
+    files = {
+        ":bin_amd64": "/app/bin",
+    },
+    mode = "0555",
+    package_dir = "/app",
+)
+
+pkg_tar(
+    name = "tar_arm64",
+    srcs = [":bin_arm64"],
+    files = {
+        ":bin_arm64": "/app/bin",
+    },
+    mode = "0555",
+    package_dir = "/app",
+)
+
+oci_image(
+    name = "image_arm64",
+    base = "@chainguard_static_linux_arm64//:chainguard_static_linux_arm64",
+    entrypoint = ["/app/bin"],
+    env = {"SERVE_PORT": "8080"},
+    tars = [":tar_arm64"],
+    user = "nonroot",
+    visibility = ["//visibility:public"],
+)
+
+oci_image(
+    name = "image_amd64",
+    base = "@chainguard_static_linux_amd64//:chainguard_static_linux_amd64",
+    entrypoint = ["/app/bin"],
+    env = {"SERVE_PORT": "8080"},
+    tars = [":tar_amd64"],
+    user = "nonroot",
+    visibility = ["//visibility:public"],
+)
+
+oci_image_index(
+    name = "image_multi",
+    images = [
+        ":image_arm64",
+        ":image_amd64",
+    ],
+)
+
+oci_load(
+    name = "load_arm64",
+    image = ":image_arm64",
+    repo_tags = [IMAGE_NAME + ":arm64"],
+    target_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:arm64",
+    ],
+)
+
+oci_load(
+    name = "load_amd64",
+    image = ":image_amd64",
+    repo_tags = [IMAGE_NAME + ":amd64"],
+    target_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+)
+
+alias(
+    name = "load",
+    actual = select({
+        "@platforms//cpu:x86_64": ":load_amd64",
+        "@platforms//cpu:arm64": ":load_arm64",
+        "//conditions:default": ":load_amd64",
+    }),
+)
+
+oci_push(
+    name = "push",
+    image = ":image_multi",
+    remote_tags = ["latest"],
+    repository = registry + "/" + IMAGE_NAME,  # Use the registry defined in oci_registry.bzl
+)
+
+go_test(
+    name = "flight-tracker-go_test",
+    srcs = ["main_test.go"],
+    embed = [":flight-tracker-go_lib"],
+)

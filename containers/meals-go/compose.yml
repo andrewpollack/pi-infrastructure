@@ -1,6 +1,6 @@
 services:
   app:
-    build: .
+    image: meals-go:latest
     ports:
       - "8080:8080"
     env_file:

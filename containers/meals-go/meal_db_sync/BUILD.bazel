@@ -1,0 +1,12 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "meal_db_sync",
+    srcs = ["meal_db_sync.go"],
+    importpath = "github.com/andrewpollack/pi-infrastructure/containers/meals-go/meal_db_sync",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//containers/meals-go/meal_collection",
+        "@com_github_jackc_pgx_v5//:pgx",
+    ],
+)

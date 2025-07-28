@@ -3,16 +3,17 @@ package meal_backend
 import (
 	"fmt"
 	"log"
-	"meals/calendar"
-	"meals/config"
-	"meals/meal_calendar"
-	"meals/meal_collection"
-	"meals/meal_email"
 	"net/http"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/andrewpollack/pi-infrastructure/containers/meals-go/calendar"
+	"github.com/andrewpollack/pi-infrastructure/containers/meals-go/config"
+	"github.com/andrewpollack/pi-infrastructure/containers/meals-go/meal_calendar"
+	"github.com/andrewpollack/pi-infrastructure/containers/meals-go/meal_collection"
+	"github.com/andrewpollack/pi-infrastructure/containers/meals-go/meal_email"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
