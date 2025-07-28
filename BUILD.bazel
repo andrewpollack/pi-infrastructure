@@ -1,0 +1,44 @@
+load("@rules_go//go:def.bzl", "go_binary", "go_library")
+
+# Root BUILD file for the pi-infrastructure workspace
+# This file makes the root directory a Bazel package so that go.mod can be referenced
+
+load("@gazelle//:def.bzl", "gazelle")
+
+exports_files(["go.mod"])
+
+# gazelle:prefix github.com/andrewpollack/pi-infrastructure
+gazelle(name = "gazelle")
+
+go_library(
+    name = "pi-infrastructure_lib",
+    srcs = ["deps.go"],
+    importpath = "github.com/andrewpollack/pi-infrastructure",
+    visibility = ["//visibility:private"],
+    deps = [
+        "@com_github_aws_aws_sdk_go_v2//:aws-sdk-go-v2",
+        "@com_github_aws_aws_sdk_go_v2_config//:config",
+        "@com_github_aws_aws_sdk_go_v2_service_s3//:s3",
+        "@com_github_aws_aws_sdk_go_v2_service_ses//:ses",
+        "@com_github_gin_contrib_cors//:cors",
+        "@com_github_gin_gonic_gin//:gin",
+        "@com_github_golang_jwt_jwt_v5//:jwt",
+        "@com_github_golang_migrate_migrate_v4//:migrate",
+        "@com_github_jackc_pgx_v5//:pgx",
+        "@com_github_knadh_koanf_parsers_yaml//:yaml",
+        "@com_github_knadh_koanf_providers_file//:file",
+        "@com_github_knadh_koanf_v2//:koanf",
+        "@com_github_lib_pq//:pq",
+        "@com_github_prometheus_client_golang//prometheus",
+        "@com_github_prometheus_client_golang//prometheus/promhttp",
+        "@com_github_sebastiaanklippert_go_wkhtmltopdf//:go-wkhtmltopdf",
+        "@com_github_stianeikeland_go_rpio_v4//:go-rpio",
+        "@org_golang_x_exp//slices",
+    ],
+)
+
+go_binary(
+    name = "pi-infrastructure",
+    embed = [":pi-infrastructure_lib"],
+    visibility = ["//visibility:public"],
+)

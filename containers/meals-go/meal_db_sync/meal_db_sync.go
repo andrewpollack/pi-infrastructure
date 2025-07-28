@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"meals/meal_collection"
 	"time"
+
+	"github.com/andrewpollack/pi-infrastructure/containers/meals-go/meal_collection"
 
 	"github.com/jackc/pgx/v5"
 )

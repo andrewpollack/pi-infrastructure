@@ -1,0 +1,25 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "meal_backend",
+    srcs = [
+        "auth.go",
+        "meal_backend.go",
+        "migrate.go",
+    ],
+    importpath = "github.com/andrewpollack/pi-infrastructure/containers/meals-go/meal_backend",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//containers/meals-go/calendar",
+        "//containers/meals-go/config",
+        "//containers/meals-go/meal_calendar",
+        "//containers/meals-go/meal_collection",
+        "//containers/meals-go/meal_email",
+        "@com_github_gin_contrib_cors//:cors",
+        "@com_github_gin_gonic_gin//:gin",
+        "@com_github_golang_jwt_jwt_v5//:jwt",
+        "@com_github_golang_migrate_migrate_v4//:migrate",
+        "@com_github_golang_migrate_migrate_v4//database/postgres",
+        "@com_github_golang_migrate_migrate_v4//source/file",
+    ],
+)

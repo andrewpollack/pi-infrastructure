@@ -2,18 +2,18 @@ package meal_email
 
 import (
 	"fmt"
-	"meals/calendar"
-	"meals/config"
-	"meals/meal_collection"
 	"strings"
 	"time"
+
+	"github.com/andrewpollack/pi-infrastructure/containers/meals-go/calendar"
+	"github.com/andrewpollack/pi-infrastructure/containers/meals-go/config"
+	"github.com/andrewpollack/pi-infrastructure/containers/meals-go/meal_collection"
 )
 
 type EmailService int
 
 const (
-	Gmail = iota
-	SES
+	SES = iota
 )
 
 type Date struct {
@@ -304,16 +304,6 @@ func (c Config) CreateAndSendEmail() error {
 		sender = SESEmailSender{
 			From: c.Sender,
 			To:   c.Receivers,
-		}
-	case Gmail:
-		gs, err := AuthenticateGmail()
-		if err != nil {
-			return fmt.Errorf("failed to authenticate with Gmail: %w", err)
-		}
-		sender = GmailSender{
-			From:    c.Sender,
-			To:      c.Receivers,
-			Service: gs,
 		}
 	default:
 		return fmt.Errorf("unsupported email service: %d", c.EmailService)

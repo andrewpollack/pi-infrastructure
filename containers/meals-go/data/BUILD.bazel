@@ -1,0 +1,4 @@
+exports_files([
+    "recipes.json",
+    "recipes_with_unknown_field.json",
+])

@@ -1,0 +1,14 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "calendar",
+    srcs = ["calendar.go"],
+    importpath = "github.com/andrewpollack/pi-infrastructure/containers/meals-go/calendar",
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "calendar_test",
+    srcs = ["calendar_test.go"],
+    embed = [":calendar"],
+)

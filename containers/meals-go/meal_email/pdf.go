@@ -2,9 +2,10 @@ package meal_email
 
 import (
 	"fmt"
-	"meals/config"
-	"meals/meal_collection"
 	"strings"
+
+	"github.com/andrewpollack/pi-infrastructure/containers/meals-go/config"
+	"github.com/andrewpollack/pi-infrastructure/containers/meals-go/meal_collection"
 
 	"github.com/SebastiaanKlippert/go-wkhtmltopdf"
 )

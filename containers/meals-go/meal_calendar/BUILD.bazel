@@ -1,0 +1,26 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "meal_calendar",
+    srcs = [
+        "meal_calendar.go",
+        "meal_calendar_server.go",
+    ],
+    importpath = "github.com/andrewpollack/pi-infrastructure/containers/meals-go/meal_calendar",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//containers/meals-go/calendar",
+        "//containers/meals-go/meal_collection",
+    ],
+)
+
+go_test(
+    name = "meal_calendar_test",
+    srcs = ["meal_calendar_test.go"],
+    data = ["//containers/meals-go/data:recipes.json"],
+    embed = [":meal_calendar"],
+    deps = [
+        "//containers/meals-go/calendar",
+        "//containers/meals-go/meal_collection",
+    ],
+)
