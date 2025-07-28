@@ -100,7 +100,7 @@ func TestServeFlightInfo_WithTailNumber(t *testing.T) {
 			http.Error(w, "Error fetching flight info: tail number cannot be empty", http.StatusInternalServerError)
 			return
 		}
-		
+
 		// Create a mock flight info response
 		flightInfo := FlightInfo{
 			FlightNumber:   tailNumber,
@@ -116,10 +116,10 @@ func TestServeFlightInfo_WithTailNumber(t *testing.T) {
 			FlightDuration: "2 hours 0 minutes",
 			EstimatedFuel:  "50 gallons (300 pounds)",
 		}
-		
+
 		// Return the mock flight info as JSON
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(flightInfo)
+		_ = json.NewEncoder(w).Encode(flightInfo)
 	})
 
 	// Create a request with a tail number parameter
@@ -158,7 +158,7 @@ func TestServeFlightInfo_NoTailNumber(t *testing.T) {
 			http.Error(w, "Error fetching flight info: tail number cannot be empty", http.StatusInternalServerError)
 			return
 		}
-		
+
 		// This should not be reached in this test
 		t.Error("Handler did not return error for empty tail number")
 	})
@@ -191,7 +191,11 @@ func TestServeFlightInfo_NoTailNumber(t *testing.T) {
 func TestEnvironmentVariableValidation(t *testing.T) {
 	// Save original environment and restore it after the test
 	originalEnv := os.Getenv("TAIL_NUMBERS")
-	defer os.Setenv("TAIL_NUMBERS", originalEnv)
+	defer func() {
+		if err := os.Setenv("TAIL_NUMBERS", originalEnv); err != nil {
+			t.Fatalf("Failed to restore original environment variable: %v", err)
+		}
+	}()
 
 	// Test cases for environment variable validation
 	tests := []struct {
@@ -229,7 +233,7 @@ func TestEnvironmentVariableValidation(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Set the environment variable
-			os.Setenv("TAIL_NUMBERS", tc.envValue)
+			_ = os.Setenv("TAIL_NUMBERS", tc.envValue)
 
 			// Use a function that calls the validation logic but returns instead of exiting
 			validateEnv := func() (panicked bool) {

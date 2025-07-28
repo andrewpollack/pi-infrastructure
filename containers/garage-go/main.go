@@ -82,7 +82,11 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	defer rpio.Close()
+	defer func() {
+		if err := rpio.Close(); err != nil {
+			fmt.Printf("Failed to close GPIO: %v", err)
+		}
+	}()
 	pin := rpio.Pin(PIN_NUMBER)
 	pin.Input()
 

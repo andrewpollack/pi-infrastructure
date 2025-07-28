@@ -10,6 +10,6 @@ dev:
 
 push:
 	@docker buildx build --platform linux/amd64,linux/arm64 -t $(REPO_PATH) --push .
-	@../ops/update-pods.sh $(POD_NAME) $(REGISTRY)
+	@bazel run //containers/ops:update_pods -- $(POD_NAME) $(REGISTRY)
 
 .PHONY: setup dev push

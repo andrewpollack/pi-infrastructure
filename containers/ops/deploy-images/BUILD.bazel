@@ -5,10 +5,12 @@ go_library(
     srcs = ["main.go"],
     importpath = "github.com/andrewpollack/pi-infrastructure/containers/ops/deploy-images",
     visibility = ["//visibility:private"],
+    deps = ["@rules_go//go/runfiles"],
 )
 
 go_binary(
     name = "deploy-images",
+    data = glob(["data/**"]),
     embed = [":deploy-images_lib"],
     visibility = ["//visibility:public"],
 )

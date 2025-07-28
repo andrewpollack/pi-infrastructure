@@ -1,0 +1,5 @@
+sh_test(
+    name = "check_gofmt",
+    srcs = ["check_gofmt.sh"],
+    visibility = ["//visibility:public"],
+)

@@ -13,6 +13,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/bazelbuild/rules_go/go/runfiles"
 )
 
 // CommandRunner abstracts running external commands.
@@ -471,7 +473,20 @@ func (d *Deployer) PackageImages(images []Image) []error {
 }
 
 func main() {
-	configPath := flag.String("config", "data/config.json", "Path to configuration file")
+	rfs, err := runfiles.New()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "❌ Failed to initialize runfiles: %v\n", err)
+		os.Exit(1)
+	}
+
+	// TODO: Is there a better way to find the config file?
+	path, err := rfs.Rlocation("_main/containers/ops/deploy-images/data/config.json")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "❌ Failed to resolve runfile path: %v\n", err)
+		os.Exit(1)
+	}
+
+	configPath := flag.String("config", path, "Path to configuration file")
 	timeoutFlag := flag.Duration("timeout", 240*time.Second, "Timeout for external commands")
 	flag.Parse()
 

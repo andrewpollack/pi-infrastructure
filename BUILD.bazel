@@ -10,6 +10,16 @@ exports_files(["go.mod"])
 # gazelle:prefix github.com/andrewpollack/pi-infrastructure
 gazelle(name = "gazelle")
 
+alias(
+    name = "gofmt",
+    actual = "//tools/gofmt:check_gofmt",
+)
+
+alias(
+    name = "golangci-lint",
+    actual = "//tools/golangci-lint:golangci-lint-check",
+)
+
 go_library(
     name = "pi-infrastructure_lib",
     srcs = ["deps.go"],
@@ -34,6 +44,7 @@ go_library(
         "@com_github_sebastiaanklippert_go_wkhtmltopdf//:go-wkhtmltopdf",
         "@com_github_stianeikeland_go_rpio_v4//:go-rpio",
         "@org_golang_x_exp//slices",
+        "@rules_go//go/runfiles",
     ],
 )
 

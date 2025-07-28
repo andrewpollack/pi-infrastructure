@@ -1,0 +1,5 @@
+sh_binary(
+    name = "golangci-lint-check",
+    srcs = ["run_golangci-lint.sh"],
+    visibility = ["//visibility:public"],
+)

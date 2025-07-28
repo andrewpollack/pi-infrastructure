@@ -4,7 +4,7 @@ include variables.mk
 
 push:
 	@bazel run //containers/meals-go:push
-	@../ops/update-pods.sh $(POD_NAME) $(REGISTRY)
+	@bazel run //containers/ops:update_pods -- $(POD_NAME) $(REGISTRY)
 
 local:
 	@bazel run //containers/meals-go:load
