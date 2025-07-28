@@ -1,6 +1,6 @@
-// Package main provides a placeholder to establish direct dependencies
-// This file ensures that all required dependencies are properly resolved
-// for the Bazel build system.
+// Package main is a dependency resolution helper for the Bazel build system.
+// This file ensures that all required dependencies are properly resolved.
+// The main function is a placeholder and is not intended to be executed.
 package main
 
 import (
