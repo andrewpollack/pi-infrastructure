@@ -17,6 +17,7 @@ import (
 	_ "github.com/aws/aws-sdk-go-v2/config"
 	_ "github.com/aws/aws-sdk-go-v2/service/s3"
 	_ "github.com/aws/aws-sdk-go-v2/service/ses"
+	_ "github.com/bazelbuild/rules_go/go/runfiles"
 	_ "github.com/gin-contrib/cors"
 	_ "github.com/gin-gonic/gin"
 	_ "github.com/golang-jwt/jwt/v5"

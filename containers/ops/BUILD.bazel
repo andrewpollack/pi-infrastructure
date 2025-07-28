@@ -1,0 +1,4 @@
+sh_binary(
+    name = "update_pods",
+    srcs = ["update-pods.sh"],
+)

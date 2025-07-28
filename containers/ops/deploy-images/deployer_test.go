@@ -11,7 +11,7 @@ import (
 
 // FakeRunner records executed commands.
 type FakeRunner struct {
-	Commands []string
+	Commands   []string
 	ShouldFail bool
 }
 
