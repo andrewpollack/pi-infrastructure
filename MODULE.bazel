@@ -5,7 +5,10 @@ bazel_dep(name = "gazelle", version = "0.40.0")
 bazel_dep(name = "rules_pkg", version = "1.1.0")
 bazel_dep(name = "platforms", version = "1.0.0")
 bazel_dep(name = "rules_distroless", version = "0.5.1")
+bazel_dep(name = "aspect_bazel_lib", version = "2.7.2")
+bazel_dep(name = "rules_oci", version = "2.2.6")
 
+# Go
 go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
 go_sdk.download(version = "1.23.11")
 
@@ -32,10 +35,7 @@ use_repo(
     "org_golang_x_exp",
 )
 
-# OCI
-bazel_dep(name = "aspect_bazel_lib", version = "2.7.2")
-bazel_dep(name = "rules_oci", version = "2.2.6")
-
+# Images
 oci = use_extension("@rules_oci//oci:extensions.bzl", "oci")
 oci.pull(
     name = "chainguard_static",
