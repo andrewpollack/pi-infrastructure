@@ -12,12 +12,12 @@ gazelle(name = "gazelle")
 
 alias(
     name = "gofmt",
-    actual = "//tools/gofmt:check_gofmt",
+    actual = "//build_tools/gofmt:check_gofmt",
 )
 
 alias(
     name = "golangci-lint",
-    actual = "//tools/golangci-lint:golangci-lint-check",
+    actual = "//build_tools/golangci-lint:golangci-lint-check",
 )
 
 go_library(
