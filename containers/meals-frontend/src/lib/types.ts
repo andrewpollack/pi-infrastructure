@@ -52,3 +52,18 @@ export enum StatusType {
 export interface EmailsResponse {
 	emails: string[];
 }
+
+export interface IngredientPreview {
+	name: string;
+	display: string;
+	aisle: string;
+}
+
+export interface AisleGroup {
+	aisle: string;
+	ingredients: IngredientPreview[];
+}
+
+export interface EmailPreviewResponse {
+	aisleGroups: AisleGroup[];
+}

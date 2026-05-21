@@ -213,9 +213,121 @@ func (c Config) GetItems(ctx *gin.Context) {
 
 // SendEmailRequest represents the email request payload.
 type SendEmailRequest struct {
+	Meals         []string `json:"meals"`
+	Emails        []string `json:"emails"`
+	ExtraItems    []string `json:"extraItems"`
+	ExcludedItems []string `json:"excludedItems"`
+}
+
+// PreviewEmailRequest represents the payload for generating a grocery list preview.
+type PreviewEmailRequest struct {
 	Meals      []string `json:"meals"`
-	Emails     []string `json:"emails"`
 	ExtraItems []string `json:"extraItems"`
+}
+
+// IngredientPreviewResponse is a single ingredient in the preview response.
+type IngredientPreviewResponse struct {
+	Name    string `json:"name"`
+	Display string `json:"display"`
+	Aisle   string `json:"aisle"`
+}
+
+// AisleGroupResponse groups ingredients under a single aisle.
+type AisleGroupResponse struct {
+	Aisle       string                      `json:"aisle"`
+	Ingredients []IngredientPreviewResponse `json:"ingredients"`
+}
+
+// EmailPreviewResponse is the full preview response.
+type EmailPreviewResponse struct {
+	AisleGroups []AisleGroupResponse `json:"aisleGroups"`
+}
+
+// PreviewEmail handles the POST /email/preview endpoint.
+// It computes the grocery list for the given meals and extra items and returns
+// ingredients grouped by aisle so the caller can review before sending.
+func (c Config) PreviewEmail(ctx *gin.Context) {
+	var req PreviewEmailRequest
+	if err := ctx.BindJSON(&req); err != nil {
+		log.Println("Error in PreviewEmail while binding JSON:", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err})
+		return
+	}
+
+	if len(req.Meals) != 7 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Exactly 7 meals must be provided"})
+		return
+	}
+
+	mealCollection, err := meal_collection.ReadMealCollectionFromDB(c.PostgresURL, time.Now().Unix())
+	if err != nil {
+		log.Println("Error in PreviewEmail while fetching meal collection:", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err})
+		return
+	}
+
+	mealMap := mealCollection.MapNameToMeal()
+	var selectedMeals []meal_collection.Meal
+	for _, name := range req.Meals {
+		meal, found := mealMap[name]
+		if !found {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Meal not found: %s", name)})
+			return
+		}
+		selectedMeals = append(selectedMeals, meal)
+	}
+
+	ingredients := meal_collection.MealsToIngredients(selectedMeals)
+
+	if len(req.ExtraItems) > 0 {
+		extraItemsDB, err := meal_collection.ReadExtraItemsFromDB(c.PostgresURL)
+		if err != nil {
+			log.Println("Error in PreviewEmail while fetching extra items:", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err})
+			return
+		}
+		extraItemsMap := make(map[string]meal_collection.ExtraItem, len(extraItemsDB))
+		for _, ei := range extraItemsDB {
+			extraItemsMap[ei.Name] = ei
+		}
+		for _, name := range req.ExtraItems {
+			ei, found := extraItemsMap[name]
+			if !found {
+				ctx.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Extra item not found: %s", name)})
+				return
+			}
+			ingredients = append(ingredients, meal_collection.ExtraItemToIngredient(ei))
+		}
+	}
+
+	// Group by aisle, preserving the configured aisle order.
+	aisleMap := make(map[string][]meal_collection.Ingredient)
+	for _, ing := range ingredients {
+		key := string(ing.Aisle)
+		aisleMap[key] = append(aisleMap[key], ing)
+	}
+
+	var aisleGroups []AisleGroupResponse
+	for _, aisle := range config.Cfg.App.Aisles {
+		ingList, ok := aisleMap[aisle]
+		if !ok {
+			continue
+		}
+		ingResponses := make([]IngredientPreviewResponse, len(ingList))
+		for i, ing := range ingList {
+			ingResponses[i] = IngredientPreviewResponse{
+				Name:    ing.Name,
+				Display: ing.String(),
+				Aisle:   aisle,
+			}
+		}
+		aisleGroups = append(aisleGroups, AisleGroupResponse{
+			Aisle:       aisle,
+			Ingredients: ingResponses,
+		})
+	}
+
+	ctx.JSON(http.StatusOK, EmailPreviewResponse{AisleGroups: aisleGroups})
 }
 
 // SendEmail handles the POST /email endpoint.
@@ -336,6 +448,7 @@ func (c Config) SendEmail(ctx *gin.Context) {
 		Sender:         c.EmailSender,
 		Receivers:      emails,
 		ExtraItems:     extraItemNames,
+		ExcludedItems:  emailRequest.ExcludedItems,
 	}
 	err = mealEmailConfig.CreateAndSendEmail()
 	if err != nil {
@@ -522,6 +635,7 @@ func (c Config) RunBackend() {
 	api.GET("/items", c.authenticateMiddleware, c.GetItems)
 	api.POST("/items/update", c.authenticateMiddleware, c.UpdateItems)
 	api.POST("/email", c.authenticateMiddleware, c.SendEmail)
+	api.POST("/email/preview", c.authenticateMiddleware, c.PreviewEmail)
 	api.GET("/meals", c.authenticateMiddleware, c.GetMeals)
 	api.POST("/meals/enable", c.authenticateMiddleware, c.EnableMeals)
 	api.GET("/aisles", c.authenticateMiddleware, c.GetAisles)
