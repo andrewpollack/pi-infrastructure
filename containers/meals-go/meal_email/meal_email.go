@@ -29,6 +29,7 @@ type Config struct {
 	Receivers      []string
 	HardcodedMeals []string
 	ExtraItems     []string
+	ExcludedItems  []string
 }
 
 func (d Date) ToTime() time.Time {
@@ -275,6 +276,20 @@ func (c Config) CreateAndSendEmail() error {
 	ingredients, err := c.GetIngredientsForNextWeek(currDate, collection)
 	if err != nil {
 		return fmt.Errorf("failed to get ingredients for next week: %w", err)
+	}
+
+	if len(c.ExcludedItems) > 0 {
+		excluded := make(map[string]bool, len(c.ExcludedItems))
+		for _, name := range c.ExcludedItems {
+			excluded[name] = true
+		}
+		filtered := ingredients[:0]
+		for _, ing := range ingredients {
+			if !excluded[ing.Name] {
+				filtered = append(filtered, ing)
+			}
+		}
+		ingredients = filtered
 	}
 
 	// 3) Build email subject and HTML body
