@@ -245,12 +245,8 @@ func (c Config) GetExtraItems() ([]meal_collection.ExtraItem, error) {
 	return extraItems, nil
 }
 
-func GenerateHeaderForNextWeek(date Date) string {
-	daysOfWeek := GetDaysOfNextWeek(date)
-	first := daysOfWeek[0]
-	last := daysOfWeek[6]
-
-	return fmt.Sprintf("Meals for %s %d -> %s %d ", time.Month(first.Month), first.Day, time.Month(last.Month), last.Day)
+func GenerateHeader(date Date) string {
+	return fmt.Sprintf("Grocery List for %s %d, %d", time.Month(date.Month), date.Day, date.Year)
 }
 
 func (c Config) CreateAndSendEmail() error {
@@ -293,7 +289,7 @@ func (c Config) CreateAndSendEmail() error {
 	}
 
 	// 3) Build email subject and HTML body
-	subject := GenerateHeaderForNextWeek(currDate)
+	subject := GenerateHeader(currDate)
 	bodyHTML, err := c.GenerateEmailContentHTML(currDate, collection, meals, ingredients)
 	if err != nil {
 		return fmt.Errorf("failed to generate email HTML: %w", err)
@@ -305,13 +301,7 @@ func (c Config) CreateAndSendEmail() error {
 		return fmt.Errorf("failed to generate ingredients PDF: %w", err)
 	}
 
-	// 5) Generating the PDF name as the first day of the next week
-	nextWeekDays := GetDaysOfNextWeek(currDate)
-	if len(nextWeekDays) == 0 {
-		return fmt.Errorf("GetDaysOfNextWeek returned no days")
-	}
-	first := nextWeekDays[0]
-	pdfName := fmt.Sprintf("%d-%02d-%02d-grocery-list.pdf", first.Year, first.Month, first.Day)
+	pdfName := fmt.Sprintf("%d-%02d-%02d-grocery-list.pdf", currDate.Year, currDate.Month, currDate.Day)
 
 	var sender EmailSender
 	switch c.EmailService {
