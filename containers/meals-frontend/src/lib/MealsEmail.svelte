@@ -229,7 +229,11 @@
 								{#each chunk as item}
 									<div>
 										<label class="checkbox-label">
-											<input type="checkbox" value={item.Name} bind:group={emailState.selectedExtraItems} />
+											<input
+												type="checkbox"
+												value={item.Name}
+												bind:group={emailState.selectedExtraItems}
+											/>
 											{item.Name}
 										</label>
 									</div>
