@@ -3,21 +3,32 @@
 	import { StatusType } from '$lib/types';
 	import { DaysOfWeek, Color } from '$lib/const';
 	import StatusIndicator from './StatusIndicator.svelte';
+	import { emailState } from '$lib/emailState.svelte';
 
 	let { meals, emails, extraItems }: { meals: Meal[]; emails: string[]; extraItems: ExtraItem[] } =
 		$props();
 
 	let message = $state('');
 	let statusType = $state(StatusType.SUCCESS);
-	let selectedMeals = $state([] as string[]);
-	let selectedEmails = $state([] as string[]);
-	let selectedExtraItems = $state([] as string[]);
-	let disableLinks: boolean = $state(false);
+
+	let selectedMeals = $derived.by(() => emailState.selectedMeals);
+	let selectedEmails = $derived.by(() => emailState.selectedEmails);
+	let selectedExtraItems = $derived.by(() => emailState.selectedExtraItems);
+	let disableLinks = $derived.by(() => emailState.disableLinks);
 
 	// Step 1 = meal/email selection, Step 2 = ingredient preview
 	let step = $state(1);
 	let aisleGroups = $state([] as AisleGroup[]);
 	let excludedItems = $state(new Set<string>());
+
+	// Remove any persisted extra-item selections that no longer exist in the DB.
+	$effect(() => {
+		const valid = new Set(extraItems.map((i) => i.Name));
+		const cleaned = emailState.selectedExtraItems.filter((n) => valid.has(n));
+		if (cleaned.length !== emailState.selectedExtraItems.length) {
+			emailState.selectedExtraItems = cleaned;
+		}
+	});
 
 	let isEmailSelected = $derived(selectedEmails.length > 0);
 	let isMealsSelected = $derived(selectedMeals.length > 0);
@@ -26,9 +37,9 @@
 
 	function toggleMeal(meal: string, checked: boolean) {
 		if (checked) {
-			selectedMeals = [...selectedMeals, meal];
+			emailState.selectedMeals = [...emailState.selectedMeals, meal];
 		} else {
-			selectedMeals = selectedMeals.filter((m) => m !== meal);
+			emailState.selectedMeals = emailState.selectedMeals.filter((m) => m !== meal);
 		}
 	}
 
@@ -64,7 +75,7 @@
 
 	function handleMealChange(meal: Meal, event: Event) {
 		const input = event.target as HTMLInputElement;
-		if (input.checked && selectedMeals.length >= maxMeals) {
+		if (input.checked && emailState.selectedMeals.length >= maxMeals) {
 			input.checked = false;
 			alert(`Error: You can only select up to ${maxMeals} meals.`);
 			return;
@@ -201,7 +212,7 @@
 				{#each emails as email}
 					<div>
 						<label class="checkbox-label">
-							<input type="checkbox" value={email} bind:group={selectedEmails} />
+							<input type="checkbox" value={email} bind:group={emailState.selectedEmails} />
 							{email}
 						</label>
 					</div>
@@ -218,7 +229,11 @@
 								{#each chunk as item}
 									<div>
 										<label class="checkbox-label">
-											<input type="checkbox" value={item.Name} bind:group={selectedExtraItems} />
+											<input
+												type="checkbox"
+												value={item.Name}
+												bind:group={emailState.selectedExtraItems}
+											/>
 											{item.Name}
 										</label>
 									</div>
@@ -235,7 +250,7 @@
 					<div>
 						<strong> Meals </strong>
 						<label>
-							<input type="checkbox" bind:checked={disableLinks} />
+							<input type="checkbox" bind:checked={emailState.disableLinks} />
 							Disable Links
 						</label>
 					</div>
