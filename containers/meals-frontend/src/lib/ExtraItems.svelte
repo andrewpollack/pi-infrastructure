@@ -20,14 +20,6 @@
 		return item.Name !== other.Name || item.Aisle !== other.Aisle || item.Enabled !== other.Enabled;
 	}
 
-	let isDifferent = $derived(
-		localItems.length !== extraItems.length ||
-			localItems.some((item, index) => {
-				const original = extraItems[index];
-				return itemsDifferent(item, original);
-			})
-	);
-
 	// Basic validation
 	let hasEmptyName = $derived(localItems.some((item) => item.Name.trim().length === 0));
 	let hasEmptyAisle = $derived(localItems.some((item) => item.Aisle.trim().length === 0));
@@ -43,8 +35,14 @@
 		);
 	}
 
-	function toggleEditAll() {
-		isEditingAll = !isEditingAll;
+	function startEditing() {
+		isEditingAll = true;
+	}
+
+	function cancelEditing() {
+		localItems = extraItems.map((m) => ({ ...m }));
+		isEditingAll = false;
+		message = '';
 	}
 
 	function addItem() {
@@ -136,14 +134,12 @@
 
 <StatusIndicator {message} type={statusType} />
 
-<!-- Toggle all rows editable or read-only -->
-<button type="button" onclick={toggleEditAll}>
-	{isEditingAll ? 'Done Editing' : 'Edit Items'}
-</button>
-
-<button type="button" onclick={updateItems} disabled={!isDifferent} class:warning={!isFormValid}>
-	Update Items
-</button>
+{#if isEditingAll}
+	<button type="button" onclick={updateItems} class:warning={!isFormValid}> Update Items </button>
+	<button type="button" class="warning" onclick={cancelEditing}>Cancel Updates</button>
+{:else}
+	<button type="button" onclick={startEditing}>Edit Items</button>
+{/if}
 
 <br /><br />
 <div
