@@ -126,6 +126,7 @@
 			message = 'Items updated!';
 			extraItems = [...localItems];
 			statusType = StatusType.SUCCESS;
+			isEditingAll = false;
 		} catch (error) {
 			message = 'Error updating items: ' + (error instanceof Error ? error.message : String(error));
 			statusType = StatusType.ERROR;
