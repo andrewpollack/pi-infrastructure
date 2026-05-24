@@ -51,7 +51,8 @@ oci.pull(
 )
 oci.pull(
     name = "chainguard_gcc_glibc",
-    digest = "sha256:8972fa63d3c20a323c4aa6b4215f92f847e057589272f2c976d45746339f39ce",
+    # Pinned: newer images require GLIBC_2.38, incompatible with Bookworm's libc6. Fix: replace wkhtmltopdf.
+    digest = "sha256:3a45fcb3aa750f2564cc188b3aa2926c3790142594822dee0c16c2e72d8ff326",
     image = "cgr.dev/chainguard/gcc-glibc",
     platforms = [
         "linux/amd64",
