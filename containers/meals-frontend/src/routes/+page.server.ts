@@ -29,6 +29,9 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
 	const extraItemsRes = await fetch(`${env.API_BASE_URL}/api/items`, {
 		headers: getTokenHeaders(cookies)
 	});
+	const aislesRes = await fetch(`${env.API_BASE_URL}/api/aisles`, {
+		headers: getTokenHeaders(cookies)
+	});
 
 	if (!mealsRes.ok) {
 		if (mealsRes.status === 401) {
@@ -54,12 +57,19 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
 		}
 		throw error(emailsRes.status, 'Failed to fetch emails');
 	}
+	if (!aislesRes.ok) {
+		if (aislesRes.status === 401) {
+			throw redirect(302, '/login');
+		}
+		throw error(aislesRes.status, 'Failed to fetch aisles');
+	}
 
 	const mealsData: MealsResponse = await mealsRes.json();
 	const calendarData: CalendarResponse = await calendarRes.json();
 	const extraItemsData: ExtraItemsResponse = await extraItemsRes.json();
 	const extraItems = extraItemsData.allItems.filter((item) => item.Enabled);
 	const emailsData: EmailsResponse = await emailsRes.json();
+	const aislesData: { aisles: string[] } = await aislesRes.json();
 
 	return {
 		allMeals: mealsData.allMeals,
@@ -67,6 +77,7 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
 		allEmails: emailsData.emails,
 		allExtraItems: extraItems,
 		selectedYear: currentYear,
-		selectedMonth: currentMonth
+		selectedMonth: currentMonth,
+		aisles: aislesData.aisles
 	};
 };

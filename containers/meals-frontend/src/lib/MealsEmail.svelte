@@ -1,12 +1,16 @@
 <script lang="ts">
-	import type { Meal, ExtraItem, AisleGroup } from '$lib/types';
+	import type { Meal, ExtraItem, AisleGroup, OneOffItem } from '$lib/types';
 	import { StatusType } from '$lib/types';
 	import { DaysOfWeek, Color } from '$lib/const';
 	import StatusIndicator from './StatusIndicator.svelte';
 	import { emailState } from '$lib/emailState.svelte';
 
-	let { meals, emails, extraItems }: { meals: Meal[]; emails: string[]; extraItems: ExtraItem[] } =
-		$props();
+	let {
+		meals,
+		emails,
+		extraItems,
+		aisles
+	}: { meals: Meal[]; emails: string[]; extraItems: ExtraItem[]; aisles: string[] } = $props();
 
 	let message = $state('');
 	let statusType = $state(StatusType.SUCCESS);
@@ -20,6 +24,21 @@
 	let step = $state(1);
 	let aisleGroups = $state([] as AisleGroup[]);
 	let excludedItems = $state(new Set<string>());
+
+	// One-off items: keyed by aisle name → list of item names
+	let oneOffItems = $state<Record<string, string[]>>({});
+	// Excluded one-off items: keyed by "aisle::name"
+	let excludedOneOffItems = $state(new Set<string>());
+	// Which aisle's inline add-form is open
+	let addingToAisle = $state<string | null>(null);
+	let newItemText = $state('');
+	let addItemInputEl = $state<HTMLInputElement | null>(null);
+
+	$effect(() => {
+		if (addingToAisle !== null) {
+			addItemInputEl?.focus();
+		}
+	});
 
 	// Remove any persisted extra-item selections that no longer exist in the DB.
 	$effect(() => {
@@ -133,6 +152,43 @@
 		excludedItems = next;
 	}
 
+	function startAddingToAisle(aisle: string) {
+		addingToAisle = aisle;
+		newItemText = '';
+	}
+
+	function cancelAddItem() {
+		addingToAisle = null;
+		newItemText = '';
+	}
+
+	function confirmAddItem(aisle: string) {
+		const name = newItemText.trim();
+		if (!name) return;
+		oneOffItems[aisle] = [...(oneOffItems[aisle] ?? []), name];
+		addingToAisle = null;
+		newItemText = '';
+	}
+
+	function toggleOneOffItem(aisle: string, name: string, checked: boolean) {
+		const key = `${aisle}::${name}`;
+		const next = new Set(excludedOneOffItems);
+		if (!checked) {
+			next.add(key);
+		} else {
+			next.delete(key);
+		}
+		excludedOneOffItems = next;
+	}
+
+	function getOneOffItemsForSend(): OneOffItem[] {
+		return Object.entries(oneOffItems).flatMap(([aisle, names]) =>
+			names
+				.filter((name) => !excludedOneOffItems.has(`${aisle}::${name}`))
+				.map((name) => ({ name, aisle }))
+		);
+	}
+
 	async function handleSend(event: Event) {
 		event.preventDefault();
 		message = 'Sending email...';
@@ -146,7 +202,8 @@
 					meals: getPaddedMeals(),
 					emails: selectedEmails,
 					extraItems: selectedExtraItems,
-					excludedItems: Array.from(excludedItems)
+					excludedItems: Array.from(excludedItems),
+					oneOffItems: getOneOffItemsForSend()
 				})
 			});
 
@@ -298,6 +355,10 @@
 					onclick={() => {
 						step = 1;
 						message = '';
+						oneOffItems = {};
+						excludedOneOffItems = new Set();
+						addingToAisle = null;
+						newItemText = '';
 					}}
 				>
 					Back
@@ -307,12 +368,13 @@
 
 			<br />
 
-			{#if aisleGroups.length === 0}
-				<p>No grocery items found.</p>
-			{:else}
-				{#each aisleGroups as aisleGroup}
-					<fieldset>
-						<legend><strong>{aisleGroup.aisle}</strong></legend>
+			{#each aisles as aisle}
+				{@const aisleGroup = aisleGroups.find((g) => g.aisle === aisle) ?? null}
+				{@const oneOffs = oneOffItems[aisle] ?? []}
+				<fieldset>
+					<legend><strong>{aisle}</strong></legend>
+
+					{#if aisleGroup}
 						{#each aisleGroup.ingredients as ingredient}
 							{@const colonIdx = ingredient.display.indexOf(': ')}
 							{@const hasQty = colonIdx !== -1}
@@ -341,9 +403,51 @@
 								</label>
 							</div>
 						{/each}
-					</fieldset>
-				{/each}
-			{/if}
+					{/if}
+
+					{#each oneOffs as oneOff}
+						<div>
+							<label class="checkbox-label">
+								<input
+									type="checkbox"
+									checked={!excludedOneOffItems.has(`${aisle}::${oneOff}`)}
+									onchange={(e) =>
+										toggleOneOffItem(aisle, oneOff, (e.target as HTMLInputElement).checked)}
+								/>
+								<span class="ingredient-label">
+									<span class="item-name">{oneOff}</span>
+									<span class="item-meals one-off-tag">(one-off)</span>
+								</span>
+							</label>
+						</div>
+					{/each}
+
+					{#if addingToAisle === aisle}
+						<div class="add-oneoff-form">
+							<input
+								type="text"
+								bind:value={newItemText}
+								bind:this={addItemInputEl}
+								placeholder="Item name..."
+								onkeydown={(e) => {
+									if (e.key === 'Enter') {
+										e.preventDefault();
+										confirmAddItem(aisle);
+									} else if (e.key === 'Escape') {
+										cancelAddItem();
+									}
+								}}
+							/>
+							<button type="button" onclick={() => confirmAddItem(aisle)}>Add</button>
+							<button type="button" onclick={cancelAddItem}>Cancel</button>
+						</div>
+					{:else}
+						<button type="button" class="add-oneoff-btn" onclick={() => startAddingToAisle(aisle)}
+							>+</button
+						>
+					{/if}
+				</fieldset>
+			{/each}
 		</form>
 	{/if}
 </div>
@@ -431,5 +535,41 @@
 	.item-meals {
 		font-size: 0.8em;
 		color: #888;
+	}
+
+	.one-off-tag {
+		font-size: 0.75em;
+		color: #aaa;
+		font-style: italic;
+	}
+
+	.add-oneoff-btn {
+		display: block;
+		margin-top: 0.4rem;
+		padding: 0.1rem 0.6rem;
+		font-size: 1rem;
+		cursor: pointer;
+		border: 1px solid var(--secondary-color);
+		border-radius: 3px;
+		background: transparent;
+	}
+
+	.add-oneoff-btn:hover {
+		background-color: var(--tertiary-color);
+	}
+
+	.add-oneoff-form {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		margin-top: 0.4rem;
+	}
+
+	.add-oneoff-form input[type='text'] {
+		flex: 1;
+		padding: 0.2rem 0.4rem;
+		font-size: 0.9rem;
+		border: 1px solid var(--secondary-color);
+		border-radius: 3px;
 	}
 </style>

@@ -67,3 +67,8 @@ export interface AisleGroup {
 export interface EmailPreviewResponse {
 	aisleGroups: AisleGroup[];
 }
+
+export interface OneOffItem {
+	name: string;
+	aisle: string;
+}

@@ -30,6 +30,7 @@ type Config struct {
 	HardcodedMeals []string
 	ExtraItems     []string
 	ExcludedItems  []string
+	OneOffItems    []meal_collection.Ingredient
 }
 
 func (d Date) ToTime() time.Time {
@@ -286,6 +287,11 @@ func (c Config) CreateAndSendEmail() error {
 			}
 		}
 		ingredients = filtered
+	}
+
+	// Append one-off items (already pre-filtered/checked by the sender).
+	if len(c.OneOffItems) > 0 {
+		ingredients = append(ingredients, c.OneOffItems...)
 	}
 
 	// 3) Build email subject and HTML body

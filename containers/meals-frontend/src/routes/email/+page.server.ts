@@ -14,6 +14,9 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
 	const extraItemsRes = await fetch(`${env.API_BASE_URL}/api/items`, {
 		headers: getTokenHeaders(cookies)
 	});
+	const aislesRes = await fetch(`${env.API_BASE_URL}/api/aisles`, {
+		headers: getTokenHeaders(cookies)
+	});
 
 	if (!mealsRes.ok) {
 		if (mealsRes.status === 401) {
@@ -27,21 +30,28 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
 		}
 		throw error(extraItemsRes.status, 'Failed to fetch extra items');
 	}
-
 	if (!emailsRes.ok) {
 		if (emailsRes.status === 401) {
 			throw redirect(302, '/login');
 		}
 		throw error(emailsRes.status, 'Failed to fetch emails');
 	}
+	if (!aislesRes.ok) {
+		if (aislesRes.status === 401) {
+			throw redirect(302, '/login');
+		}
+		throw error(aislesRes.status, 'Failed to fetch aisles');
+	}
 
 	const emailsData: EmailsResponse = await emailsRes.json();
 	const mealsData: MealsResponse = await mealsRes.json();
 	const extraItemsData = await extraItemsRes.json();
+	const aislesData: { aisles: string[] } = await aislesRes.json();
 
 	return {
 		allMeals: mealsData.allMeals,
 		allEmails: emailsData.emails,
-		allExtraItems: extraItemsData.allItems
+		allExtraItems: extraItemsData.allItems,
+		aisles: aislesData.aisles
 	};
 };

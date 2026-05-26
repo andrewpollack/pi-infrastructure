@@ -3,8 +3,15 @@
 	import MealsEmail from '$lib/MealsEmail.svelte';
 
 	let { data } = $props();
-	const { allMeals, currMonthResponse, allEmails, allExtraItems, selectedYear, selectedMonth } =
-		data;
+	const {
+		allMeals,
+		currMonthResponse,
+		allEmails,
+		allExtraItems,
+		selectedYear,
+		selectedMonth,
+		aisles
+	} = data;
 
 	let year = $state(selectedYear);
 	let month = $state(selectedMonth);
@@ -53,5 +60,5 @@
 <CalendarMonth monthData={calendarData} />
 
 <div>
-	<MealsEmail meals={allMeals} emails={allEmails} extraItems={allExtraItems} />
+	<MealsEmail meals={allMeals} emails={allEmails} extraItems={allExtraItems} {aisles} />
 </div>
