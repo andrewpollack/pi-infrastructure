@@ -211,12 +211,19 @@ func (c Config) GetItems(ctx *gin.Context) {
 	})
 }
 
+// OneOffItem represents a one-time grocery item that is not saved to the database.
+type OneOffItem struct {
+	Name  string `json:"name"`
+	Aisle string `json:"aisle"`
+}
+
 // SendEmailRequest represents the email request payload.
 type SendEmailRequest struct {
-	Meals         []string `json:"meals"`
-	Emails        []string `json:"emails"`
-	ExtraItems    []string `json:"extraItems"`
-	ExcludedItems []string `json:"excludedItems"`
+	Meals         []string     `json:"meals"`
+	Emails        []string     `json:"emails"`
+	ExtraItems    []string     `json:"extraItems"`
+	ExcludedItems []string     `json:"excludedItems"`
+	OneOffItems   []OneOffItem `json:"oneOffItems"`
 }
 
 // PreviewEmailRequest represents the payload for generating a grocery list preview.
@@ -441,6 +448,15 @@ func (c Config) SendEmail(ctx *gin.Context) {
 		extraItemNames = append(extraItemNames, extraItem)
 	}
 
+	// Convert one-off items to Ingredient objects.
+	var oneOffIngredients []meal_collection.Ingredient
+	for _, oi := range emailRequest.OneOffItems {
+		oneOffIngredients = append(oneOffIngredients, meal_collection.Ingredient{
+			Name:  oi.Name,
+			Aisle: meal_collection.Aisle(oi.Aisle),
+		})
+	}
+
 	mealEmailConfig := meal_email.Config{
 		PostgresURL:    c.PostgresURL,
 		EmailService:   meal_email.SES,
@@ -449,6 +465,7 @@ func (c Config) SendEmail(ctx *gin.Context) {
 		Receivers:      emails,
 		ExtraItems:     extraItemNames,
 		ExcludedItems:  emailRequest.ExcludedItems,
+		OneOffItems:    oneOffIngredients,
 	}
 	err = mealEmailConfig.CreateAndSendEmail()
 	if err != nil {
