@@ -32,6 +32,13 @@
 	// Which aisle's inline add-form is open
 	let addingToAisle = $state<string | null>(null);
 	let newItemText = $state('');
+	let addItemInputEl = $state<HTMLInputElement | null>(null);
+
+	$effect(() => {
+		if (addingToAisle !== null) {
+			addItemInputEl?.focus();
+		}
+	});
 
 	// Remove any persisted extra-item selections that no longer exist in the DB.
 	$effect(() => {
@@ -420,8 +427,8 @@
 							<input
 								type="text"
 								bind:value={newItemText}
+								bind:this={addItemInputEl}
 								placeholder="Item name..."
-								autofocus
 								onkeydown={(e) => {
 									if (e.key === 'Enter') {
 										e.preventDefault();
