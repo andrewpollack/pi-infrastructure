@@ -435,11 +435,9 @@
 							<button type="button" onclick={cancelAddItem}>Cancel</button>
 						</div>
 					{:else}
-						<button
-							type="button"
-							class="add-oneoff-btn"
-							onclick={() => startAddingToAisle(aisle)}
-						>+</button>
+						<button type="button" class="add-oneoff-btn" onclick={() => startAddingToAisle(aisle)}
+							>+</button
+						>
 					{/if}
 				</fieldset>
 			{/each}
