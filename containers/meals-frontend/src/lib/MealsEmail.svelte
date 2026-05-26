@@ -1,12 +1,16 @@
 <script lang="ts">
-	import type { Meal, ExtraItem, AisleGroup } from '$lib/types';
+	import type { Meal, ExtraItem, AisleGroup, OneOffItem } from '$lib/types';
 	import { StatusType } from '$lib/types';
 	import { DaysOfWeek, Color } from '$lib/const';
 	import StatusIndicator from './StatusIndicator.svelte';
 	import { emailState } from '$lib/emailState.svelte';
 
-	let { meals, emails, extraItems }: { meals: Meal[]; emails: string[]; extraItems: ExtraItem[] } =
-		$props();
+	let {
+		meals,
+		emails,
+		extraItems,
+		aisles
+	}: { meals: Meal[]; emails: string[]; extraItems: ExtraItem[]; aisles: string[] } = $props();
 
 	let message = $state('');
 	let statusType = $state(StatusType.SUCCESS);
@@ -20,6 +24,14 @@
 	let step = $state(1);
 	let aisleGroups = $state([] as AisleGroup[]);
 	let excludedItems = $state(new Set<string>());
+
+	// One-off items: keyed by aisle name → list of item names
+	let oneOffItems = $state<Record<string, string[]>>({});
+	// Excluded one-off items: keyed by "aisle::name"
+	let excludedOneOffItems = $state(new Set<string>());
+	// Which aisle's inline add-form is open
+	let addingToAisle = $state<string | null>(null);
+	let newItemText = $state('');
 
 	// Remove any persisted extra-item selections that no longer exist in the DB.
 	$effect(() => {
@@ -133,6 +145,43 @@
 		excludedItems = next;
 	}
 
+	function startAddingToAisle(aisle: string) {
+		addingToAisle = aisle;
+		newItemText = '';
+	}
+
+	function cancelAddItem() {
+		addingToAisle = null;
+		newItemText = '';
+	}
+
+	function confirmAddItem(aisle: string) {
+		const name = newItemText.trim();
+		if (!name) return;
+		oneOffItems[aisle] = [...(oneOffItems[aisle] ?? []), name];
+		addingToAisle = null;
+		newItemText = '';
+	}
+
+	function toggleOneOffItem(aisle: string, name: string, checked: boolean) {
+		const key = `${aisle}::${name}`;
+		const next = new Set(excludedOneOffItems);
+		if (!checked) {
+			next.add(key);
+		} else {
+			next.delete(key);
+		}
+		excludedOneOffItems = next;
+	}
+
+	function getOneOffItemsForSend(): OneOffItem[] {
+		return Object.entries(oneOffItems).flatMap(([aisle, names]) =>
+			names
+				.filter((name) => !excludedOneOffItems.has(`${aisle}::${name}`))
+				.map((name) => ({ name, aisle }))
+		);
+	}
+
 	async function handleSend(event: Event) {
 		event.preventDefault();
 		message = 'Sending email...';
@@ -146,7 +195,8 @@
 					meals: getPaddedMeals(),
 					emails: selectedEmails,
 					extraItems: selectedExtraItems,
-					excludedItems: Array.from(excludedItems)
+					excludedItems: Array.from(excludedItems),
+					oneOffItems: getOneOffItemsForSend()
 				})
 			});
 
@@ -298,6 +348,10 @@
 					onclick={() => {
 						step = 1;
 						message = '';
+						oneOffItems = {};
+						excludedOneOffItems = new Set();
+						addingToAisle = null;
+						newItemText = '';
 					}}
 				>
 					Back
@@ -307,42 +361,96 @@
 
 			<br />
 
-			{#if aisleGroups.length === 0}
-				<p>No grocery items found.</p>
-			{:else}
-				{#each aisleGroups as aisleGroup}
+			{#each aisles as aisle}
+				{@const aisleGroup = aisleGroups.find((g) => g.aisle === aisle) ?? null}
+				{@const oneOffs = oneOffItems[aisle] ?? []}
+				{@const hasContent = (aisleGroup?.ingredients.length ?? 0) > 0 || oneOffs.length > 0}
+				{#if hasContent || addingToAisle === aisle}
 					<fieldset>
-						<legend><strong>{aisleGroup.aisle}</strong></legend>
-						{#each aisleGroup.ingredients as ingredient}
-							{@const colonIdx = ingredient.display.indexOf(': ')}
-							{@const hasQty = colonIdx !== -1}
-							{@const qtyUnit = hasQty ? ingredient.display.slice(0, colonIdx) : ''}
-							{@const rest = hasQty ? ingredient.display.slice(colonIdx + 2) : ingredient.display}
-							{@const parenIdx = rest.lastIndexOf(' (')}
-							{@const itemName = parenIdx !== -1 ? rest.slice(0, parenIdx) : rest}
-							{@const itemMeals = parenIdx !== -1 ? rest.slice(parenIdx + 1) : ''}
+						<legend>
+							<strong>{aisle}</strong>
+							<button
+								type="button"
+								class="add-oneoff-btn"
+								title="Add one-off item to {aisle}"
+								onclick={() => startAddingToAisle(aisle)}
+							>+</button>
+						</legend>
+
+						{#if aisleGroup}
+							{#each aisleGroup.ingredients as ingredient}
+								{@const colonIdx = ingredient.display.indexOf(': ')}
+								{@const hasQty = colonIdx !== -1}
+								{@const qtyUnit = hasQty ? ingredient.display.slice(0, colonIdx) : ''}
+								{@const rest = hasQty ? ingredient.display.slice(colonIdx + 2) : ingredient.display}
+								{@const parenIdx = rest.lastIndexOf(' (')}
+								{@const itemName = parenIdx !== -1 ? rest.slice(0, parenIdx) : rest}
+								{@const itemMeals = parenIdx !== -1 ? rest.slice(parenIdx + 1) : ''}
+								<div>
+									<label class="checkbox-label">
+										<input
+											type="checkbox"
+											checked={!excludedItems.has(ingredient.name)}
+											onchange={(e) =>
+												toggleItem(ingredient.name, (e.target as HTMLInputElement).checked)}
+										/>
+										<span class="ingredient-label">
+											{#if hasQty}
+												<strong class="qty">{qtyUnit}</strong>
+											{/if}
+											<span class="item-name">{itemName}</span>
+											{#if itemMeals}
+												<span class="item-meals">{itemMeals}</span>
+											{/if}
+										</span>
+									</label>
+								</div>
+							{/each}
+						{/if}
+
+						{#each oneOffs as oneOff}
 							<div>
 								<label class="checkbox-label">
 									<input
 										type="checkbox"
-										checked={!excludedItems.has(ingredient.name)}
+										checked={!excludedOneOffItems.has(`${aisle}::${oneOff}`)}
 										onchange={(e) =>
-											toggleItem(ingredient.name, (e.target as HTMLInputElement).checked)}
+											toggleOneOffItem(aisle, oneOff, (e.target as HTMLInputElement).checked)}
 									/>
 									<span class="ingredient-label">
-										{#if hasQty}
-											<strong class="qty">{qtyUnit}</strong>
-										{/if}
-										<span class="item-name">{itemName}</span>
-										{#if itemMeals}
-											<span class="item-meals">{itemMeals}</span>
-										{/if}
+										<span class="item-name">{oneOff}</span>
+										<span class="item-meals one-off-tag">(one-off)</span>
 									</span>
 								</label>
 							</div>
 						{/each}
+
+						{#if addingToAisle === aisle}
+							<div class="add-oneoff-form">
+								<input
+									type="text"
+									bind:value={newItemText}
+									placeholder="Item name..."
+									autofocus
+									onkeydown={(e) => {
+										if (e.key === 'Enter') {
+											e.preventDefault();
+											confirmAddItem(aisle);
+										} else if (e.key === 'Escape') {
+											cancelAddItem();
+										}
+									}}
+								/>
+								<button type="button" onclick={() => confirmAddItem(aisle)}>Add</button>
+								<button type="button" onclick={cancelAddItem}>Cancel</button>
+							</div>
+						{/if}
 					</fieldset>
-				{/each}
+				{/if}
+			{/each}
+
+			{#if aisleGroups.length === 0 && Object.keys(oneOffItems).length === 0}
+				<p>No grocery items found. Use the <strong>+</strong> buttons above to add one-off items.</p>
 			{/if}
 		</form>
 	{/if}
@@ -431,5 +539,42 @@
 	.item-meals {
 		font-size: 0.8em;
 		color: #888;
+	}
+
+	.one-off-tag {
+		font-size: 0.75em;
+		color: #aaa;
+		font-style: italic;
+	}
+
+	.add-oneoff-btn {
+		margin-left: 0.5rem;
+		padding: 0 0.4rem;
+		font-size: 1rem;
+		line-height: 1.2;
+		cursor: pointer;
+		border: 1px solid var(--secondary-color);
+		border-radius: 3px;
+		background: transparent;
+		vertical-align: middle;
+	}
+
+	.add-oneoff-btn:hover {
+		background-color: var(--tertiary-color);
+	}
+
+	.add-oneoff-form {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		margin-top: 0.4rem;
+	}
+
+	.add-oneoff-form input[type='text'] {
+		flex: 1;
+		padding: 0.2rem 0.4rem;
+		font-size: 0.9rem;
+		border: 1px solid var(--secondary-color);
+		border-radius: 3px;
 	}
 </style>

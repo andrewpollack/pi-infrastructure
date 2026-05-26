@@ -2,7 +2,7 @@
 	import MealsEmail from '$lib/MealsEmail.svelte';
 
 	let { data } = $props();
-	const { allMeals, allEmails, allExtraItems } = data;
+	const { allMeals, allEmails, allExtraItems, aisles } = data;
 </script>
 
 <h1 style="display: flex; align-items: center; justify-content: flex-start; gap: 1rem;">
@@ -12,5 +12,5 @@
 </h1>
 
 <div>
-	<MealsEmail meals={allMeals} emails={allEmails} extraItems={allExtraItems} />
+	<MealsEmail meals={allMeals} emails={allEmails} extraItems={allExtraItems} {aisles} />
 </div>
