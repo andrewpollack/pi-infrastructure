@@ -364,94 +364,85 @@
 			{#each aisles as aisle}
 				{@const aisleGroup = aisleGroups.find((g) => g.aisle === aisle) ?? null}
 				{@const oneOffs = oneOffItems[aisle] ?? []}
-				{@const hasContent = (aisleGroup?.ingredients.length ?? 0) > 0 || oneOffs.length > 0}
-				{#if hasContent || addingToAisle === aisle}
-					<fieldset>
-						<legend>
-							<strong>{aisle}</strong>
-							<button
-								type="button"
-								class="add-oneoff-btn"
-								title="Add one-off item to {aisle}"
-								onclick={() => startAddingToAisle(aisle)}
-							>+</button>
-						</legend>
+				<fieldset>
+					<legend><strong>{aisle}</strong></legend>
 
-						{#if aisleGroup}
-							{#each aisleGroup.ingredients as ingredient}
-								{@const colonIdx = ingredient.display.indexOf(': ')}
-								{@const hasQty = colonIdx !== -1}
-								{@const qtyUnit = hasQty ? ingredient.display.slice(0, colonIdx) : ''}
-								{@const rest = hasQty ? ingredient.display.slice(colonIdx + 2) : ingredient.display}
-								{@const parenIdx = rest.lastIndexOf(' (')}
-								{@const itemName = parenIdx !== -1 ? rest.slice(0, parenIdx) : rest}
-								{@const itemMeals = parenIdx !== -1 ? rest.slice(parenIdx + 1) : ''}
-								<div>
-									<label class="checkbox-label">
-										<input
-											type="checkbox"
-											checked={!excludedItems.has(ingredient.name)}
-											onchange={(e) =>
-												toggleItem(ingredient.name, (e.target as HTMLInputElement).checked)}
-										/>
-										<span class="ingredient-label">
-											{#if hasQty}
-												<strong class="qty">{qtyUnit}</strong>
-											{/if}
-											<span class="item-name">{itemName}</span>
-											{#if itemMeals}
-												<span class="item-meals">{itemMeals}</span>
-											{/if}
-										</span>
-									</label>
-								</div>
-							{/each}
-						{/if}
-
-						{#each oneOffs as oneOff}
+					{#if aisleGroup}
+						{#each aisleGroup.ingredients as ingredient}
+							{@const colonIdx = ingredient.display.indexOf(': ')}
+							{@const hasQty = colonIdx !== -1}
+							{@const qtyUnit = hasQty ? ingredient.display.slice(0, colonIdx) : ''}
+							{@const rest = hasQty ? ingredient.display.slice(colonIdx + 2) : ingredient.display}
+							{@const parenIdx = rest.lastIndexOf(' (')}
+							{@const itemName = parenIdx !== -1 ? rest.slice(0, parenIdx) : rest}
+							{@const itemMeals = parenIdx !== -1 ? rest.slice(parenIdx + 1) : ''}
 							<div>
 								<label class="checkbox-label">
 									<input
 										type="checkbox"
-										checked={!excludedOneOffItems.has(`${aisle}::${oneOff}`)}
+										checked={!excludedItems.has(ingredient.name)}
 										onchange={(e) =>
-											toggleOneOffItem(aisle, oneOff, (e.target as HTMLInputElement).checked)}
+											toggleItem(ingredient.name, (e.target as HTMLInputElement).checked)}
 									/>
 									<span class="ingredient-label">
-										<span class="item-name">{oneOff}</span>
-										<span class="item-meals one-off-tag">(one-off)</span>
+										{#if hasQty}
+											<strong class="qty">{qtyUnit}</strong>
+										{/if}
+										<span class="item-name">{itemName}</span>
+										{#if itemMeals}
+											<span class="item-meals">{itemMeals}</span>
+										{/if}
 									</span>
 								</label>
 							</div>
 						{/each}
+					{/if}
 
-						{#if addingToAisle === aisle}
-							<div class="add-oneoff-form">
+					{#each oneOffs as oneOff}
+						<div>
+							<label class="checkbox-label">
 								<input
-									type="text"
-									bind:value={newItemText}
-									placeholder="Item name..."
-									autofocus
-									onkeydown={(e) => {
-										if (e.key === 'Enter') {
-											e.preventDefault();
-											confirmAddItem(aisle);
-										} else if (e.key === 'Escape') {
-											cancelAddItem();
-										}
-									}}
+									type="checkbox"
+									checked={!excludedOneOffItems.has(`${aisle}::${oneOff}`)}
+									onchange={(e) =>
+										toggleOneOffItem(aisle, oneOff, (e.target as HTMLInputElement).checked)}
 								/>
-								<button type="button" onclick={() => confirmAddItem(aisle)}>Add</button>
-								<button type="button" onclick={cancelAddItem}>Cancel</button>
-							</div>
-						{/if}
-					</fieldset>
-				{/if}
-			{/each}
+								<span class="ingredient-label">
+									<span class="item-name">{oneOff}</span>
+									<span class="item-meals one-off-tag">(one-off)</span>
+								</span>
+							</label>
+						</div>
+					{/each}
 
-			{#if aisleGroups.length === 0 && Object.keys(oneOffItems).length === 0}
-				<p>No grocery items found. Use the <strong>+</strong> buttons above to add one-off items.</p>
-			{/if}
+					{#if addingToAisle === aisle}
+						<div class="add-oneoff-form">
+							<input
+								type="text"
+								bind:value={newItemText}
+								placeholder="Item name..."
+								autofocus
+								onkeydown={(e) => {
+									if (e.key === 'Enter') {
+										e.preventDefault();
+										confirmAddItem(aisle);
+									} else if (e.key === 'Escape') {
+										cancelAddItem();
+									}
+								}}
+							/>
+							<button type="button" onclick={() => confirmAddItem(aisle)}>Add</button>
+							<button type="button" onclick={cancelAddItem}>Cancel</button>
+						</div>
+					{:else}
+						<button
+							type="button"
+							class="add-oneoff-btn"
+							onclick={() => startAddingToAisle(aisle)}
+						>+</button>
+					{/if}
+				</fieldset>
+			{/each}
 		</form>
 	{/if}
 </div>
@@ -548,15 +539,14 @@
 	}
 
 	.add-oneoff-btn {
-		margin-left: 0.5rem;
-		padding: 0 0.4rem;
+		display: block;
+		margin-top: 0.4rem;
+		padding: 0.1rem 0.6rem;
 		font-size: 1rem;
-		line-height: 1.2;
 		cursor: pointer;
 		border: 1px solid var(--secondary-color);
 		border-radius: 3px;
 		background: transparent;
-		vertical-align: middle;
 	}
 
 	.add-oneoff-btn:hover {
